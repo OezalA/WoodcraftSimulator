@@ -152,3 +152,13 @@ floor objects were harder to target for interaction.
 remaining hit). Used by `PlayerInteractor` and `PlayerCarrier`. Overlap tests for placement still include the player.
 **Rule:** every new query cast from the player's eyes must use these helpers (or a layer setup that excludes the player).
 **Kept:** `PlayerCarrier` logs a refused placement (only on click) with surface, distance, normal and blockers.
+
+## D-024: Small items live on a tool belt; one item in hand (Accepted, 2026-11-13)
+Phase 3a, the small-item inventory moved from Phase 2 (D-021). Domain `ToolBelt` (4 slots, small items only),
+`ItemDefinition` ScriptableObjects, `PickupItem` world objects, `PlayerToolBelt` scene wrapper.
+- Keys 1–4 select a slot; the same key again (or an empty slot) holsters.
+- Taking an item with empty hands puts it in hand immediately (no extra key press).
+- Hands-full rule: picking up a large `Carryable` holsters the tool; no slot switching while carrying.
+- Stored items are deactivated GameObjects (no colliders); only the item in hand is visible, attached to the camera.
+**Deferred:** putting small items back down, gamepad bindings, more than 4 slots, toolboxes/shelves for small items.
+Placeholder item geometry may use scaled cubes (exception to D-016, which is about timber).

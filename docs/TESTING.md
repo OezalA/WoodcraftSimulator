@@ -148,3 +148,23 @@ Precondition: rebuild the scene (MT-001). Press Play.
 Failure → diagnosis:
 - Lowest shelf boards unreachable → report the position you stood at (reach is 2.5 m from the eyes).
 - Preview always red on a shelf → the shelf above may be too close for the board's orientation (try T); otherwise report.
+
+### MT-008: Tool belt (tape measure + pencil)
+Precondition: rebuild the scene (MT-001). Press Play.
+| Step | Expected |
+|---|---|
+| Start | Belt bar at the bottom: `1 —  2 —  3 —  4 —` (all empty, dimmed) |
+| Look at the yellow box at the front-left of the workbench | `[E]  Take Tape measure` |
+| Press E | Tape measure disappears from the bench and appears in your hand (lower right); slot 1 shows "Tape measure", highlighted |
+| Take the red pencil | Goes to slot 2; tape stays in hand (hands were not empty) |
+| Press 2 / 1 / 1 | Pencil in hand / tape in hand / hands empty (slot 1 pressed again holsters) |
+| Press 3 (empty slot) while holding something | Hands empty |
+| With a tool in hand, pick up a board (E) | Tool disappears (holstered), board in hands |
+| While carrying, press 1 / 2 | Nothing happens (hands full) |
+| Esc while holding a tool | Pause works; after Resume the tool is still in hand |
+| EditMode tests | 44 tests, all green (new: `ToolBeltTests`) |
+
+Failure → diagnosis:
+- `InvalidOperationException ... Player/ToolSlot1` → Input Actions not reimported (right-click `InputSystem_Actions` > Reimport).
+- No belt bar → HUD lacks the `toolBelt` reference or `belt` element; rebuild the scene; check Console.
+- Pencil hard to target → it is only 7 mm thick; aim assist should still catch it within ~8 cm. Report if not.

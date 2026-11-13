@@ -5,5 +5,7 @@
         <ui:VisualElement name="prompt-anchor" class="prompt-anchor" picking-mode="Ignore">
             <ui:Label name="interaction-prompt" class="interaction-prompt hidden" picking-mode="Ignore" text="" />
         </ui:VisualElement>
+        <!-- Tool belt slots are created from code (slot count comes from PlayerToolBelt). -->
+        <ui:VisualElement name="belt" class="belt" picking-mode="Ignore" />
     </ui:VisualElement>
 </ui:UXML>

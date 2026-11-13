@@ -9,7 +9,7 @@ Legend: ✅ done (verified) · 🟡 in progress · ⬜ not started
 | 0 | Environment and Project Foundation | ✅ |
 | 1 | First-Person Workshop Prototype | ✅ |
 | 2 | Basic Object Handling | ✅ |
-| 3 | Measurement Prototype | ⬜ |
+| 3 | Measurement Prototype | 🟡 |
 | 4 | Cutting Prototype | ⬜ |
 | 5 | Basic Assembly | ⬜ |
 | 6 | First Complete Crafting Job (vertical slice) | ⬜ |
@@ -53,6 +53,7 @@ Split into steps: **2a** timber data + board, **2b** handling, **2c** timber rac
 - [x] 2c: Simple storage rack: timber rack on the left wall (MT-007 passed, 2026-11-13)
 - [ ] ~~2c: Small-item inventory prototype~~ → moved to Phase 3 (D-021)
 
-## Phase 3: Measurement Prototype (planned)
-- [ ] Small-item inventory prototype (moved from Phase 2, D-021): tape measure, pencil as first items
-- [ ] Measurement data types, tape measure tool, visualization, cutting marks, tolerance checks, tests
+## Phase 3: Measurement Prototype
+- [ ] 3a: Small-item inventory = tool belt (D-024): tape measure + pencil, keys 1–4 (code done, awaiting MT-008)
+- [ ] 3b: Tape measure: hooks on the nearest board end, live mm reading, precision look mode (RMB zoom + lower sensitivity)
+- [ ] 3c: Pencil marks stored on the board (Length from the reference end), tolerance check (default ±1 mm), tests

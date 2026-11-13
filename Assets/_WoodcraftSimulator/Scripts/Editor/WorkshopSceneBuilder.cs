@@ -8,6 +8,7 @@ using UnityEngine.UIElements;
 using WoodcraftSimulator.Core;
 using WoodcraftSimulator.Handling;
 using WoodcraftSimulator.Interaction;
+using WoodcraftSimulator.Inventory;
 using WoodcraftSimulator.Materials;
 using WoodcraftSimulator.Player;
 using WoodcraftSimulator.UI;
@@ -91,6 +92,7 @@ namespace WoodcraftSimulator.Editor
             EnsureFolder(Path.GetDirectoryName(ScenePath).Replace('\\', '/'));
             EnsureFolder(MaterialFolder);
             EnsureFolder(WoodSpeciesAssets.Folder);
+            EnsureFolder(ItemAssets.Folder);
 
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
             ConfigureDefaultObjects(scene);
@@ -151,7 +153,46 @@ namespace WoodcraftSimulator.Editor
             BuildWorkbench(workshop, materials.Workbench);
             BuildTimberRack(workshop, materials.Steel, materials.Workbench);
             BuildTimber(workshop, materials.Lumber, species);
+            BuildBenchTools(workshop, materials);
             BuildWorkbenchLamp(workshop, materials.Wall);
+        }
+
+        /// <summary>
+        /// First small items, lying at the front-left of the workbench: a tape measure and a carpenter's pencil
+        /// (placeholder boxes with real-world sizes).
+        /// </summary>
+        private static void BuildBenchTools(Transform parent, GreyboxMaterials materials)
+        {
+            var tools = new GameObject("Tools").transform;
+            tools.SetParent(parent, false);
+
+            float benchTop = FloorTop + 0.9f;
+            float frontZ = InteriorDepth / 2f - 0.5f - 0.3f; // 10 cm behind the bench's front edge
+
+            // Tape measure housing ≈ 70 × 70 × 35 mm, lying on its side; held upright in the hand.
+            CreatePickupItem("TapeMeasure", tools, ItemAssets.TapeMeasure(), new Vector3(0.07f, 0.035f, 0.07f),
+                new Vector3(-0.6f, benchTop, frontZ), 0f, materials.ToolYellow,
+                handPosition: new Vector3(0.2f, -0.17f, 0.38f), handRotation: new Vector3(0f, -20f, 90f));
+
+            // Carpenter's pencil ≈ 175 × 12 × 7 mm (flat), lying across the bench; held pointing forward.
+            CreatePickupItem("CarpenterPencil", tools, ItemAssets.CarpenterPencil(), new Vector3(0.012f, 0.007f, 0.175f),
+                new Vector3(-0.35f, benchTop, frontZ), 90f, materials.PencilRed,
+                handPosition: new Vector3(0.16f, -0.14f, 0.32f), handRotation: new Vector3(10f, -15f, 0f));
+        }
+
+        private static void CreatePickupItem(string name, Transform parent, ItemDefinition definition, Vector3 size,
+            Vector3 surfacePosition, float yawDegrees, Material material, Vector3 handPosition, Vector3 handRotation)
+        {
+            // Placeholder geometry: a scaled cube is acceptable for small props (unlike timber, D-016).
+            GameObject item = CreateBox(name, parent, surfacePosition + Vector3.up * (size.y / 2f + 0.001f), size, material);
+            item.transform.localRotation = Quaternion.Euler(0f, yawDegrees, 0f);
+
+            var pickup = item.AddComponent<PickupItem>();
+            var serialized = new SerializedObject(pickup);
+            serialized.FindProperty("definition").objectReferenceValue = definition;
+            serialized.FindProperty("handPosition").vector3Value = handPosition;
+            serialized.FindProperty("handRotation").vector3Value = handRotation;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
         }
 
         private static void BuildWorkbenchLamp(Transform parent, Material switchMaterial)
@@ -390,6 +431,10 @@ namespace WoodcraftSimulator.Editor
             SetReference(carrier, "interactor", interactor);
             SetReference(carrier, "previewMaterial", placementPreviewMaterial);
 
+            var toolBelt = player.AddComponent<PlayerToolBelt>();
+            SetReference(toolBelt, "cameraTransform", cameraObject.transform);
+            SetReference(toolBelt, "carrier", carrier);
+
             return player;
         }
 
@@ -405,6 +450,7 @@ namespace WoodcraftSimulator.Editor
             var hud = hudObject.AddComponent<GameplayHud>();
             SetReference(hud, "interactor", interactor);
             SetReference(hud, "carrier", carrier);
+            SetReference(hud, "toolBelt", carrier.GetComponent<PlayerToolBelt>());
         }
 
         private static void BuildPauseSystem(GameObject player, VisualTreeAsset layout, PanelSettings panelSettings)
@@ -419,7 +465,7 @@ namespace WoodcraftSimulator.Editor
 
             var serializedPause = new SerializedObject(pauseController);
             SerializedProperty disabledProperty = serializedPause.FindProperty("disableWhilePaused");
-            Behaviour[] gameplayComponents = { playerController, interactor, carrier };
+            Behaviour[] gameplayComponents = { playerController, interactor, carrier, player.GetComponent<PlayerToolBelt>() };
             disabledProperty.arraySize = gameplayComponents.Length;
             for (int i = 0; i < gameplayComponents.Length; i++)
             {
@@ -498,6 +544,8 @@ namespace WoodcraftSimulator.Editor
             public Material Wall { get; } = GetOrCreate("Wall", new Color(0.82f, 0.80f, 0.74f));
             public Material Workbench { get; } = GetOrCreate("Workbench", new Color(0.60f, 0.43f, 0.27f));
             public Material Steel { get; } = GetOrCreate("Steel", new Color(0.36f, 0.38f, 0.42f));
+            public Material ToolYellow { get; } = GetOrCreate("ToolYellow", new Color(0.95f, 0.78f, 0.10f));
+            public Material PencilRed { get; } = GetOrCreate("PencilRed", new Color(0.75f, 0.15f, 0.12f));
             public Material Lumber { get; } = GetOrCreate("Lumber", new Color(0.86f, 0.73f, 0.53f));
             public Material PlacementPreview { get; } = GetOrCreateTransparentUnlit("PlacementPreview",
                 new Color(0.3f, 1f, 0.4f, 0.35f));

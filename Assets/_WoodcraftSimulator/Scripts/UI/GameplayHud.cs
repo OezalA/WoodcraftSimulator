@@ -3,11 +3,12 @@ using UnityEngine.InputSystem;
 using UnityEngine.UIElements;
 using WoodcraftSimulator.Handling;
 using WoodcraftSimulator.Interaction;
+using WoodcraftSimulator.Inventory;
 
 namespace WoodcraftSimulator.UI
 {
     /// <summary>
-    /// In-game HUD (UI Toolkit): crosshair and a single prompt line.
+    /// In-game HUD (UI Toolkit): crosshair, a single prompt line and the tool belt bar.
     /// The prompt shows the focused interaction ("[E] Pick up ...") or, while carrying, the carry controls.
     /// Layout lives in UI/Hud.uxml, styling in UI/Hud.uss; this class only toggles state.
     /// </summary>
@@ -18,11 +19,19 @@ namespace WoodcraftSimulator.UI
         private const string HiddenClass = "hidden";
         private const string KeyboardMouseGroup = "Keyboard&Mouse";
 
+        private const string BeltSlotClass = "belt-slot";
+        private const string BeltSlotEmptyClass = "belt-slot--empty";
+        private const string BeltSlotSelectedClass = "belt-slot--selected";
+
         [SerializeField] private PlayerInteractor interactor;
         [SerializeField] private PlayerCarrier carrier;
+        [SerializeField] private PlayerToolBelt toolBelt;
 
         private VisualElement crosshair;
         private Label promptLabel;
+        private VisualElement beltContainer;
+        private Label[] beltSlots;
+        private string[] beltKeyLabels;
         private string interactKeyLabel;
         private string carryHint;
 
@@ -40,17 +49,18 @@ namespace WoodcraftSimulator.UI
             VisualElement root = GetComponent<UIDocument>().rootVisualElement;
             crosshair = root.Q<VisualElement>("crosshair");
             promptLabel = root.Q<Label>("interaction-prompt");
+            beltContainer = root.Q<VisualElement>("belt");
 
-            if (crosshair == null || promptLabel == null)
+            if (crosshair == null || promptLabel == null || beltContainer == null)
             {
-                Debug.LogError($"{nameof(GameplayHud)}: expected elements 'crosshair' and 'interaction-prompt' in the UXML.", this);
+                Debug.LogError($"{nameof(GameplayHud)}: expected elements 'crosshair', 'interaction-prompt' and 'belt' in the UXML.", this);
                 enabled = false;
                 return;
             }
 
-            if (interactor == null || carrier == null)
+            if (interactor == null || carrier == null || toolBelt == null)
             {
-                Debug.LogError($"{nameof(GameplayHud)}: Player Interactor and Player Carrier must be assigned.", this);
+                Debug.LogError($"{nameof(GameplayHud)}: Player Interactor, Carrier and Tool Belt must be assigned.", this);
                 enabled = false;
                 return;
             }
@@ -58,7 +68,53 @@ namespace WoodcraftSimulator.UI
             interactor.TargetChanged += OnTargetChanged;
             carrier.CarryingChanged += OnCarryingChanged;
             carrier.PlacementStatusChanged += Refresh;
+            toolBelt.Changed += RefreshBelt;
             Refresh();
+            RefreshBelt();
+        }
+
+        // The belt's slot count is only known after PlayerToolBelt.Awake; Start runs after every Awake in the scene.
+        private void Start()
+        {
+            if (!enabled || toolBelt.Belt == null)
+            {
+                return;
+            }
+
+            int slotCount = toolBelt.Belt.SlotCount;
+            beltSlots = new Label[slotCount];
+            beltKeyLabels = new string[slotCount];
+            beltContainer.Clear();
+
+            for (int i = 0; i < slotCount; i++)
+            {
+                InputAction slotAction = InputSystem.actions.FindAction($"Player/ToolSlot{i + 1}");
+                beltKeyLabels[i] = slotAction != null ? KeyLabelOf(slotAction) : (i + 1).ToString();
+
+                var slot = new Label { pickingMode = PickingMode.Ignore };
+                slot.AddToClassList(BeltSlotClass);
+                beltContainer.Add(slot);
+                beltSlots[i] = slot;
+            }
+
+            RefreshBelt();
+        }
+
+        private void RefreshBelt()
+        {
+            if (beltSlots == null || toolBelt.Belt == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < beltSlots.Length; i++)
+            {
+                var item = toolBelt.Belt.GetItem(i);
+                Label slot = beltSlots[i];
+                slot.text = item != null ? $"{beltKeyLabels[i]}   {item.DisplayName}" : $"{beltKeyLabels[i]}   —";
+                slot.EnableInClassList(BeltSlotEmptyClass, item == null);
+                slot.EnableInClassList(BeltSlotSelectedClass, i == toolBelt.Belt.SelectedSlot);
+            }
         }
 
         private void OnDisable()
@@ -72,6 +128,11 @@ namespace WoodcraftSimulator.UI
             {
                 carrier.CarryingChanged -= OnCarryingChanged;
                 carrier.PlacementStatusChanged -= Refresh;
+            }
+
+            if (toolBelt != null)
+            {
+                toolBelt.Changed -= RefreshBelt;
             }
         }
 
@@ -131,12 +192,12 @@ namespace WoodcraftSimulator.UI
             promptLabel.EnableInClassList(HiddenClass, false);
         }
 
-        private static string KeyLabel(string actionPath)
-        {
-            InputAction action = InputSystem.actions.FindAction(actionPath, throwIfNotFound: true);
-            return action.GetBindingDisplayString(
+        private static string KeyLabel(string actionPath) =>
+            KeyLabelOf(InputSystem.actions.FindAction(actionPath, throwIfNotFound: true));
+
+        private static string KeyLabelOf(InputAction action) =>
+            action.GetBindingDisplayString(
                 InputBinding.MaskByGroup(KeyboardMouseGroup),
                 InputBinding.DisplayStringOptions.DontIncludeInteractions);
-        }
     }
 }
