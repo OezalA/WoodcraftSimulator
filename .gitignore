@@ -49,3 +49,6 @@ crashlytics-buildid.txt
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Test results (command-line runs)
+/TestResults/
