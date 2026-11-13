@@ -1,0 +1,47 @@
+/* Full-screen container; centers the crosshair. */
+.hud-root {
+    position: absolute;
+    left: 0px;
+    top: 0px;
+    right: 0px;
+    bottom: 0px;
+    align-items: center;
+    justify-content: center;
+}
+
+.crosshair {
+    width: 6px;
+    height: 6px;
+    border-radius: 3px;
+    background-color: rgba(255, 255, 255, 0.8);
+}
+
+/* Something interactable is under the crosshair. */
+.crosshair--focused {
+    width: 10px;
+    height: 10px;
+    border-radius: 5px;
+    background-color: rgb(255, 214, 140);
+}
+
+/* Positioned below the crosshair without shifting it. */
+.prompt-anchor {
+    position: absolute;
+    left: 0px;
+    right: 0px;
+    top: 54%;
+    align-items: center;
+}
+
+.interaction-prompt {
+    font-size: 22px;
+    color: rgb(255, 255, 255);
+    background-color: rgba(0, 0, 0, 0.55);
+    padding: 6px 14px;
+    border-radius: 4px;
+    -unity-text-align: middle-center;
+}
+
+.hidden {
+    display: none;
+}

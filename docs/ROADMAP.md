@@ -36,9 +36,9 @@ Legend: ✅ done (verified) · 🟡 in progress · ⬜ not started
 - [x] Test environment: ground, walls, workbench (generator written)
 - [x] First-person movement, mouse look, gravity, collision (code written)
 - [x] Manual verification of movement / look / collisions (MT-001, MT-002 passed by owner, 2026-11-13)
-- [ ] HUD with UI Toolkit: crosshair
-- [ ] Interaction raycasting (`PlayerInteractor`) + `IInteractable`
-- [ ] Interaction prompt ("[E] ...")
-- [ ] One basic interactable object (e.g. light switch or inspectable board)
+- [x] HUD with UI Toolkit: crosshair (MT-003 passed, 2026-11-13)
+- [x] Interaction raycasting (`PlayerInteractor`) + `IInteractable`
+- [x] Interaction prompt ("[E] ...")
+- [x] One basic interactable object: workbench lamp `LightSwitch`
 - [ ] Pause and cursor management (move cursor logic out of `PlayerController`)
 - [ ] Mouse sensitivity setting exposed beyond the Inspector

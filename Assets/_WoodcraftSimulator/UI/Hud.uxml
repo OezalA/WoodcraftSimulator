@@ -1,0 +1,9 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <Style src="Hud.uss" />
+    <ui:VisualElement name="hud-root" class="hud-root" picking-mode="Ignore">
+        <ui:VisualElement name="crosshair" class="crosshair" picking-mode="Ignore" />
+        <ui:VisualElement name="prompt-anchor" class="prompt-anchor" picking-mode="Ignore">
+            <ui:Label name="interaction-prompt" class="interaction-prompt hidden" picking-mode="Ignore" text="" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

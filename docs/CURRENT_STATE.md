@@ -20,13 +20,17 @@ Phase 0 ✅ done. Phase 1 (First-Person Workshop Prototype) in progress.
 | MT-001 Build workshop scene | Passed (owner) | 2026-11-13 |
 | MT-002 First-person movement | Passed (owner): look, WASD, collisions, exit through door work; feel "fena değil" | 2026-11-13 |
 
+## Done: interaction system
+- `IInteractable`, `PlayerInteractor`, `GameplayHud` (UI Toolkit: crosshair + prompt), `LightSwitch` + workbench lamp.
+- Static compile check (D-010) 0 errors; Unity compilation clean; MT-003 passed (owner, 2026-11-13).
+- Owner feedback: precise ray targeting is fine; aim assist (SphereCast) deliberately not added.
+
 ## Known issues / limitations
 - Build Settings scene list still points to the deleted `SampleScene`; owner to replace it with `Workshop.unity`
   via *File > Build Profiles > Scene List* (Editor-side change, not edited on disk while the Editor is open).
-- No crosshair yet (UI Toolkit HUD planned, see D-008).
-- Cursor lock lives temporarily in `PlayerController`.
+- Cursor lock lives temporarily in `PlayerController`; `PlayerInteractor` reads the lock state as a stand-in for "paused".
 - Mouse look tuned for mouse only; gamepad right stick would be far too slow.
 
 ## Next recommended action
-Phase 1 interaction system: `IInteractable` + `PlayerInteractor` (camera raycast) + UI Toolkit HUD
-(crosshair + prompt) + one test interactable.
+1. Phase 1 last task: pause menu (UI Toolkit) + central cursor/pause state, replacing the temporary
+   cursor logic in `PlayerController` and `PlayerInteractor`; mouse sensitivity setting.

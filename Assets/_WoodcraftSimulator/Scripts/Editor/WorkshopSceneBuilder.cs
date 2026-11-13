@@ -3,7 +3,11 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UIElements;
+using WoodcraftSimulator.Interaction;
 using WoodcraftSimulator.Player;
+using WoodcraftSimulator.UI;
+using WoodcraftSimulator.Workshop;
 
 namespace WoodcraftSimulator.Editor
 {
@@ -15,6 +19,10 @@ namespace WoodcraftSimulator.Editor
     {
         private const string ScenePath = "Assets/_WoodcraftSimulator/Scenes/Workshop/Workshop.unity";
         private const string MaterialFolder = "Assets/_WoodcraftSimulator/Art/Materials/Greybox";
+        private const string UiFolder = "Assets/_WoodcraftSimulator/UI";
+        private const string HudUxmlPath = UiFolder + "/Hud.uxml";
+        private const string ThemePath = UiFolder + "/DefaultRuntimeTheme.tss";
+        private const string PanelSettingsPath = UiFolder + "/GameplayPanelSettings.asset";
 
         // Workshop interior: 8 m x 6 m, 3 m walls, 10 cm concrete slab on top of the ground.
         private const float FloorTop = 0.10f;
@@ -45,6 +53,15 @@ namespace WoodcraftSimulator.Editor
                 return;
             }
 
+            // Load UI assets first so a missing file aborts before the current scene is replaced.
+            var hudLayout = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(HudUxmlPath);
+            var theme = AssetDatabase.LoadAssetAtPath<ThemeStyleSheet>(ThemePath);
+            if (hudLayout == null || theme == null)
+            {
+                Debug.LogError($"Workshop scene not built: missing {HudUxmlPath} or {ThemePath}.");
+                return;
+            }
+
             EnsureFolder(Path.GetDirectoryName(ScenePath).Replace('\\', '/'));
             EnsureFolder(MaterialFolder);
 
@@ -54,6 +71,7 @@ namespace WoodcraftSimulator.Editor
             var materials = new GreyboxMaterials();
             BuildEnvironment(materials);
             GameObject player = BuildPlayer();
+            BuildHud(player.GetComponent<PlayerInteractor>(), hudLayout, GetOrCreatePanelSettings(theme));
 
             // Intentionally does not touch Build Settings (ProjectSettings): add the scene there manually when needed.
             EditorSceneManager.SaveScene(scene, ScenePath);
@@ -102,6 +120,36 @@ namespace WoodcraftSimulator.Editor
             BuildWalls(workshop, materials.Wall);
             BuildWorkbench(workshop, materials.Workbench);
             BuildLumberStack(workshop, materials.Lumber);
+            BuildWorkbenchLamp(workshop, materials.Wall);
+        }
+
+        private static void BuildWorkbenchLamp(Transform parent, Material switchMaterial)
+        {
+            // Spot light hanging above the workbench, controlled by a switch on the back wall.
+            var lampObject = new GameObject("WorkbenchLamp");
+            lampObject.transform.SetParent(parent, false);
+            lampObject.transform.localPosition = new Vector3(0f, FloorTop + 2.6f, InteriorDepth / 2f - 0.5f);
+            lampObject.transform.localRotation = Quaternion.Euler(90f, 0f, 0f); // pointing straight down
+
+            var lamp = lampObject.AddComponent<Light>();
+            lamp.type = LightType.Spot;
+            lamp.color = new Color(1f, 0.93f, 0.8f); // warm white
+            lamp.intensity = 8f;
+            lamp.range = 5f;
+            lamp.spotAngle = 80f;
+            lamp.shadows = LightShadows.Soft;
+
+            // Switch: 8 x 12 cm plate at 1.2 m height on the back wall, right of the workbench.
+            GameObject switchObject = CreateBox("LightSwitch", parent,
+                new Vector3(1.4f, FloorTop + 1.2f, InteriorDepth / 2f - 0.015f),
+                new Vector3(0.08f, 0.12f, 0.03f), switchMaterial);
+
+            var lightSwitch = switchObject.AddComponent<LightSwitch>();
+            var serializedSwitch = new SerializedObject(lightSwitch);
+            SerializedProperty lightsProperty = serializedSwitch.FindProperty("lights");
+            lightsProperty.arraySize = 1;
+            lightsProperty.GetArrayElementAtIndex(0).objectReferenceValue = lamp;
+            serializedSwitch.ApplyModifiedPropertiesWithoutUndo();
         }
 
         private static void BuildWalls(Transform parent, Material material)
@@ -216,7 +264,50 @@ namespace WoodcraftSimulator.Editor
             serializedController.FindProperty("cameraTransform").objectReferenceValue = cameraObject.transform;
             serializedController.ApplyModifiedPropertiesWithoutUndo();
 
+            var interactor = player.AddComponent<PlayerInteractor>();
+            SetReference(interactor, "cameraTransform", cameraObject.transform);
+
             return player;
+        }
+
+        private static void BuildHud(PlayerInteractor interactor, VisualTreeAsset layout, PanelSettings panelSettings)
+        {
+            var hudObject = new GameObject("HUD");
+
+            var document = hudObject.AddComponent<UIDocument>();
+            document.panelSettings = panelSettings;
+            document.visualTreeAsset = layout;
+
+            var hud = hudObject.AddComponent<GameplayHud>();
+            SetReference(hud, "interactor", interactor);
+        }
+
+        private static PanelSettings GetOrCreatePanelSettings(ThemeStyleSheet theme)
+        {
+            var panelSettings = AssetDatabase.LoadAssetAtPath<PanelSettings>(PanelSettingsPath);
+            if (panelSettings == null)
+            {
+                panelSettings = ScriptableObject.CreateInstance<PanelSettings>();
+                AssetDatabase.CreateAsset(panelSettings, PanelSettingsPath);
+            }
+
+            // Same idea as uGUI's CanvasScaler: design at 1080p, scale with the window.
+            panelSettings.themeStyleSheet = theme;
+            panelSettings.scaleMode = PanelScaleMode.ScaleWithScreenSize;
+            panelSettings.referenceResolution = new Vector2Int(1920, 1080);
+            panelSettings.screenMatchMode = PanelScreenMatchMode.MatchWidthOrHeight;
+            panelSettings.match = 0.5f;
+            EditorUtility.SetDirty(panelSettings);
+            AssetDatabase.SaveAssetIfDirty(panelSettings);
+            return panelSettings;
+        }
+
+        /// <summary>Assigns a private [SerializeField] reference the same way the Inspector does.</summary>
+        private static void SetReference(Object target, string propertyName, Object value)
+        {
+            var serializedObject = new SerializedObject(target);
+            serializedObject.FindProperty(propertyName).objectReferenceValue = value;
+            serializedObject.ApplyModifiedPropertiesWithoutUndo();
         }
 
         private static GameObject CreateBox(string name, Transform parent, Vector3 localPosition,

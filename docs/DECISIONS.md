@@ -43,3 +43,18 @@ becomes hand-authored content (Phase 8), the builder is retired.
 Master prompt §6.15 prefers UI Toolkit and forbids unnecessary mixing of UI systems. HUD (crosshair,
 interaction prompt) and menus will use UI Toolkit. uGUI only if a concrete world-space need arises.
 A first uGUI crosshair draft was removed before commit for this reason.
+
+## D-009: Interaction via `IInteractable` + per-frame camera raycast (Accepted, 2026-11-13)
+One `Physics.Raycast` per frame from the camera (2 m), component lookup only when the hit collider changes.
+Interactables are components implementing `IInteractable` (composition, master prompt §6.2).
+The HUD reacts to a C# event instead of polling.
+**Alternatives considered:** trigger volumes / overlap spheres (less precise for small targets like screws or
+marks); SphereCast (more forgiving aim, revisit if small targets feel hard to hit).
+**Consequence:** interactables need a non-trigger collider on the default raycast layers.
+In-game text is English for now; localization is out of scope until the UI grows.
+
+## D-010: Static compile check outside Unity (Accepted, 2026-11-13)
+Claude verifies code with `dotnet build` on temporary copies of the Unity-generated `.csproj` files
+(in the session scratchpad, new files added, `HintPath`s made absolute). This catches C# and API errors
+against the real Unity DLLs without touching the open Editor. It does **not** replace Unity compilation
+(Unity's own compiler, ILPP, asmdef rules) or play testing.

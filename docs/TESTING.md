@@ -18,6 +18,12 @@ Running tests from the command line (Editor must be **closed**, since a project 
 "C:\Program Files\Unity\Hub\Editor\6000.3.28f1\Editor\Unity.exe" -batchmode -projectPath . -runTests -testPlatform EditMode -testResults TestResults/editmode.xml -logFile -
 ```
 
+## Static compile check (Claude, no Editor needed)
+Copy `WoodcraftSimulator.csproj` and `WoodcraftSimulator.Editor.csproj` to a temp folder, replace the
+`<Compile Include>` items with all current `.cs` files (absolute paths), make `<HintPath>Library\…` absolute,
+replace `ProjectReference Unity.InputSystem.csproj` with a `Reference` to `Library/ScriptAssemblies/Unity.InputSystem.dll`,
+then `dotnet build WoodcraftSimulator.Editor.csproj`. See D-010 for what this does and does not prove.
+
 ## Manual test procedures
 
 ### MT-001: Build the workshop scene
@@ -43,3 +49,20 @@ Failure → diagnosis:
 - `InvalidOperationException` / action not found → project-wide actions not assigned (*Project Settings > Input System Package*).
 - Falling through the floor → CharacterController spawned inside a collider; check `Player` Y position.
 - No mouse look → cursor not locked (click into Game view) or Game view not focused.
+
+### MT-003: Interaction, HUD and light switch
+Precondition: rebuild the scene (MT-001). Press Play, click into the Game view.
+| Step | Expected |
+|---|---|
+| Look around | Small white dot (crosshair) in the screen center |
+| Walk to the right end of the workbench, look at the small plate on the back wall | Crosshair grows and turns warm yellow; prompt `[E]  Turn off lamp` below it |
+| Press E | Warm spot light over the workbench turns off; prompt changes to `Turn on lamp` |
+| Press E again | Light on again, prompt `Turn off lamp` |
+| Step back > 2 m or look away | Prompt disappears, crosshair back to small white dot |
+| Esc while looking at the switch | Prompt disappears (no interaction while cursor released) |
+
+Failure → diagnosis:
+- No crosshair at all → `HUD` object missing or its `UIDocument` has no Panel Settings / Source Asset; Console errors from `GameplayHud`.
+- Crosshair visible but prompt text invisible → theme missing on `GameplayPanelSettings` (no font).
+- Prompt never appears → switch has no collider, or `PlayerInteractor` missing / camera not assigned (Console error).
+- Prompt appears but E does nothing → check *Project Settings > Input System Package* actions contain `Player/Interact` bound to E.
