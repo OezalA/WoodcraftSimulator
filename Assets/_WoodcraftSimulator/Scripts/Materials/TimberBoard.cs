@@ -1,5 +1,7 @@
+using System.Globalization;
 using UnityEngine;
 using WoodcraftSimulator.Core;
+using WoodcraftSimulator.Interaction;
 
 namespace WoodcraftSimulator.Materials
 {
@@ -11,7 +13,7 @@ namespace WoodcraftSimulator.Materials
     /// </summary>
     [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer), typeof(BoxCollider))]
     [RequireComponent(typeof(Rigidbody))]
-    public sealed class TimberBoard : MonoBehaviour
+    public sealed class TimberBoard : MonoBehaviour, IDescribable
     {
         private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
 
@@ -29,6 +31,11 @@ namespace WoodcraftSimulator.Materials
         public TimberPiece Piece { get; private set; }
 
         public WoodSpeciesDefinition SpeciesDefinition => species;
+
+        /// <summary>e.g. "Spruce 2400 × 95 × 45 mm (4.6 kg)". Invariant culture: always "4.6", never "4,6".</summary>
+        public string Description => Piece == null
+            ? name
+            : $"{Piece} ({Piece.MassKg.ToString("0.0", CultureInfo.InvariantCulture)} kg)";
 
         private void Awake() => Rebuild();
 

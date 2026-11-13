@@ -24,7 +24,8 @@ Assets/
       Core/PauseController.cs, UserPreferences.cs, BoxMeshBuilder.cs
       Materials/WoodSpeciesDefinition.cs, TimberBoard.cs
       Player/PlayerController.cs
-      Interaction/IInteractable.cs, PlayerInteractor.cs
+      Interaction/IInteractable.cs, IDescribable.cs, PlayerInteractor.cs
+      Handling/Carryable.cs, PlayerCarrier.cs
       UI/GameplayHud.cs, PauseMenu.cs
       Workshop/LightSwitch.cs
       Editor/
@@ -83,14 +84,26 @@ Namespaces mirror folders: `WoodcraftSimulator.Player`, `WoodcraftSimulator.Edit
 ### Interaction (`WoodcraftSimulator.Interaction`)
 - `IInteractable`: `InteractionPrompt` + `Interact(PlayerInteractor)`. Any component on the hit collider's
   GameObject or a parent. New interactable types = new components; no central switch statement.
-- `PlayerInteractor` (on Player): raycast from the camera each frame (2 m reach, triggers ignored),
+- `PlayerInteractor` (on Player): raycast from the camera each frame (2.5 m reach, triggers ignored),
   caches the last collider to skip repeated `GetComponentInParent`, forwards `Player/Interact` (E).
   Raises `TargetChanged(IInteractable)` on focus change and after each interaction → UI is event-driven.
 - Disabled while paused (via `PauseController`); `OnDisable` clears focus so the prompt hides.
+- `IsBlocked`: suspends interactions without touching `enabled` (used while carrying; independent of pause).
+- `IDescribable`: optional `Description` used by generic components to build prompts.
+
+### Handling (`WoodcraftSimulator.Handling`)
+- `Carryable` (`IInteractable`, needs Rigidbody + BoxCollider): prompt "Pick up <description>"; on E asks the
+  player's `PlayerCarrier` to pick it up. `SetCarried` switches colliders off/on; kinematic in both states.
+  The BoxCollider is the placement footprint.
+- `PlayerCarrier` (on Player, disabled while paused): carries one object at a time at `holdOffset` (yaw-only),
+  R/T rotate, LateUpdate computes the placement pose and validity (raycast + `Physics.CheckBox`, D-019),
+  shows a translucent preview (`PlacementPreview` material, MaterialPropertyBlock green/red), LMB places.
+  Raises `CarryingChanged(bool)`; sets `PlayerInteractor.IsBlocked` while carrying.
 
 ### UI (`WoodcraftSimulator.UI`)
 `GameplayHud` (on `HUD` with `UIDocument`): queries `crosshair` / `interaction-prompt` from `Hud.uxml`,
-subscribes to `PlayerInteractor.TargetChanged`, toggles USS classes (`crosshair--focused`, `hidden`).
+subscribes to `PlayerInteractor.TargetChanged` and `PlayerCarrier.CarryingChanged`, toggles USS classes
+(`crosshair--focused`, `hidden`). While carrying, the prompt shows the carry controls instead.
 The key label comes from the action binding (`GetBindingDisplayString`), so rebinding updates the prompt.
 
 `PauseMenu` (on `PauseMenu` with `UIDocument`, `sortingOrder` 10 → above the HUD; same PanelSettings/panel):
@@ -114,7 +127,7 @@ Unity side (`WoodcraftSimulator`):
 - `TimberBoard` (MonoBehaviour): serialized species + mm dimensions → `TimberPiece` (source of truth) →
   generated box mesh (`BoxMeshBuilder`, UVs in meters), `BoxCollider` size, `Rigidbody` mass, color via
   `MaterialPropertyBlock` on the shared `Lumber` material. Transform scale stays 1. Axes: length Z, width X, thickness Y.
-  Boards are dynamic rigidbodies (interpolated, continuous speculative collision) for now.
+  Implements `IDescribable` ("Spruce 2400 × 95 × 45 mm (4.6 kg)"). Boards are kinematic + `Carryable` (D-019).
 
 ### Workshop objects (`WoodcraftSimulator.Workshop`)
 `LightSwitch`: `IInteractable` toggling a list of `Light`s (first test interactable).
@@ -127,4 +140,7 @@ Does not modify Build Settings. `WoodSpeciesAssets` creates missing species asse
 
 ## Input actions
 Project-wide asset `Assets/InputSystem_Actions.inputactions` (template), extended with:
-- `Player/Pause`: `<Keyboard>/escape`, `<Gamepad>/start` (added 2026-11-13).
+- `Player/Pause`: `<Keyboard>/escape`, `<Gamepad>/start`.
+- `Player/Place`: `<Mouse>/leftButton`, `<Gamepad>/rightTrigger`.
+- `Player/Rotate`: `<Keyboard>/r`, `<Gamepad>/rightShoulder`.
+- `Player/Tilt`: `<Keyboard>/t`, `<Gamepad>/leftShoulder`.

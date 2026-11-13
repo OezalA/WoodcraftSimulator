@@ -48,6 +48,7 @@ Split into steps: **2a** timber data + board, **2b** handling, **2c** storage + 
 - [x] 2a: `Length` (0.1 mm), `BoardDimensions`, `WoodSpecies`, `TimberPiece` + EditMode tests (31/31 green in dotnet test and Unity Test Runner)
 - [x] 2a: Wood species definitions (7 species, approximate densities, D-017)
 - [x] 2a: `TimberBoard` generated from data (mesh, collider, mass, color); boards in the workshop (MT-005 passed, 2026-11-13)
-- [ ] 2b: Pick up, carry, rotate, place a board; placement preview with collision check (invalid placement prevented)
+- [x] 2b: Pick up, carry, rotate, place a board; placement preview with collision check (MT-006 passed, 2026-11-13)
+- [ ] Later: improve carry feel (owner: "taşıma hissi şimdilik çok beğenmedim"), see CURRENT_STATE
 - [ ] 2c: Simple storage rack
 - [ ] 2c: Small-item inventory prototype

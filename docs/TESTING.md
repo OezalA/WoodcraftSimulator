@@ -58,7 +58,7 @@ Precondition: rebuild the scene (MT-001). Press Play, click into the Game view.
 | Walk to the right end of the workbench, look at the small plate on the back wall | Crosshair grows and turns warm yellow; prompt `[E]  Turn off lamp` below it |
 | Press E | Warm spot light over the workbench turns off; prompt changes to `Turn on lamp` |
 | Press E again | Light on again, prompt `Turn off lamp` |
-| Step back > 2 m or look away | Prompt disappears, crosshair back to small white dot |
+| Step back > 2.5 m or look away | Prompt disappears, crosshair back to small white dot |
 | Esc while looking at the switch | Pause menu opens, prompt disappears; E does nothing while paused |
 
 Failure → diagnosis:
@@ -108,3 +108,26 @@ Failure → diagnosis:
 - Game view `Scale` slider must be at **1x**; higher values zoom (upscale) the image and make 3D and UI text blurry.
 - Use a fixed resolution (Game view resolution dropdown, e.g. *Full HD (1920x1080)*) or *Play Maximized*
   so UI scaling matches the 1080p reference of `GameplayPanelSettings`.
+
+### MT-006: Pick up, carry, rotate and place boards
+Precondition: rebuild the scene (MT-001). Press Play.
+| Step | Expected |
+|---|---|
+| Look at the top spruce board on the floor stack (≤ 2.5 m from the eyes, ~1.9 m horizontally) | Prompt `[E]  Pick up Spruce 2400 × 95 × 45 mm (4.6 kg)` |
+| Press E | Board held in front of you, level; prompt changes to `[LMB] Place  [R] Rotate  [T] Tilt` |
+| Look at the floor 1–3 m away | Translucent **green** preview of the board lying on the floor |
+| Look at a spot where the preview overlaps a wall, the bench or the other boards | Preview turns **red**; left click does nothing |
+| Look at the floor right at your feet | Red (would overlap the player) |
+| Look at a wall or the sky | No preview; left click does nothing |
+| R / T | Preview and held board turn 90° (R: around vertical; T: board flat ↔ on edge) |
+| Left click on a green spot | Board placed exactly at the preview pose; prompt returns to normal |
+| Pick the board up again and place it on the workbench or on top of another board | Works when green; placed board stays still (no sliding) |
+| Look at the light switch while carrying | No `[E]` prompt (hands full) |
+| Esc while carrying, then Resume | Preview hidden while paused; clicking Resume does not place the board |
+| Inspector of a placed board | Same dimensions and mass as before (dimensions never change) |
+
+Failure → diagnosis:
+- `InvalidOperationException ... Player/Place` → Input Actions not reimported (right-click `InputSystem_Actions` > Reimport).
+- Preview pink / opaque → `PlacementPreview` material not transparent; select it once in the Inspector or rebuild the scene.
+- Always red on open floor → something overlaps the test box (check with Scene view gizmos); report it.
+- Prompt missing on boards → board lacks `Carryable` or collider; rebuild the scene.

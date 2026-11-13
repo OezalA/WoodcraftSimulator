@@ -12,13 +12,33 @@ namespace WoodcraftSimulator.Interaction
     {
         [SerializeField] private Transform cameraTransform;
 
+        // 2.5 m from the eyes (~1.75 m above the floor) leaves ~1.9 m of horizontal reach for objects lying on the
+        // floor; 2.0 m left only ~1.2 m, which made floor items feel unreachable.
         [Tooltip("Maximum reach from the eyes, in meters.")]
-        [SerializeField, Min(0.1f)] private float interactionRange = 2.0f;
+        [SerializeField, Min(0.1f)] private float interactionRange = 2.5f;
 
         [SerializeField] private LayerMask interactionMask = Physics.DefaultRaycastLayers;
 
         private InputAction interactAction;
         private Collider focusedCollider;
+        private bool isBlocked;
+
+        /// <summary>
+        /// Temporarily disables interactions without disabling the component (e.g. hands full while carrying).
+        /// Independent of the pause state, which enables/disables the component itself.
+        /// </summary>
+        public bool IsBlocked
+        {
+            get => isBlocked;
+            set
+            {
+                isBlocked = value;
+                if (isBlocked)
+                {
+                    SetFocus(null, null);
+                }
+            }
+        }
 
         /// <summary>The interactable currently under the crosshair, or null.</summary>
         public IInteractable CurrentTarget { get; private set; }
@@ -46,6 +66,11 @@ namespace WoodcraftSimulator.Interaction
         // Disabled by PauseController while paused; OnDisable then clears the focus so the HUD prompt hides.
         private void Update()
         {
+            if (isBlocked)
+            {
+                return;
+            }
+
             UpdateFocus();
 
             // WasPressedThisFrame ignores the "Hold" interaction configured on the template's Interact action,

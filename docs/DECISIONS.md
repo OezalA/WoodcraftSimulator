@@ -46,7 +46,8 @@ interaction prompt) and menus will use UI Toolkit. uGUI only if a concrete world
 A first uGUI crosshair draft was removed before commit for this reason.
 
 ## D-009: Interaction via `IInteractable` + per-frame camera raycast (Accepted, 2026-11-13)
-One `Physics.Raycast` per frame from the camera (2 m), component lookup only when the hit collider changes.
+One `Physics.Raycast` per frame from the camera (2 m, raised to 2.5 m on 2026-11-13 so floor items are reachable),
+component lookup only when the hit collider changes.
 Interactables are components implementing `IInteractable` (composition, master prompt §6.2).
 The HUD reacts to a C# event instead of polling.
 **Alternatives considered:** trigger volumes / overlap spheres (less precise for small targets like screws or
@@ -72,7 +73,7 @@ Focus loss pauses the game (also when clicking another Editor window during Play
 Small player preferences (mouse sensitivity) use `PlayerPrefs` (Windows registry). Game progress will use
 a separate versioned save system (master prompt §6.16). `UserPreferences` holds no state of its own.
 
-## D-013: Public GitHub repo, feature branches + PRs (Accepted, 2026-11-13)
+## D-013: Public GitHub repo, feature branches + PRs (Accepted, 2026-11-13; branching superseded by D-020)
 `origin` = https://github.com/OezalA/WoodcraftSimulator (public, owner's choice). `main` starts at the template
 commit; work happens on `feature/...` branches merged via pull requests.
 
@@ -105,3 +106,22 @@ These are rounded typical values from general knowledge, **not verified against 
 The template's `PC_RPAsset` had MSAA off, so geometry edges were jagged. `m_MSAA` set to 4 (Forward+ supports MSAA).
 Moderate GPU cost; revisit with profiling in Phase 13 (alternatives: SMAA/FXAA post-process AA, or MSAA 2x).
 Note: softness seen in the Editor was mainly the Game view zoom (`Scale` > 1x), not the render resolution.
+
+## D-019: Object handling = kinematic carry + validated placement (Accepted, 2026-11-13, refines D-016)
+- **Resting** objects are kinematic rigidbodies: they stay exactly where they were placed (no settling, sliding or
+  stack jitter). Master prompt §6.18 "controlled transitions between physical manipulation and fixed state".
+- **Carried** objects have their colliders disabled and are moved by code to a hold point in front of the eyes
+  (yaw only, so they stay level). They don't block the player or the placement test, but can visually clip into
+  walls while carried: accepted simplification for the prototype.
+- **Placement**: ray from the camera (3 m) onto a surface ≤ 30° slope; target pose = surface point + rotated
+  half-height; `Physics.CheckBox` (shrunk by 3 mm, 2 mm above the surface) must find no other collider,
+  including the player's CharacterController. Translucent preview green/red; LMB places only when valid.
+- Rotation: R = 90° yaw, T = 90° around the object's length axis.
+- While carrying, `PlayerInteractor.IsBlocked` = true (hands full).
+**Known consequence:** removing a board from under another leaves the upper one floating (kinematic). Revisit with
+support checks or a "settle" step if it matters for gameplay. No free "drop" yet.
+
+## D-020: Two long-lived branches: `main` and `develop` (Accepted, 2026-11-13, supersedes the branch part of D-013)
+Owner's choice: no feature branches. Day-to-day commits go to `develop`; `main` is fast-forwarded to `develop`
+once the owner has confirmed the manual tests of a step. The former feature branches were linear and fully
+contained in `develop`/`main` (756e4ce) and were deleted locally and on GitHub.

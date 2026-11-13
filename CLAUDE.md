@@ -23,6 +23,6 @@
   `dotnet test tools/DomainTests` (runs EditMode domain tests). Report them as such, not as Unity results.
 - Domain code (`Scripts/Domain`, assembly `WoodcraftSimulator.Domain`) must not use UnityEngine; C# 9 only (no records/init).
 - Git LFS enabled for binary assets. Remote `origin` = https://github.com/OezalA/WoodcraftSimulator (**public**).
-- Branch workflow: work on `feature/...` branches, push, merge into `main` via PR. `origin/main` started at the
-  template commit; `feature/phase-0-1-foundation` holds Phase 0 + Phase 1 interaction work.
-  Ask before pushing; never force-push or rewrite pushed history without approval.
+- Branches (owner's rule, 2026-11-13): **only `main` and `develop`, no feature branches.**
+  Work and commit on `develop`; push `develop`. `main` = tested, accepted state: fast-forward `main` to `develop`
+  after the owner confirms the milestone's manual tests. Never force-push or rewrite pushed history without approval.

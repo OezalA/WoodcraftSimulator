@@ -6,6 +6,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
 using WoodcraftSimulator.Core;
+using WoodcraftSimulator.Handling;
 using WoodcraftSimulator.Interaction;
 using WoodcraftSimulator.Materials;
 using WoodcraftSimulator.Player;
@@ -76,9 +77,9 @@ namespace WoodcraftSimulator.Editor
 
             var materials = new GreyboxMaterials();
             BuildEnvironment(materials, WoodSpeciesAssets.EnsureDefaults());
-            GameObject player = BuildPlayer();
+            GameObject player = BuildPlayer(materials.PlacementPreview);
             PanelSettings panelSettings = GetOrCreatePanelSettings(theme);
-            BuildHud(player.GetComponent<PlayerInteractor>(), hudLayout, panelSettings);
+            BuildHud(player.GetComponent<PlayerInteractor>(), player.GetComponent<PlayerCarrier>(), hudLayout, panelSettings);
             BuildPauseSystem(player, pauseMenuLayout, panelSettings);
 
             // Intentionally does not touch Build Settings (ProjectSettings): add the scene there manually when needed.
@@ -272,9 +273,12 @@ namespace WoodcraftSimulator.Editor
             board.AddComponent<BoxCollider>();
 
             var body = board.AddComponent<Rigidbody>();
+            // Resting objects are kinematic: they stay exactly where they were placed (D-019).
+            body.isKinematic = true;
             body.interpolation = RigidbodyInterpolation.Interpolate;
             body.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
 
+            board.AddComponent<Carryable>();
             var timberBoard = board.AddComponent<TimberBoard>();
             var serialized = new SerializedObject(timberBoard);
             serialized.FindProperty("species").objectReferenceValue = species;
@@ -287,7 +291,7 @@ namespace WoodcraftSimulator.Editor
             timberBoard.Rebuild();
         }
 
-        private static GameObject BuildPlayer()
+        private static GameObject BuildPlayer(Material placementPreviewMaterial)
         {
             var player = new GameObject("Player");
             // Origin at the feet, standing in the workshop facing the workbench (+Z).
@@ -322,10 +326,16 @@ namespace WoodcraftSimulator.Editor
             var interactor = player.AddComponent<PlayerInteractor>();
             SetReference(interactor, "cameraTransform", cameraObject.transform);
 
+            var carrier = player.AddComponent<PlayerCarrier>();
+            SetReference(carrier, "cameraTransform", cameraObject.transform);
+            SetReference(carrier, "interactor", interactor);
+            SetReference(carrier, "previewMaterial", placementPreviewMaterial);
+
             return player;
         }
 
-        private static void BuildHud(PlayerInteractor interactor, VisualTreeAsset layout, PanelSettings panelSettings)
+        private static void BuildHud(PlayerInteractor interactor, PlayerCarrier carrier, VisualTreeAsset layout,
+            PanelSettings panelSettings)
         {
             var hudObject = new GameObject("HUD");
 
@@ -335,12 +345,14 @@ namespace WoodcraftSimulator.Editor
 
             var hud = hudObject.AddComponent<GameplayHud>();
             SetReference(hud, "interactor", interactor);
+            SetReference(hud, "carrier", carrier);
         }
 
         private static void BuildPauseSystem(GameObject player, VisualTreeAsset layout, PanelSettings panelSettings)
         {
             var playerController = player.GetComponent<PlayerController>();
             var interactor = player.GetComponent<PlayerInteractor>();
+            var carrier = player.GetComponent<PlayerCarrier>();
 
             // Kept separate from the player and from any future GameManager (master prompt §6.1).
             var pauseObject = new GameObject("PauseController");
@@ -348,9 +360,12 @@ namespace WoodcraftSimulator.Editor
 
             var serializedPause = new SerializedObject(pauseController);
             SerializedProperty disabledProperty = serializedPause.FindProperty("disableWhilePaused");
-            disabledProperty.arraySize = 2;
-            disabledProperty.GetArrayElementAtIndex(0).objectReferenceValue = playerController;
-            disabledProperty.GetArrayElementAtIndex(1).objectReferenceValue = interactor;
+            Behaviour[] gameplayComponents = { playerController, interactor, carrier };
+            disabledProperty.arraySize = gameplayComponents.Length;
+            for (int i = 0; i < gameplayComponents.Length; i++)
+            {
+                disabledProperty.GetArrayElementAtIndex(i).objectReferenceValue = gameplayComponents[i];
+            }
             serializedPause.ApplyModifiedPropertiesWithoutUndo();
 
             var menuObject = new GameObject("PauseMenu");
@@ -424,6 +439,38 @@ namespace WoodcraftSimulator.Editor
             public Material Wall { get; } = GetOrCreate("Wall", new Color(0.82f, 0.80f, 0.74f));
             public Material Workbench { get; } = GetOrCreate("Workbench", new Color(0.60f, 0.43f, 0.27f));
             public Material Lumber { get; } = GetOrCreate("Lumber", new Color(0.86f, 0.73f, 0.53f));
+            public Material PlacementPreview { get; } = GetOrCreateTransparentUnlit("PlacementPreview",
+                new Color(0.3f, 1f, 0.4f, 0.35f));
+
+            /// <summary>
+            /// URP Unlit set up as alpha-blended transparent. These are the properties/keywords the URP material
+            /// inspector would set when choosing Surface Type = Transparent, Blending Mode = Alpha.
+            /// </summary>
+            private static Material GetOrCreateTransparentUnlit(string name, Color color)
+            {
+                string path = $"{MaterialFolder}/{name}.mat";
+                var material = AssetDatabase.LoadAssetAtPath<Material>(path);
+
+                if (material == null)
+                {
+                    material = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
+                    AssetDatabase.CreateAsset(material, path);
+                }
+
+                material.SetFloat("_Surface", 1f); // Transparent
+                material.SetFloat("_Blend", 0f);   // Alpha
+                material.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+                material.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                material.SetFloat("_SrcBlendAlpha", (float)UnityEngine.Rendering.BlendMode.One);
+                material.SetFloat("_DstBlendAlpha", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                material.SetFloat("_ZWrite", 0f);
+                material.SetOverrideTag("RenderType", "Transparent");
+                material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+                material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+                material.SetColor("_BaseColor", color);
+                EditorUtility.SetDirty(material);
+                return material;
+            }
 
             private static Material GetOrCreate(string name, Color color)
             {

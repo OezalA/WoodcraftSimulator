@@ -1,12 +1,14 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UIElements;
+using WoodcraftSimulator.Handling;
 using WoodcraftSimulator.Interaction;
 
 namespace WoodcraftSimulator.UI
 {
     /// <summary>
-    /// In-game HUD (UI Toolkit): crosshair and interaction prompt.
+    /// In-game HUD (UI Toolkit): crosshair and a single prompt line.
+    /// The prompt shows the focused interaction ("[E] Pick up ...") or, while carrying, the carry controls.
     /// Layout lives in UI/Hud.uxml, styling in UI/Hud.uss; this class only toggles state.
     /// </summary>
     [RequireComponent(typeof(UIDocument))]
@@ -14,20 +16,23 @@ namespace WoodcraftSimulator.UI
     {
         private const string CrosshairFocusedClass = "crosshair--focused";
         private const string HiddenClass = "hidden";
+        private const string KeyboardMouseGroup = "Keyboard&Mouse";
 
         [SerializeField] private PlayerInteractor interactor;
+        [SerializeField] private PlayerCarrier carrier;
 
         private VisualElement crosshair;
         private Label promptLabel;
         private string interactKeyLabel;
+        private string carryHint;
 
         private void Awake()
         {
-            // Show the actually bound key (e.g. "E") so the prompt stays correct if bindings change.
-            InputAction interactAction = InputSystem.actions.FindAction("Player/Interact", throwIfNotFound: true);
-            interactKeyLabel = interactAction.GetBindingDisplayString(
-                InputBinding.MaskByGroup("Keyboard&Mouse"),
-                InputBinding.DisplayStringOptions.DontIncludeInteractions);
+            // Show the actually bound keys (e.g. "E", "LMB") so prompts stay correct if bindings change.
+            interactKeyLabel = KeyLabel("Player/Interact");
+            carryHint = $"[{KeyLabel("Player/Place")}]  Place      " +
+                        $"[{KeyLabel("Player/Rotate")}]  Rotate      " +
+                        $"[{KeyLabel("Player/Tilt")}]  Tilt";
         }
 
         private void OnEnable()
@@ -43,15 +48,16 @@ namespace WoodcraftSimulator.UI
                 return;
             }
 
-            if (interactor == null)
+            if (interactor == null || carrier == null)
             {
-                Debug.LogError($"{nameof(GameplayHud)}: Player Interactor is not assigned.", this);
+                Debug.LogError($"{nameof(GameplayHud)}: Player Interactor and Player Carrier must be assigned.", this);
                 enabled = false;
                 return;
             }
 
             interactor.TargetChanged += OnTargetChanged;
-            OnTargetChanged(interactor.CurrentTarget);
+            carrier.CarryingChanged += OnCarryingChanged;
+            Refresh();
         }
 
         private void OnDisable()
@@ -60,19 +66,51 @@ namespace WoodcraftSimulator.UI
             {
                 interactor.TargetChanged -= OnTargetChanged;
             }
+
+            if (carrier != null)
+            {
+                carrier.CarryingChanged -= OnCarryingChanged;
+            }
         }
 
-        private void OnTargetChanged(IInteractable target)
+        private void OnTargetChanged(IInteractable target) => Refresh();
+
+        private void OnCarryingChanged(bool isCarrying) => Refresh();
+
+        private void Refresh()
         {
-            bool hasTarget = target != null;
-
-            crosshair.EnableInClassList(CrosshairFocusedClass, hasTarget);
-            promptLabel.EnableInClassList(HiddenClass, !hasTarget);
-
-            if (hasTarget)
+            if (carrier.IsCarrying)
             {
-                promptLabel.text = $"[{interactKeyLabel}]  {target.InteractionPrompt}";
+                crosshair.EnableInClassList(CrosshairFocusedClass, false);
+                ShowPrompt(carryHint);
+                return;
             }
+
+            IInteractable target = interactor.CurrentTarget;
+            crosshair.EnableInClassList(CrosshairFocusedClass, target != null);
+
+            if (target != null)
+            {
+                ShowPrompt($"[{interactKeyLabel}]  {target.InteractionPrompt}");
+            }
+            else
+            {
+                promptLabel.EnableInClassList(HiddenClass, true);
+            }
+        }
+
+        private void ShowPrompt(string text)
+        {
+            promptLabel.text = text;
+            promptLabel.EnableInClassList(HiddenClass, false);
+        }
+
+        private static string KeyLabel(string actionPath)
+        {
+            InputAction action = InputSystem.actions.FindAction(actionPath, throwIfNotFound: true);
+            return action.GetBindingDisplayString(
+                InputBinding.MaskByGroup(KeyboardMouseGroup),
+                InputBinding.DisplayStringOptions.DontIncludeInteractions);
         }
     }
 }
