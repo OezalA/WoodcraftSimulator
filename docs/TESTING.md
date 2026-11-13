@@ -41,8 +41,7 @@ Precondition: MT-001. Press Play, click into the Game view.
 | Space | Small jump (~0.5 m), lands back |
 | Walk into walls / workbench | Blocked, no passing through |
 | Walk out of the door | Steps down 10 cm slab onto the ground |
-| Esc | Cursor visible, look stops, movement keys still work |
-| Left click in Game view | Cursor captured again |
+| Esc | Pause menu opens (see MT-004) |
 
 Failure → diagnosis:
 - Console `Camera Transform is not assigned` → `PlayerController.cameraTransform` missing in the Inspector; rebuild the scene.
@@ -59,10 +58,31 @@ Precondition: rebuild the scene (MT-001). Press Play, click into the Game view.
 | Press E | Warm spot light over the workbench turns off; prompt changes to `Turn on lamp` |
 | Press E again | Light on again, prompt `Turn off lamp` |
 | Step back > 2 m or look away | Prompt disappears, crosshair back to small white dot |
-| Esc while looking at the switch | Prompt disappears (no interaction while cursor released) |
+| Esc while looking at the switch | Pause menu opens, prompt disappears; E does nothing while paused |
 
 Failure → diagnosis:
 - No crosshair at all → `HUD` object missing or its `UIDocument` has no Panel Settings / Source Asset; Console errors from `GameplayHud`.
 - Crosshair visible but prompt text invisible → theme missing on `GameplayPanelSettings` (no font).
 - Prompt never appears → switch has no collider, or `PlayerInteractor` missing / camera not assigned (Console error).
 - Prompt appears but E does nothing → check *Project Settings > Input System Package* actions contain `Player/Interact` bound to E.
+
+### MT-004: Pause menu, cursor and mouse sensitivity
+Precondition: rebuild the scene (MT-001). Press Play, click into the Game view.
+| Step | Expected |
+|---|---|
+| Start of Play Mode | Cursor hidden and locked, game not paused |
+| Esc | Dimmed overlay with panel: "Paused", Resume, Mouse sensitivity slider (0.02–0.5, shows 0.1 by default), Quit. Cursor visible |
+| While paused: move mouse, W A S D, E | Camera and player do not move, no interaction |
+| Click Resume | Menu closes, cursor locked, movement works |
+| Esc, then Esc again | Menu opens, second Esc closes it |
+| Esc, drag slider to ~0.3, Resume, move mouse | Noticeably faster looking |
+| Stop and start Play Mode again, open menu | Slider still at ~0.3 (persisted) |
+| While playing, click another Editor window (e.g. Inspector) | Game pauses, menu visible |
+| Esc → Quit | Play Mode stops |
+
+Failure → diagnosis:
+- `InvalidOperationException ... Player/Pause` → the Input Actions asset did not reimport; right-click `InputSystem_Actions` > Reimport.
+- Menu visible but buttons don't react to clicks → UI Toolkit doesn't receive pointer input; report it (an EventSystem
+  with `InputSystemUIInputModule` may be required).
+- Slider label unreadable / unstyled → theme missing on `GameplayPanelSettings`.
+- Game stays frozen after exiting Play Mode → report (PauseController.OnDestroy resets timeScale).

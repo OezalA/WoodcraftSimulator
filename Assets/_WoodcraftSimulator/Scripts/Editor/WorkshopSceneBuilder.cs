@@ -4,6 +4,7 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
+using WoodcraftSimulator.Core;
 using WoodcraftSimulator.Interaction;
 using WoodcraftSimulator.Player;
 using WoodcraftSimulator.UI;
@@ -21,6 +22,7 @@ namespace WoodcraftSimulator.Editor
         private const string MaterialFolder = "Assets/_WoodcraftSimulator/Art/Materials/Greybox";
         private const string UiFolder = "Assets/_WoodcraftSimulator/UI";
         private const string HudUxmlPath = UiFolder + "/Hud.uxml";
+        private const string PauseMenuUxmlPath = UiFolder + "/PauseMenu.uxml";
         private const string ThemePath = UiFolder + "/DefaultRuntimeTheme.tss";
         private const string PanelSettingsPath = UiFolder + "/GameplayPanelSettings.asset";
 
@@ -55,10 +57,11 @@ namespace WoodcraftSimulator.Editor
 
             // Load UI assets first so a missing file aborts before the current scene is replaced.
             var hudLayout = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(HudUxmlPath);
+            var pauseMenuLayout = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(PauseMenuUxmlPath);
             var theme = AssetDatabase.LoadAssetAtPath<ThemeStyleSheet>(ThemePath);
-            if (hudLayout == null || theme == null)
+            if (hudLayout == null || pauseMenuLayout == null || theme == null)
             {
-                Debug.LogError($"Workshop scene not built: missing {HudUxmlPath} or {ThemePath}.");
+                Debug.LogError($"Workshop scene not built: missing {HudUxmlPath}, {PauseMenuUxmlPath} or {ThemePath}.");
                 return;
             }
 
@@ -71,7 +74,9 @@ namespace WoodcraftSimulator.Editor
             var materials = new GreyboxMaterials();
             BuildEnvironment(materials);
             GameObject player = BuildPlayer();
-            BuildHud(player.GetComponent<PlayerInteractor>(), hudLayout, GetOrCreatePanelSettings(theme));
+            PanelSettings panelSettings = GetOrCreatePanelSettings(theme);
+            BuildHud(player.GetComponent<PlayerInteractor>(), hudLayout, panelSettings);
+            BuildPauseSystem(player, pauseMenuLayout, panelSettings);
 
             // Intentionally does not touch Build Settings (ProjectSettings): add the scene there manually when needed.
             EditorSceneManager.SaveScene(scene, ScenePath);
@@ -280,6 +285,33 @@ namespace WoodcraftSimulator.Editor
 
             var hud = hudObject.AddComponent<GameplayHud>();
             SetReference(hud, "interactor", interactor);
+        }
+
+        private static void BuildPauseSystem(GameObject player, VisualTreeAsset layout, PanelSettings panelSettings)
+        {
+            var playerController = player.GetComponent<PlayerController>();
+            var interactor = player.GetComponent<PlayerInteractor>();
+
+            // Kept separate from the player and from any future GameManager (master prompt §6.1).
+            var pauseObject = new GameObject("PauseController");
+            var pauseController = pauseObject.AddComponent<PauseController>();
+
+            var serializedPause = new SerializedObject(pauseController);
+            SerializedProperty disabledProperty = serializedPause.FindProperty("disableWhilePaused");
+            disabledProperty.arraySize = 2;
+            disabledProperty.GetArrayElementAtIndex(0).objectReferenceValue = playerController;
+            disabledProperty.GetArrayElementAtIndex(1).objectReferenceValue = interactor;
+            serializedPause.ApplyModifiedPropertiesWithoutUndo();
+
+            var menuObject = new GameObject("PauseMenu");
+            var document = menuObject.AddComponent<UIDocument>();
+            document.panelSettings = panelSettings;
+            document.visualTreeAsset = layout;
+            document.sortingOrder = 10; // drawn above the HUD (same panel, higher order wins)
+
+            var pauseMenu = menuObject.AddComponent<PauseMenu>();
+            SetReference(pauseMenu, "pauseController", pauseController);
+            SetReference(pauseMenu, "playerController", playerController);
         }
 
         private static PanelSettings GetOrCreatePanelSettings(ThemeStyleSheet theme)

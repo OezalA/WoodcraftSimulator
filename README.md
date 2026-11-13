@@ -24,8 +24,8 @@ First-person, realistic woodworking and construction simulator built with Unity.
 | Look | Mouse |
 | Sprint | Left Shift |
 | Jump | Space |
-| Release cursor | Esc |
-| Capture cursor | Left click in Game view |
+| Interact | E (when a prompt is shown) |
+| Pause menu | Esc |
 
 ## Documentation
 | Document | Contents |

@@ -1,0 +1,11 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <Style src="PauseMenu.uss" />
+    <ui:VisualElement name="pause-root" class="pause-root hidden">
+        <ui:VisualElement name="pause-panel" class="pause-panel">
+            <ui:Label text="Paused" class="pause-title" />
+            <ui:Button name="resume-button" text="Resume" class="pause-button" />
+            <ui:Slider name="sensitivity-slider" label="Mouse sensitivity" class="pause-slider" />
+            <ui:Button name="quit-button" text="Quit" class="pause-button" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

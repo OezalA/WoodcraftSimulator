@@ -43,15 +43,9 @@ namespace WoodcraftSimulator.Interaction
 
         private void OnDisable() => SetFocus(null, null);
 
+        // Disabled by PauseController while paused; OnDisable then clears the focus so the HUD prompt hides.
         private void Update()
         {
-            // Temporary: no interaction while the cursor is released. Replaced by the pause flow later in Phase 1.
-            if (Cursor.lockState != CursorLockMode.Locked)
-            {
-                SetFocus(null, null);
-                return;
-            }
-
             UpdateFocus();
 
             // WasPressedThisFrame ignores the "Hold" interaction configured on the template's Interact action,

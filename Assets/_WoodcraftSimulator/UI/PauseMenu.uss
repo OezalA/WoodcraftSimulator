@@ -1,0 +1,44 @@
+/* Dimmed full-screen overlay; centers the panel. */
+.pause-root {
+    position: absolute;
+    left: 0px;
+    top: 0px;
+    right: 0px;
+    bottom: 0px;
+    background-color: rgba(0, 0, 0, 0.6);
+    align-items: center;
+    justify-content: center;
+}
+
+/* Light panel: the default runtime theme's controls are designed for dark text on a light background. */
+.pause-panel {
+    width: 520px;
+    padding: 32px;
+    background-color: rgb(236, 229, 216);
+    border-radius: 8px;
+}
+
+.pause-title {
+    font-size: 36px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    color: rgb(60, 45, 30);
+    margin-bottom: 24px;
+}
+
+.pause-button {
+    height: 44px;
+    font-size: 20px;
+    margin-top: 6px;
+    margin-bottom: 6px;
+}
+
+.pause-slider {
+    margin-top: 18px;
+    margin-bottom: 18px;
+    font-size: 16px;
+}
+
+.hidden {
+    display: none;
+}

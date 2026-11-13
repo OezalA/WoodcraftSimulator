@@ -3,34 +3,34 @@
 _Last updated: 2026-11-13_
 
 ## Current milestone
-Phase 0 ✅ done. Phase 1 (First-Person Workshop Prototype) in progress.
+Phase 1 ✅ done (MT-001..MT-004 passed). Next: Phase 2 (Basic Object Handling).
+Branch: `feature/phase-1-pause` (based on `feature/phase-0-1-foundation`).
 
 ## Completed
-- Git repository (`main`) with Unity `.gitignore`, `.gitattributes` and Git LFS.
-- Template tutorial content and `SampleScene` removed.
-- Folder structure `Assets/_WoodcraftSimulator/` with runtime and editor assembly definitions.
-- `PlayerController`: first-person controller (CharacterController + Input System).
-- `WorkshopSceneBuilder` editor menu; generated baseline scene `Scenes/Workshop/Workshop.unity` committed.
-- Documentation set: README, MASTER_PROMPT, ARCHITECTURE, ROADMAP, DECISIONS, TESTING, CURRENT_STATE.
+- Phase 0: Git + LFS, folder structure, asmdefs, docs, baseline workshop scene. GitHub: https://github.com/OezalA/WoodcraftSimulator
+- First-person controller (`PlayerController`), greybox workshop generator (`WorkshopSceneBuilder`).
+- Interaction system: `IInteractable`, `PlayerInteractor`, UI Toolkit HUD (`GameplayHud`), `LightSwitch` + lamp.
+
+## Done: pause system
+- `PauseController` (Esc / gamepad Start, focus loss → pause; timeScale 0; cursor; disables player components).
+- `PauseMenu` (UI Toolkit): Resume, mouse sensitivity slider, Quit. `UserPreferences` (PlayerPrefs).
+- New input action `Player/Pause`. Temporary cursor code removed from `PlayerController` / `PlayerInteractor`.
+- Static compile check: 0 errors, 0 warnings (2026-11-13). Unity compilation clean; MT-004 passed (owner).
 
 ## Latest verification
 | What | Result | Date |
 |---|---|---|
-| Unity compilation (both assemblies) | Succeeded, Console clean (Editor.log + owner) | 2026-11-13 |
 | MT-001 Build workshop scene | Passed (owner) | 2026-11-13 |
-| MT-002 First-person movement | Passed (owner): look, WASD, collisions, exit through door work; feel "fena değil" | 2026-11-13 |
-
-## Done: interaction system
-- `IInteractable`, `PlayerInteractor`, `GameplayHud` (UI Toolkit: crosshair + prompt), `LightSwitch` + workbench lamp.
-- Static compile check (D-010) 0 errors; Unity compilation clean; MT-003 passed (owner, 2026-11-13).
-- Owner feedback: precise ray targeting is fine; aim assist (SphereCast) deliberately not added.
+| MT-002 First-person movement | Passed (owner) | 2026-11-13 |
+| MT-003 Interaction + HUD + light switch | Passed (owner) | 2026-11-13 |
+| MT-004 Pause menu | Passed (owner) | 2026-11-13 |
 
 ## Known issues / limitations
-- Build Settings scene list still points to the deleted `SampleScene`; owner to replace it with `Workshop.unity`
-  via *File > Build Profiles > Scene List* (Editor-side change, not edited on disk while the Editor is open).
-- Cursor lock lives temporarily in `PlayerController`; `PlayerInteractor` reads the lock state as a stand-in for "paused".
+- Build Settings: `Workshop` enabled; deleted `SampleScene` still listed (disabled, harmless).
 - Mouse look tuned for mouse only; gamepad right stick would be far too slow.
+- In-game text is English only.
 
 ## Next recommended action
-1. Phase 1 last task: pause menu (UI Toolkit) + central cursor/pause state, replacing the temporary
-   cursor logic in `PlayerController` and `PlayerInteractor`; mouse sensitivity setting.
+1. Open PR(s) into `main` when convenient.
+2. Phase 2 (Basic Object Handling): wood board with basic material data,
+   pick up / carry / rotate / place with collision-aware placement.

@@ -58,3 +58,19 @@ Claude verifies code with `dotnet build` on temporary copies of the Unity-genera
 (in the session scratchpad, new files added, `HintPath`s made absolute). This catches C# and API errors
 against the real Unity DLLs without touching the open Editor. It does **not** replace Unity compilation
 (Unity's own compiler, ILPP, asmdef rules) or play testing.
+
+## D-011: Pause = timeScale 0 + disabling listed gameplay components (Accepted, 2026-11-13)
+`PauseController` owns the paused state and the cursor. It disables the Behaviours in `disableWhilePaused`
+instead of every system checking an `IsPaused` flag, so gameplay components stay unaware of pausing.
+`Time.timeScale = 0` additionally freezes physics and anything time-based.
+**Consequences:** new gameplay components that must stop while paused are added to the list (scene builder);
+code that must run while paused (UI, pause input) must not depend on `Time.deltaTime`.
+Focus loss pauses the game (also when clicking another Editor window during Play Mode); toggle `pauseOnFocusLoss`.
+
+## D-012: Settings in PlayerPrefs via `UserPreferences` (Accepted, 2026-11-13)
+Small player preferences (mouse sensitivity) use `PlayerPrefs` (Windows registry). Game progress will use
+a separate versioned save system (master prompt §6.16). `UserPreferences` holds no state of its own.
+
+## D-013: Public GitHub repo, feature branches + PRs (Accepted, 2026-11-13)
+`origin` = https://github.com/OezalA/WoodcraftSimulator (public, owner's choice). `main` starts at the template
+commit; work happens on `feature/...` branches merged via pull requests.

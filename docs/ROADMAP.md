@@ -7,7 +7,7 @@ Legend: ✅ done (verified) · 🟡 in progress · ⬜ not started
 | Phase | Name | Status |
 |---|---|---|
 | 0 | Environment and Project Foundation | ✅ |
-| 1 | First-Person Workshop Prototype | 🟡 |
+| 1 | First-Person Workshop Prototype | ✅ |
 | 2 | Basic Object Handling | ⬜ |
 | 3 | Measurement Prototype | ⬜ |
 | 4 | Cutting Prototype | ⬜ |
@@ -40,5 +40,5 @@ Legend: ✅ done (verified) · 🟡 in progress · ⬜ not started
 - [x] Interaction raycasting (`PlayerInteractor`) + `IInteractable`
 - [x] Interaction prompt ("[E] ...")
 - [x] One basic interactable object: workbench lamp `LightSwitch`
-- [ ] Pause and cursor management (move cursor logic out of `PlayerController`)
-- [ ] Mouse sensitivity setting exposed beyond the Inspector
+- [x] Pause and cursor management: `PauseController` + UI Toolkit `PauseMenu` (MT-004 passed, 2026-11-13)
+- [x] Mouse sensitivity setting in the pause menu, persisted

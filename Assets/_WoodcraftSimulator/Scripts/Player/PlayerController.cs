@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using WoodcraftSimulator.Core;
 
 namespace WoodcraftSimulator.Player
 {
@@ -7,6 +8,7 @@ namespace WoodcraftSimulator.Player
     /// First-person movement and mouse look built on <see cref="CharacterController"/>.
     /// Reads input from the project-wide Input Actions asset (Project Settings > Input System Package).
     /// The GameObject's origin is at the player's feet; the camera is a child at eye height.
+    /// Cursor lock and pausing are handled by <see cref="PauseController"/>, which disables this component while paused.
     /// </summary>
     [RequireComponent(typeof(CharacterController))]
     public sealed class PlayerController : MonoBehaviour
@@ -22,8 +24,6 @@ namespace WoodcraftSimulator.Player
         [SerializeField] private float gravity = -9.81f;
 
         [Header("Look")]
-        [Tooltip("Degrees of rotation per pixel of mouse movement.")]
-        [SerializeField, Min(0f)] private float lookSensitivity = 0.1f;
         [SerializeField, Range(0f, 90f)] private float maxPitch = 85f;
 
         // Small constant downward speed while grounded so isGrounded stays reliable on slopes/steps.
@@ -37,10 +37,19 @@ namespace WoodcraftSimulator.Player
 
         private float pitch;
         private float verticalVelocity;
+        private float lookSensitivity;
+
+        /// <summary>Degrees of rotation per pixel of mouse movement. Initialized from <see cref="UserPreferences"/>.</summary>
+        public float LookSensitivity
+        {
+            get => lookSensitivity;
+            set => lookSensitivity = Mathf.Clamp(value, UserPreferences.MinMouseSensitivity, UserPreferences.MaxMouseSensitivity);
+        }
 
         private void Awake()
         {
             characterController = GetComponent<CharacterController>();
+            LookSensitivity = UserPreferences.MouseSensitivity;
 
             if (cameraTransform == null)
             {
@@ -57,19 +66,9 @@ namespace WoodcraftSimulator.Player
             jumpAction = actions.FindAction("Player/Jump", throwIfNotFound: true);
         }
 
-        private void OnEnable() => SetCursorLocked(true);
-
-        private void OnDisable() => SetCursorLocked(false);
-
         private void Update()
         {
-            HandleCursorLock();
-
-            if (Cursor.lockState == CursorLockMode.Locked)
-            {
-                HandleLook();
-            }
-
+            HandleLook();
             HandleMovement();
         }
 
@@ -109,29 +108,6 @@ namespace WoodcraftSimulator.Player
 
             Vector3 velocity = direction * speed + Vector3.up * verticalVelocity;
             characterController.Move(velocity * Time.deltaTime);
-        }
-
-        // Temporary: Escape releases the cursor, left click captures it again.
-        // Will move to a proper pause/UI flow once menus exist.
-        private static void HandleCursorLock()
-        {
-            Keyboard keyboard = Keyboard.current;
-            Mouse mouse = Mouse.current;
-
-            if (keyboard != null && keyboard.escapeKey.wasPressedThisFrame)
-            {
-                SetCursorLocked(false);
-            }
-            else if (mouse != null && mouse.leftButton.wasPressedThisFrame && Cursor.lockState != CursorLockMode.Locked)
-            {
-                SetCursorLocked(true);
-            }
-        }
-
-        private static void SetCursorLocked(bool locked)
-        {
-            Cursor.lockState = locked ? CursorLockMode.Locked : CursorLockMode.None;
-            Cursor.visible = !locked;
         }
     }
 }
