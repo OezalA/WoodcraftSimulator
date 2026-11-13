@@ -52,6 +52,8 @@ Interactables are components implementing `IInteractable` (composition, master p
 The HUD reacts to a C# event instead of polling.
 **Alternatives considered:** trigger volumes / overlap spheres (less precise for small targets like screws or
 marks); SphereCast (more forgiving aim, revisit if small targets feel hard to hit).
+**Update 2026-11-13:** SphereCast aim assist (radius 0.08 m) added as a fallback after the precise ray, at the
+owner's request (boards on the lower rack shelf were hard to target). Precise ray still wins.
 **Consequence:** interactables need a non-trigger collider on the default raycast layers.
 In-game text is English for now; localization is out of scope until the UI grows.
 
@@ -125,3 +127,28 @@ support checks or a "settle" step if it matters for gameplay. No free "drop" yet
 Owner's choice: no feature branches. Day-to-day commits go to `develop`; `main` is fast-forwarded to `develop`
 once the owner has confirmed the manual tests of a step. The former feature branches were linear and fully
 contained in `develop`/`main` (756e4ce) and were deleted locally and on GitHub.
+
+## D-021: Timber rack as continuous shelves; small-item inventory moved to Phase 3 (Accepted, 2026-11-13)
+- **Rack:** steel uprights + arms against the left wall carrying three continuous 0.45 m shelves (tops 0.30 / 0.90 / 1.50 m; first version 0.35 /
+  0.85 / 1.35 m hid the lowest shelf behind the middle one). Real cantilever racks have only arms, but aiming a 2.4 m board at a 5 cm arm is poor UX.
+  No rack-specific code: shelves are ordinary placement surfaces, uprights are obstacles (D-019).
+- **Roadmap change (approved by owner):** the Phase 2 task "small-item inventory prototype" moves to Phase 3,
+  where the first small items (tape measure, pencil) appear. Building it now would be a speculative system
+  with nothing to store (master prompt §1, §14 step 3).
+
+## D-022: Placement feedback names the blocker (Accepted, 2026-11-13)
+`PlayerCarrier` exposes `Status` (NoSurface / Valid / Blocked) and `Blocker`, raising `PlacementStatusChanged`
+only on change. The HUD shows "Aim at a free, level surface within reach", "Blocked by <object>" or
+"Blocked: too close to you". The overlap test now uses `Physics.OverlapBoxNonAlloc` into a reused buffer
+(no allocations) instead of `CheckBox`, to know what blocks.
+
+## D-023: Player casts must explicitly ignore the player's own colliders (Accepted, 2026-11-13)
+**Finding (from the placement diagnostic log, D-022):** casts starting at the camera, i.e. inside the player's
+CharacterController, *do* report that controller when looking down (`surface='Player' distance≈0.09 m`).
+The earlier assumption "casts ignore colliders containing their origin" (D-009 comment) was wrong for this case.
+Effects: the player's head was taken as the placement surface (floor placement always "Blocked by Player"), and
+floor objects were harder to target for interaction.
+**Fix:** `Core.PhysicsQueries.RaycastIgnoring / SphereCastIgnoring` (NonAlloc + skip a given hierarchy, closest
+remaining hit). Used by `PlayerInteractor` and `PlayerCarrier`. Overlap tests for placement still include the player.
+**Rule:** every new query cast from the player's eyes must use these helpers (or a layer setup that excludes the player).
+**Kept:** `PlayerCarrier` logs a refused placement (only on click) with surface, distance, normal and blockers.

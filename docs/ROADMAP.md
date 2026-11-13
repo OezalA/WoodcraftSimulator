@@ -8,7 +8,7 @@ Legend: ✅ done (verified) · 🟡 in progress · ⬜ not started
 |---|---|---|
 | 0 | Environment and Project Foundation | ✅ |
 | 1 | First-Person Workshop Prototype | ✅ |
-| 2 | Basic Object Handling | 🟡 |
+| 2 | Basic Object Handling | ✅ |
 | 3 | Measurement Prototype | ⬜ |
 | 4 | Cutting Prototype | ⬜ |
 | 5 | Basic Assembly | ⬜ |
@@ -44,11 +44,15 @@ Legend: ✅ done (verified) · 🟡 in progress · ⬜ not started
 - [x] Mouse sensitivity setting in the pause menu, persisted
 
 ## Phase 2: Basic Object Handling
-Split into steps: **2a** timber data + board, **2b** handling, **2c** storage + inventory.
+Split into steps: **2a** timber data + board, **2b** handling, **2c** timber rack (inventory moved to Phase 3, D-021).
 - [x] 2a: `Length` (0.1 mm), `BoardDimensions`, `WoodSpecies`, `TimberPiece` + EditMode tests (31/31 green in dotnet test and Unity Test Runner)
 - [x] 2a: Wood species definitions (7 species, approximate densities, D-017)
 - [x] 2a: `TimberBoard` generated from data (mesh, collider, mass, color); boards in the workshop (MT-005 passed, 2026-11-13)
 - [x] 2b: Pick up, carry, rotate, place a board; placement preview with collision check (MT-006 passed, 2026-11-13)
 - [ ] Later: improve carry feel (owner: "taşıma hissi şimdilik çok beğenmedim"), see CURRENT_STATE
-- [ ] 2c: Simple storage rack
-- [ ] 2c: Small-item inventory prototype
+- [x] 2c: Simple storage rack: timber rack on the left wall (MT-007 passed, 2026-11-13)
+- [ ] ~~2c: Small-item inventory prototype~~ → moved to Phase 3 (D-021)
+
+## Phase 3: Measurement Prototype (planned)
+- [ ] Small-item inventory prototype (moved from Phase 2, D-021): tape measure, pencil as first items
+- [ ] Measurement data types, tape measure tool, visualization, cutting marks, tolerance checks, tests

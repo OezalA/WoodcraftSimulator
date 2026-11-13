@@ -39,6 +39,17 @@ namespace WoodcraftSimulator.Editor
         private const float DoorHeight = 2.1f;
 
         // Player: 1.80 m tall capsule, eyes at 1.65 m.
+        // Timber rack on the left wall: 3 shelves (tops above the floor, 0.6 m apart so the lower shelves stay
+        // visible and reachable), 0.45 m deep, 2.6 m long.
+        private const float RackDepth = 0.45f;
+        private const float RackShelfLength = 2.6f;
+        private const float RackShelfThickness = 0.03f;
+        private const float RackUprightSize = 0.08f;
+        private const float RackArmHeight = 0.04f;
+        private const float RackFrontOfUprightsX = -InteriorWidth / 2f + RackUprightSize;
+        private static readonly float[] RackShelfTops = { 0.30f, 0.90f, 1.50f };
+        private static readonly float[] RackUprightZ = { -1.2f, 0f, 1.2f };
+
         private const float PlayerHeight = 1.8f;
         private const float PlayerRadius = 0.3f;
         private const float EyeHeight = 1.65f;
@@ -46,6 +57,15 @@ namespace WoodcraftSimulator.Editor
         [MenuItem("WoodcraftSimulator/Build Test Workshop Scene")]
         public static void Build()
         {
+            // Scenes can't be created or saved in Play Mode (Unity throws InvalidOperationException).
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                EditorUtility.DisplayDialog("Stop Play Mode first",
+                    "The workshop scene can only be rebuilt outside Play Mode. Press Stop, then run this command again.",
+                    "OK");
+                return;
+            }
+
             if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
             {
                 return;
@@ -129,6 +149,7 @@ namespace WoodcraftSimulator.Editor
 
             BuildWalls(workshop, materials.Wall);
             BuildWorkbench(workshop, materials.Workbench);
+            BuildTimberRack(workshop, materials.Steel, materials.Workbench);
             BuildTimber(workshop, materials.Lumber, species);
             BuildWorkbenchLamp(workshop, materials.Wall);
         }
@@ -223,24 +244,62 @@ namespace WoodcraftSimulator.Editor
             }
         }
 
+        /// <summary>
+        /// Wall-mounted timber rack along the left wall: steel uprights and arms carrying continuous shelves
+        /// (continuous so a 2.4 m board can be aimed at anywhere, not only at a 5 cm arm). Placement onto the
+        /// shelves uses the normal carry/placement system; the uprights act as obstacles.
+        /// </summary>
+        private static void BuildTimberRack(Transform parent, Material steel, Material shelf)
+        {
+            var rack = new GameObject("TimberRack").transform;
+            rack.SetParent(parent, false);
+
+            float wallX = -InteriorWidth / 2f;
+            float shelfCenterX = RackFrontOfUprightsX + RackDepth / 2f;
+            float uprightHeight = RackShelfTops[RackShelfTops.Length - 1] + 0.25f;
+
+            for (int u = 0; u < RackUprightZ.Length; u++)
+            {
+                CreateBox($"Upright_{u + 1}", rack,
+                    new Vector3(wallX + RackUprightSize / 2f, FloorTop + uprightHeight / 2f, RackUprightZ[u]),
+                    new Vector3(RackUprightSize, uprightHeight, RackUprightSize), steel);
+            }
+
+            for (int level = 0; level < RackShelfTops.Length; level++)
+            {
+                float top = FloorTop + RackShelfTops[level];
+                CreateBox($"Shelf_{level + 1}", rack,
+                    new Vector3(shelfCenterX, top - RackShelfThickness / 2f, 0f),
+                    new Vector3(RackDepth, RackShelfThickness, RackShelfLength), shelf);
+
+                for (int u = 0; u < RackUprightZ.Length; u++)
+                {
+                    CreateBox($"Arm_{level + 1}_{u + 1}", rack,
+                        new Vector3(shelfCenterX, top - RackShelfThickness - RackArmHeight / 2f, RackUprightZ[u]),
+                        new Vector3(RackDepth, RackArmHeight, 0.05f), steel);
+                }
+            }
+        }
+
         private static void BuildTimber(Transform parent, Material material,
             IReadOnlyDictionary<string, WoodSpeciesDefinition> species)
         {
             var timber = new GameObject("Timber").transform;
             timber.SetParent(parent, false);
 
-            // Construction timber stacked on the floor along the left wall (length along Z).
-            float wallX = -InteriorWidth / 2f;
+            // Long construction timber stored on the rack (length along Z). Top shelf is left empty for the player.
+            float lowerShelf = FloorTop + RackShelfTops[0];
             for (int i = 0; i < 3; i++)
             {
                 CreateBoard($"Spruce_2400x95x45_{i + 1}", timber, species["spruce"], 2400f, 95f, 45f,
-                    new Vector3(wallX + 0.4f, FloorTop + i * 0.046f, 0f), 0f, material);
+                    new Vector3(RackFrontOfUprightsX + 0.07f + i * 0.13f, lowerShelf, 0f), 0f, material);
             }
 
+            float middleShelf = FloorTop + RackShelfTops[1];
             CreateBoard("Larch_2000x145x28", timber, species["larch"], 2000f, 145f, 28f,
-                new Vector3(wallX + 0.7f, FloorTop, 0f), 0f, material);
+                new Vector3(RackFrontOfUprightsX + 0.10f, middleShelf, 0f), 0f, material);
             CreateBoard("DouglasFir_2400x145x45", timber, species["douglas-fir"], 2400f, 145f, 45f,
-                new Vector3(wallX + 1.0f, FloorTop, 0f), 0f, material);
+                new Vector3(RackFrontOfUprightsX + 0.30f, middleShelf, 0f), 0f, material);
 
             // Smaller boards on the workbench (length along X, yaw 90°). Bench surface: FloorTop + 0.9 m.
             float benchTop = FloorTop + 0.9f;
@@ -438,6 +497,7 @@ namespace WoodcraftSimulator.Editor
             public Material Concrete { get; } = GetOrCreate("Concrete", new Color(0.55f, 0.55f, 0.53f));
             public Material Wall { get; } = GetOrCreate("Wall", new Color(0.82f, 0.80f, 0.74f));
             public Material Workbench { get; } = GetOrCreate("Workbench", new Color(0.60f, 0.43f, 0.27f));
+            public Material Steel { get; } = GetOrCreate("Steel", new Color(0.36f, 0.38f, 0.42f));
             public Material Lumber { get; } = GetOrCreate("Lumber", new Color(0.86f, 0.73f, 0.53f));
             public Material PlacementPreview { get; } = GetOrCreateTransparentUnlit("PlacementPreview",
                 new Color(0.3f, 1f, 0.4f, 0.35f));

@@ -57,6 +57,7 @@ namespace WoodcraftSimulator.UI
 
             interactor.TargetChanged += OnTargetChanged;
             carrier.CarryingChanged += OnCarryingChanged;
+            carrier.PlacementStatusChanged += Refresh;
             Refresh();
         }
 
@@ -70,6 +71,7 @@ namespace WoodcraftSimulator.UI
             if (carrier != null)
             {
                 carrier.CarryingChanged -= OnCarryingChanged;
+                carrier.PlacementStatusChanged -= Refresh;
             }
         }
 
@@ -82,7 +84,8 @@ namespace WoodcraftSimulator.UI
             if (carrier.IsCarrying)
             {
                 crosshair.EnableInClassList(CrosshairFocusedClass, false);
-                ShowPrompt(carryHint);
+                string status = PlacementStatusText();
+                ShowPrompt(status == null ? carryHint : $"{carryHint}\n{status}");
                 return;
             }
 
@@ -96,6 +99,29 @@ namespace WoodcraftSimulator.UI
             else
             {
                 promptLabel.EnableInClassList(HiddenClass, true);
+            }
+        }
+
+        /// <summary>Why the carried object can't be placed right now; null when placement is possible.</summary>
+        private string PlacementStatusText()
+        {
+            switch (carrier.Status)
+            {
+                case PlacementStatus.NoSurface:
+                    return "Aim at a free, level surface within reach";
+                case PlacementStatus.Blocked:
+                    Collider blocker = carrier.Blocker;
+                    if (blocker == null)
+                    {
+                        return "Blocked";
+                    }
+
+                    // The carrier lives on the player, so a blocker inside the player hierarchy is the player itself.
+                    return blocker.transform.IsChildOf(carrier.transform)
+                        ? "Blocked: too close to you"
+                        : $"Blocked by {blocker.name}";
+                default:
+                    return null;
             }
         }
 

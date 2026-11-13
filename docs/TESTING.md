@@ -131,3 +131,20 @@ Failure → diagnosis:
 - Preview pink / opaque → `PlacementPreview` material not transparent; select it once in the Inspector or rebuild the scene.
 - Always red on open floor → something overlaps the test box (check with Scene view gizmos); report it.
 - Prompt missing on boards → board lacks `Carryable` or collider; rebuild the scene.
+
+### MT-007: Timber rack
+Precondition: rebuild the scene (MT-001). Press Play.
+| Step | Expected |
+|---|---|
+| Look at the left wall | Steel-grey rack with 3 wooden shelves (30 / 90 / 150 cm); 3 spruce boards on the lowest shelf, larch + Douglas fir on the middle one, top shelf empty |
+| Pick up a spruce board from the lowest shelf (look under the middle shelf; aiming next to a board is enough thanks to aim assist) | Prompt and pick-up work |
+| Aim at the empty top shelf | Green preview lying on the shelf |
+| Aim so the preview would hit an upright or another board | Red, cannot place; HUD: `Blocked by Upright_…` / `Blocked by <board name>` |
+| Hold a 2.4 m board lengthwise (R) and aim at the floor just in front of you | Red, HUD `Blocked: too close to you`; aim further away or press R → green |
+| Aim at a wall / the sky while carrying | No preview, HUD `Aim at a free, level surface within reach` |
+| Place it on the top shelf, then on the floor, then back on the rack | All work; boards stay still |
+| Workshop floor | Free of boards (they now live on the rack) |
+
+Failure → diagnosis:
+- Lowest shelf boards unreachable → report the position you stood at (reach is 2.5 m from the eyes).
+- Preview always red on a shelf → the shelf above may be too close for the board's orientation (try T); otherwise report.

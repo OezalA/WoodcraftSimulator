@@ -21,7 +21,7 @@ Assets/
       Domain/                     assembly "WoodcraftSimulator.Domain": plain C#, no UnityEngine
         Measurement/Length.cs
         Materials/BoardDimensions.cs, WoodSpecies.cs, TimberPiece.cs
-      Core/PauseController.cs, UserPreferences.cs, BoxMeshBuilder.cs
+      Core/PauseController.cs, UserPreferences.cs, BoxMeshBuilder.cs, PhysicsQueries.cs
       Materials/WoodSpeciesDefinition.cs, TimberBoard.cs
       Player/PlayerController.cs
       Interaction/IInteractable.cs, IDescribable.cs, PlayerInteractor.cs
@@ -80,12 +80,15 @@ Namespaces mirror folders: `WoodcraftSimulator.Player`, `WoodcraftSimulator.Edit
   `Player/Pause` (Esc / gamepad Start) toggles; window focus loss pauses. Paused = `Time.timeScale 0`,
   cursor free, every Behaviour in `disableWhilePaused` disabled. Raises `PausedChanged(bool)`.
 - `UserPreferences`: static, stateless wrapper over `PlayerPrefs` for settings (mouse sensitivity). Not for save data.
+- `PhysicsQueries`: ray/sphere casts (NonAlloc) that skip one hierarchy, used for all casts from the player's eyes (D-023).
+- `BoxMeshBuilder`: exact-size box mesh, UVs in meters.
 
 ### Interaction (`WoodcraftSimulator.Interaction`)
 - `IInteractable`: `InteractionPrompt` + `Interact(PlayerInteractor)`. Any component on the hit collider's
   GameObject or a parent. New interactable types = new components; no central switch statement.
-- `PlayerInteractor` (on Player): raycast from the camera each frame (2.5 m reach, triggers ignored),
-  caches the last collider to skip repeated `GetComponentInParent`, forwards `Player/Interact` (E).
+- `PlayerInteractor` (on Player): raycast from the camera each frame (2.5 m reach, triggers ignored, player skipped, D-023), then a
+  0.08 m SphereCast aim assist if the ray missed every interactable (first contact only),
+  forwards `Player/Interact` (E). `GetComponentInParent<IInteractable>` per cast, no allocations.
   Raises `TargetChanged(IInteractable)` on focus change and after each interaction → UI is event-driven.
 - Disabled while paused (via `PauseController`); `OnDisable` clears focus so the prompt hides.
 - `IsBlocked`: suspends interactions without touching `enabled` (used while carrying; independent of pause).
@@ -96,7 +99,8 @@ Namespaces mirror folders: `WoodcraftSimulator.Player`, `WoodcraftSimulator.Edit
   player's `PlayerCarrier` to pick it up. `SetCarried` switches colliders off/on; kinematic in both states.
   The BoxCollider is the placement footprint.
 - `PlayerCarrier` (on Player, disabled while paused): carries one object at a time at `holdOffset` (yaw-only),
-  R/T rotate, LateUpdate computes the placement pose and validity (raycast + `Physics.CheckBox`, D-019),
+  R/T rotate, LateUpdate computes the placement pose and validity (raycast + `Physics.OverlapBoxNonAlloc`, D-019),
+  exposes `Status`/`Blocker` + `PlacementStatusChanged` (D-022, HUD shows why placement is not possible),
   shows a translucent preview (`PlacementPreview` material, MaterialPropertyBlock green/red), LMB places.
   Raises `CarryingChanged(bool)`; sets `PlayerInteractor.IsBlocked` while carrying.
 
@@ -134,8 +138,9 @@ Unity side (`WoodcraftSimulator`):
 
 ### Editor tooling (`WoodcraftSimulator.Editor`)
 `WorkshopSceneBuilder`: menu **WoodcraftSimulator > Build Test Workshop Scene** regenerates the greybox workshop
-(40×40 m ground, 8×6 m room with 3 m walls and a door, 0.9 m workbench, 9 `TimberBoard`s of all seven species
-on the floor and the bench, workbench lamp + wall switch, player with interactor, HUD, PauseController, PauseMenu).
+(40×40 m ground, 8×6 m room with 3 m walls and a door, 0.9 m workbench, timber rack (3 shelves) on the left wall,
+9 `TimberBoard`s of all seven species
+on the rack and the bench, workbench lamp + wall switch, player with interactor + carrier, HUD, PauseController, PauseMenu).
 Does not modify Build Settings. `WoodSpeciesAssets` creates missing species assets (never overwrites).
 
 ## Input actions

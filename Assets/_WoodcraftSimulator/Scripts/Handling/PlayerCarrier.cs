@@ -2,6 +2,7 @@ using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Rendering;
+using WoodcraftSimulator.Core;
 using WoodcraftSimulator.Interaction;
 
 namespace WoodcraftSimulator.Handling
@@ -11,6 +12,15 @@ namespace WoodcraftSimulator.Handling
     /// While carrying, a translucent preview shows the target pose: green = valid, red = blocked.
     /// Placement is only possible on a near-horizontal surface within reach and without overlapping anything.
     /// </summary>
+    public enum PlacementStatus
+    {
+        /// <summary>No suitable surface within reach under the crosshair.</summary>
+        NoSurface,
+        Valid,
+        /// <summary>The target pose overlaps another collider (see <see cref="PlayerCarrier.Blocker"/>).</summary>
+        Blocked
+    }
+
     public sealed class PlayerCarrier : MonoBehaviour
     {
         // Small vertical gap above the supporting surface, and shrink applied to the overlap test, so that
@@ -50,6 +60,11 @@ namespace WoodcraftSimulator.Handling
         private MeshRenderer previewRenderer;
         private MaterialPropertyBlock previewBlock;
 
+        private readonly Collider[] overlapBuffer = new Collider[8];
+        private readonly RaycastHit[] hitBuffer = new RaycastHit[16];
+        private RaycastHit lastSurfaceHit;
+        private bool lastSurfaceHitValid;
+        private int lastOverlapCount;
         private int ignoreInputFrame = -1;
         private bool hasPlacement;
         private Vector3 placementPosition;
@@ -59,8 +74,16 @@ namespace WoodcraftSimulator.Handling
 
         public Carryable Carried => carried;
 
+        public PlacementStatus Status { get; private set; } = PlacementStatus.NoSurface;
+
+        /// <summary>First collider blocking the placement while <see cref="Status"/> is Blocked, otherwise null.</summary>
+        public Collider Blocker { get; private set; }
+
         /// <summary>Raised with true on pick-up and false after placing.</summary>
         public event Action<bool> CarryingChanged;
+
+        /// <summary>Raised only when <see cref="Status"/> or <see cref="Blocker"/> changes (not every frame).</summary>
+        public event Action PlacementStatusChanged;
 
         private void Awake()
         {
@@ -137,9 +160,16 @@ namespace WoodcraftSimulator.Handling
 
             UpdatePlacement(rotation);
 
-            if (hasPlacement && placeAction.WasPressedThisFrame() && Time.frameCount != ignoreInputFrame)
+            if (placeAction.WasPressedThisFrame() && Time.frameCount != ignoreInputFrame)
             {
-                Place();
+                if (hasPlacement)
+                {
+                    Place();
+                }
+                else
+                {
+                    LogRefusedPlacement();
+                }
             }
         }
 
@@ -149,10 +179,17 @@ namespace WoodcraftSimulator.Handling
             var ray = new Ray(cameraTransform.position, cameraTransform.forward);
             float minNormalY = Mathf.Cos(maxSurfaceSlope * Mathf.Deg2Rad);
 
-            if (!Physics.Raycast(ray, out RaycastHit hit, placementRange, placementMask, QueryTriggerInteraction.Ignore)
-                || hit.normal.y < minNormalY)
+            // Skip the player's own CharacterController: looking down, the ray reports it at ~0.1 m and the player's
+            // head would be taken as the placement surface. The overlap test below still includes the player.
+            bool hasHit = PhysicsQueries.RaycastIgnoring(ray, placementRange, placementMask, transform, hitBuffer,
+                out RaycastHit hit);
+            lastSurfaceHit = hit;
+            lastSurfaceHitValid = hasHit;
+
+            if (!hasHit || hit.normal.y < minNormalY)
             {
                 preview.SetActive(false);
+                SetStatus(PlacementStatus.NoSurface, null);
                 return;
             }
 
@@ -162,11 +199,16 @@ namespace WoodcraftSimulator.Handling
 
             Vector3 checkExtents = Vector3.Max(halfExtents - Vector3.one * OverlapTolerance, Vector3.one * 0.0005f);
             // The carried object's colliders are disabled, so only other objects (and the player) can block.
-            bool blocked = Physics.CheckBox(boxCenter, checkExtents, rotation, placementMask, QueryTriggerInteraction.Ignore);
+            // Non-alloc query into a reused buffer: no garbage per frame.
+            int overlapCount = Physics.OverlapBoxNonAlloc(boxCenter, checkExtents, overlapBuffer, rotation,
+                placementMask, QueryTriggerInteraction.Ignore);
+            lastOverlapCount = overlapCount;
+            bool blocked = overlapCount > 0;
 
             placementRotation = rotation;
             placementPosition = boxCenter - rotation * carried.Center;
             hasPlacement = !blocked;
+            SetStatus(blocked ? PlacementStatus.Blocked : PlacementStatus.Valid, blocked ? overlapBuffer[0] : null);
 
             preview.SetActive(true);
             preview.transform.SetPositionAndRotation(placementPosition, placementRotation);
@@ -183,9 +225,47 @@ namespace WoodcraftSimulator.Handling
 
             Destroy(preview);
             preview = null;
+            SetStatus(PlacementStatus.NoSurface, null);
 
             interactor.IsBlocked = false;
             CarryingChanged?.Invoke(false);
+        }
+
+        /// <summary>
+        /// Diagnostic for refused placements (only logged when the player clicks, so no per-frame cost).
+        /// Lets placement problems be analysed from the Console / Editor.log.
+        /// </summary>
+        private void LogRefusedPlacement()
+        {
+            string surface = lastSurfaceHitValid
+                ? $"surface='{lastSurfaceHit.collider.name}' distance={lastSurfaceHit.distance:F2} m " +
+                  $"normal={lastSurfaceHit.normal} point={lastSurfaceHit.point}"
+                : $"surface=<none within {placementRange:F1} m>";
+
+            // Only the first lastOverlapCount entries are valid: NonAlloc queries don't clear the rest of the buffer.
+            string blockers = string.Empty;
+            if (Status == PlacementStatus.Blocked)
+            {
+                for (int i = 0; i < lastOverlapCount; i++)
+                {
+                    blockers += (i == 0 ? " blockers=" : ", ") + $"'{overlapBuffer[i].name}'";
+                }
+            }
+
+            Debug.Log($"[{nameof(PlayerCarrier)}] Placement refused: status={Status} carrying='{carried.name}' " +
+                      $"size={carried.Size} {surface}{blockers} eyes={cameraTransform.position}", this);
+        }
+
+        private void SetStatus(PlacementStatus status, Collider blocker)
+        {
+            if (status == Status && blocker == Blocker)
+            {
+                return;
+            }
+
+            Status = status;
+            Blocker = blocker;
+            PlacementStatusChanged?.Invoke();
         }
 
         private void CreatePreview()

@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using WoodcraftSimulator.Core;
 
 namespace WoodcraftSimulator.Interaction
 {
@@ -17,10 +18,13 @@ namespace WoodcraftSimulator.Interaction
         [Tooltip("Maximum reach from the eyes, in meters.")]
         [SerializeField, Min(0.1f)] private float interactionRange = 2.5f;
 
+        [Tooltip("Radius (m) of the fallback sphere cast used when the precise ray misses every interactable. 0 = off.")]
+        [SerializeField, Min(0f)] private float aimAssistRadius = 0.08f;
+
         [SerializeField] private LayerMask interactionMask = Physics.DefaultRaycastLayers;
 
+        private readonly RaycastHit[] hitBuffer = new RaycastHit[16];
         private InputAction interactAction;
-        private Collider focusedCollider;
         private bool isBlocked;
 
         /// <summary>
@@ -35,7 +39,7 @@ namespace WoodcraftSimulator.Interaction
                 isBlocked = value;
                 if (isBlocked)
                 {
-                    SetFocus(null, null);
+                    SetFocus(null);
                 }
             }
         }
@@ -61,7 +65,7 @@ namespace WoodcraftSimulator.Interaction
             interactAction = InputSystem.actions.FindAction("Player/Interact", throwIfNotFound: true);
         }
 
-        private void OnDisable() => SetFocus(null, null);
+        private void OnDisable() => SetFocus(null);
 
         // Disabled by PauseController while paused; OnDisable then clears the focus so the HUD prompt hides.
         private void Update()
@@ -85,28 +89,33 @@ namespace WoodcraftSimulator.Interaction
         private void UpdateFocus()
         {
             var ray = new Ray(cameraTransform.position, cameraTransform.forward);
+            IInteractable target = null;
 
-            // The ray starts inside the player's own CharacterController capsule; Physics.Raycast does not
-            // report colliders that contain the ray origin, so the player never blocks its own ray.
-            if (!Physics.Raycast(ray, out RaycastHit hit, interactionRange, interactionMask, QueryTriggerInteraction.Ignore))
+            // The casts start inside the player's CharacterController, which they can report when looking down,
+            // so the player's own hierarchy is skipped explicitly (PhysicsQueries).
+
+            // 1) Precise ray: what is exactly under the crosshair wins (matters for small neighbouring targets).
+            if (PhysicsQueries.RaycastIgnoring(ray, interactionRange, interactionMask, transform, hitBuffer,
+                    out RaycastHit hit))
             {
-                SetFocus(null, null);
-                return;
+                target = hit.collider.GetComponentInParent<IInteractable>();
             }
 
-            // Same collider as last frame: skip the component lookup.
-            if (hit.collider == focusedCollider)
+            // 2) Aim assist: if the ray missed every interactable, sweep a small sphere along it. Only the sphere's
+            // first contact counts, so nothing behind a wall or shelf edge can be selected.
+            if (target == null && aimAssistRadius > 0f &&
+                PhysicsQueries.SphereCastIgnoring(ray, aimAssistRadius, interactionRange, interactionMask, transform,
+                    hitBuffer, out RaycastHit assistHit))
             {
-                return;
+                target = assistHit.collider.GetComponentInParent<IInteractable>();
             }
 
-            SetFocus(hit.collider, hit.collider.GetComponentInParent<IInteractable>());
+            // GetComponentInParent with an interface type does not allocate; at most two lookups per frame.
+            SetFocus(target);
         }
 
-        private void SetFocus(Collider hitCollider, IInteractable target)
+        private void SetFocus(IInteractable target)
         {
-            focusedCollider = hitCollider;
-
             if (ReferenceEquals(target, CurrentTarget))
             {
                 return;

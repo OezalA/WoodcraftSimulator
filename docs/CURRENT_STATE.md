@@ -3,7 +3,8 @@
 _Last updated: 2026-11-13_
 
 ## Current milestone
-Phase 2 (Basic Object Handling): 2a ✅, 2b ✅. Next: **2c** (storage rack + small-item inventory prototype).
+Phase 2 (Basic Object Handling): 2a ✅, 2b ✅, **2c** timber rack implemented, awaiting owner test MT-007.
+Small-item inventory moved to Phase 3 (D-021). After MT-007 passes, Phase 2 is complete.
 Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 
 ## Completed
@@ -23,6 +24,11 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 | MT-001..MT-005 | Passed (owner) | 2026-11-13 |
 | Unity Test Runner EditMode | 31/31 green (owner) | 2026-11-13 |
 | MT-006 Handling | Passed (owner): floor boards reachable after 2.5 m reach, preview green/red correct, R/T work, stacking on boards works | 2026-11-13 |
+| Static compile (2c rack) | 0 errors, 0 warnings (Claude) | 2026-11-13 |
+| MT-007 Timber rack (1st try) | Failed (owner): lowest shelf boards hard to target; boards could not be placed on the floor | 2026-11-13 |
+| Fixes: shelf spacing 0.6 m, aim assist (D-009 update), blocker feedback in HUD (D-022) | Static compile 0 errors (Claude) | 2026-11-13 |
+| MT-007 2nd try + diagnostic log | Floor still refused. Log: casts hit the player's own CharacterController (`surface='Player' 0.09 m`) | 2026-11-13 |
+| Fix: `PhysicsQueries` skip the player (D-023) | Static compile 0 errors (Claude); MT-007 re-run pending | 2026-11-13 |
 
 ## Known issues / limitations
 - **Carry feel not liked yet** (owner, 2026-11-13). Ideas for later: smooth follow (lerp/slerp) instead of rigid
@@ -36,5 +42,5 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 - In-game text is English only.
 
 ## Next recommended action
-1. Phase 2c: simple storage rack (timber rack with placement slots) + small-item inventory prototype → completes Phase 2.
-2. Then Phase 3: measurement (tape measure tool, marking, tolerances).
+1. Owner: rebuild the scene, run MT-007; then commit `develop`, fast-forward `main` → Phase 2 complete.
+2. Phase 3: small-item inventory (first items: tape measure, pencil) + measurement (tape measure tool, marking, tolerances).
