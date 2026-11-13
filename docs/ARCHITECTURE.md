@@ -17,8 +17,7 @@ Assets/
         WoodcraftSimulator.Editor.asmdef   editor-only assembly
         WorkshopSceneBuilder.cs
   InputSystem_Actions.inputactions  project-wide input actions (template asset)
-  Settings/                          URP pipeline assets (template)
-  Scenes/SampleScene.unity           template leftover, unused
+  Settings/                          URP pipeline assets (template; SampleSceneProfile is referenced by PC/Mobile_RPAsset)
 ```
 
 ## Assemblies

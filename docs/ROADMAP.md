@@ -6,7 +6,7 @@ Legend: ✅ done (verified) · 🟡 in progress · ⬜ not started
 
 | Phase | Name | Status |
 |---|---|---|
-| 0 | Environment and Project Foundation | 🟡 |
+| 0 | Environment and Project Foundation | ✅ |
 | 1 | First-Person Workshop Prototype | 🟡 |
 | 2 | Basic Object Handling | ⬜ |
 | 3 | Measurement Prototype | ⬜ |
@@ -28,14 +28,14 @@ Legend: ✅ done (verified) · 🟡 in progress · ⬜ not started
 - [x] Initial folder structure + assembly definitions
 - [x] README, ARCHITECTURE, ROADMAP, CURRENT_STATE, DECISIONS, TESTING
 - [x] Scripts compile in Unity (observed in Editor.log after restructure, 2026-11-13)
-- [ ] Owner confirms no unexplained Console errors
-- [ ] Baseline scene saved (`Workshop.unity` generated and committed)
-- [ ] SampleScene `GameManager` leftover resolved (see CURRENT_STATE known issues)
+- [x] Owner confirms no unexplained Console errors (2026-11-13)
+- [x] Baseline scene saved (`Workshop.unity` generated and committed)
+- [x] SampleScene removed (owner approved, 2026-11-13)
 
 ## Phase 1: First-Person Workshop Prototype
 - [x] Test environment: ground, walls, workbench (generator written)
 - [x] First-person movement, mouse look, gravity, collision (code written)
-- [ ] Manual verification of movement / look / collisions
+- [x] Manual verification of movement / look / collisions (MT-001, MT-002 passed by owner, 2026-11-13)
 - [ ] HUD with UI Toolkit: crosshair
 - [ ] Interaction raycasting (`PlayerInteractor`) + `IInteractable`
 - [ ] Interaction prompt ("[E] ...")
