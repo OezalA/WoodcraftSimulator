@@ -20,12 +20,13 @@ Assets/
     Scripts/
       WoodcraftSimulator.asmdef   runtime assembly "WoodcraftSimulator"
       Domain/                     assembly "WoodcraftSimulator.Domain": plain C#, no UnityEngine
-        Measurement/Length.cs
+        Measurement/Length.cs, TapeMeasure.cs
         Materials/BoardDimensions.cs, WoodSpecies.cs, TimberPiece.cs
         Inventory/InventoryItem.cs, ToolBelt.cs
       Core/PauseController.cs, UserPreferences.cs, BoxMeshBuilder.cs, PhysicsQueries.cs
       Materials/WoodSpeciesDefinition.cs, TimberBoard.cs
       Inventory/ItemDefinition.cs, PickupItem.cs, PlayerToolBelt.cs
+      Tools/IHeldTool.cs (+ HeldToolContext), TapeMeasureTool.cs
       Player/PlayerController.cs
       Interaction/IInteractable.cs, IDescribable.cs, PlayerInteractor.cs
       Handling/Carryable.cs, PlayerCarrier.cs
@@ -77,6 +78,8 @@ Namespaces mirror folders: `WoodcraftSimulator.Player`, `WoodcraftSimulator.Edit
 - Input from project-wide actions: `Player/Move`, `Player/Look`, `Player/Sprint`, `Player/Jump`.
 - Look sensitivity comes from `UserPreferences` (settable at runtime via `LookSensitivity`).
 - Knows nothing about pausing or the cursor: `PauseController` disables it while paused.
+- Precision look: holding `Player/PrecisionLook` (RMB) narrows the FOV to 25° and scales look sensitivity by
+  FOV / normal FOV (D-025).
 
 ### Core (`WoodcraftSimulator.Core`)
 - `PauseController` (own root object `PauseController`): single owner of paused state + cursor lock.
@@ -120,6 +123,9 @@ stores in `UserPreferences`, saved when the menu closes), Quit (exits Play Mode 
 ### Measurement (`WoodcraftSimulator.Measurement`, Domain)
 `Length`: readonly struct, `long` count of 0.1 mm. Exact `+ - *`, comparisons, conversions to mm/cm/m,
 invariant formatting ("2400 mm", "2.5 mm"). Doubles are rounded to the nearest 0.1 mm on the way in.
+`RoundTo(step)`, `Min/Max/Clamp`.
+`TapeMeasure` (static): `Read(pieceLength, pointFromStart, hookedEnd, resolution)`, `DistanceFromHook`, `NearestEnd`;
+`BoardEnd` Start (local −Z) / End (local +Z).
 
 ### Materials
 Domain (`WoodcraftSimulator.Domain`):
@@ -151,6 +157,14 @@ Unity side:
   Hands-full rule: picking up a `Carryable` holsters the tool; slot keys are ignored while carrying. Raises `Changed`.
 - HUD: belt bar at the bottom (`belt` container, slots built in `GameplayHud.Start` from the slot count).
 - No way to put a small item back into the world yet.
+- Equips the `IHeldTool` of the item in hand (`HeldTool`), unequips on holster and while paused (OnDisable).
+
+### Tools (`WoodcraftSimulator.Tools`)
+- `IHeldTool` + `HeldToolContext` (eyes, player root): shared contract for tools in hand (D-025).
+- `TapeMeasureTool`: raycast (player skipped) onto a `TimberBoard`, hook on the nearest end, `TapeMeasure.Read`,
+  blade LineRenderer (child `TapeBlade`, `TapeBlade` Unlit material), `Readout` "623 mm   (board 2400 mm)",
+  exposes `Reading`/`HasReading` for the pencil (3c). Strings rebuilt only when the reading changes.
+- HUD shows the held tool's readout above the crosshair (`tool-readout`).
 
 ### Workshop objects (`WoodcraftSimulator.Workshop`)
 `LightSwitch`: `IInteractable` toggling a list of `Light`s (first test interactable).
@@ -169,5 +183,6 @@ Project-wide asset `Assets/InputSystem_Actions.inputactions` (template), extende
 - `Player/Place`: `<Mouse>/leftButton`, `<Gamepad>/rightTrigger`.
 - `Player/Rotate`: `<Keyboard>/r`, `<Gamepad>/rightShoulder`.
 - `Player/Tilt`: `<Keyboard>/t`, `<Gamepad>/leftShoulder`.
+- `Player/PrecisionLook`: `<Mouse>/rightButton`, `<Gamepad>/leftTrigger`.
 - `Player/ToolSlot1..4`: `<Keyboard>/1..4` (no gamepad binding yet). The template's unused `Previous`/`Next`
   are also bound to 1/2; nothing reads them.

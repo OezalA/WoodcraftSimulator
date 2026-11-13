@@ -4,11 +4,12 @@ using UnityEngine.UIElements;
 using WoodcraftSimulator.Handling;
 using WoodcraftSimulator.Interaction;
 using WoodcraftSimulator.Inventory;
+using WoodcraftSimulator.Tools;
 
 namespace WoodcraftSimulator.UI
 {
     /// <summary>
-    /// In-game HUD (UI Toolkit): crosshair, a single prompt line and the tool belt bar.
+    /// In-game HUD (UI Toolkit): crosshair, a single prompt line, the tool readout and the tool belt bar.
     /// The prompt shows the focused interaction ("[E] Pick up ...") or, while carrying, the carry controls.
     /// Layout lives in UI/Hud.uxml, styling in UI/Hud.uss; this class only toggles state.
     /// </summary>
@@ -30,6 +31,8 @@ namespace WoodcraftSimulator.UI
         private VisualElement crosshair;
         private Label promptLabel;
         private VisualElement beltContainer;
+        private Label readoutLabel;
+        private IHeldTool observedTool;
         private Label[] beltSlots;
         private string[] beltKeyLabels;
         private string interactKeyLabel;
@@ -50,10 +53,11 @@ namespace WoodcraftSimulator.UI
             crosshair = root.Q<VisualElement>("crosshair");
             promptLabel = root.Q<Label>("interaction-prompt");
             beltContainer = root.Q<VisualElement>("belt");
+            readoutLabel = root.Q<Label>("tool-readout");
 
-            if (crosshair == null || promptLabel == null || beltContainer == null)
+            if (crosshair == null || promptLabel == null || beltContainer == null || readoutLabel == null)
             {
-                Debug.LogError($"{nameof(GameplayHud)}: expected elements 'crosshair', 'interaction-prompt' and 'belt' in the UXML.", this);
+                Debug.LogError($"{nameof(GameplayHud)}: expected elements 'crosshair', 'interaction-prompt', 'belt' and 'tool-readout' in the UXML.", this);
                 enabled = false;
                 return;
             }
@@ -68,9 +72,45 @@ namespace WoodcraftSimulator.UI
             interactor.TargetChanged += OnTargetChanged;
             carrier.CarryingChanged += OnCarryingChanged;
             carrier.PlacementStatusChanged += Refresh;
-            toolBelt.Changed += RefreshBelt;
+            toolBelt.Changed += OnBeltChanged;
             Refresh();
+            OnBeltChanged();
+        }
+
+        private void OnBeltChanged()
+        {
             RefreshBelt();
+            ObserveTool(toolBelt.HeldTool);
+        }
+
+        /// <summary>Follows the readout of the tool currently in hand (re-subscribes when the tool changes).</summary>
+        private void ObserveTool(IHeldTool tool)
+        {
+            if (ReferenceEquals(tool, observedTool))
+            {
+                RefreshReadout();
+                return;
+            }
+
+            if (observedTool != null)
+            {
+                observedTool.ReadoutChanged -= RefreshReadout;
+            }
+
+            observedTool = tool;
+            if (observedTool != null)
+            {
+                observedTool.ReadoutChanged += RefreshReadout;
+            }
+
+            RefreshReadout();
+        }
+
+        private void RefreshReadout()
+        {
+            string text = observedTool?.Readout;
+            readoutLabel.text = text ?? string.Empty;
+            readoutLabel.EnableInClassList(HiddenClass, string.IsNullOrEmpty(text));
         }
 
         // The belt's slot count is only known after PlayerToolBelt.Awake; Start runs after every Awake in the scene.
@@ -132,7 +172,13 @@ namespace WoodcraftSimulator.UI
 
             if (toolBelt != null)
             {
-                toolBelt.Changed -= RefreshBelt;
+                toolBelt.Changed -= OnBeltChanged;
+            }
+
+            if (observedTool != null)
+            {
+                observedTool.ReadoutChanged -= RefreshReadout;
+                observedTool = null;
             }
         }
 

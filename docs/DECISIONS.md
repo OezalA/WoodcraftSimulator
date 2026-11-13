@@ -162,3 +162,14 @@ Phase 3a, the small-item inventory moved from Phase 2 (D-021). Domain `ToolBelt`
 - Stored items are deactivated GameObjects (no colliders); only the item in hand is visible, attached to the camera.
 **Deferred:** putting small items back down, gamepad bindings, more than 4 slots, toolboxes/shelves for small items.
 Placeholder item geometry may use scaled cubes (exception to D-016, which is about timber).
+
+## D-025: Tools in hand share one contract; tape hooks on the nearest end; precision look (Accepted, 2026-11-13)
+- **`IHeldTool`** (`Equip(HeldToolContext)`, `Unequip()`, `Readout` + `ReadoutChanged`). `PlayerToolBelt` equips
+  the tool component of the item in hand and unequips on holster/pause. The tool's own `Update` does the work.
+  Every future tool (pencil, saws, drill) follows this shape instead of a per-tool architecture (master prompt §6.3).
+- **Tape measure:** hook on the board end nearest to the player when a board is first aimed at; reading = distance
+  from the hook, clamped to the board, rounded to the 1 mm graduation (`TapeMeasure.Read`, `Length.RoundTo`).
+  Blade drawn as a camera-facing LineRenderer along the top face. HUD readout above the crosshair.
+- **Precision look** (owner-approved): hold RMB / gamepad LT → FOV 70° → 25° (200°/s) and mouse sensitivity scaled
+  by FOV/normal FOV, so millimetres become aimable. Available always, not only with tools.
+**Deferred:** choosing the hook end manually, measuring between arbitrary points, measuring width/thickness.

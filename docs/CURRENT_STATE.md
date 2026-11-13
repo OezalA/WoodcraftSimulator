@@ -4,8 +4,8 @@ _Last updated: 2026-11-13_
 
 ## Current milestone
 Phase 3 (Measurement Prototype) in progress. Plan agreed with the owner (3a tool belt, 3b tape measure + precision look
-mode, 3c pencil marks + tolerance). **3a committed on `develop` but NOT yet tested in Unity** (scene not rebuilt;
-owner asked to continue). `main` stays at Phase 2 until 3a/3b are tested together.
+mode, 3c pencil marks + tolerance). **3a and 3b committed on `develop`, NOT yet tested in Unity** (scene not rebuilt;
+owner asked to continue). `main` stays at Phase 2 until 3a/3b are tested together (MT-008 + MT-009).
 Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 
 ## Completed
@@ -28,6 +28,8 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 | MT-007 Timber rack | Passed on 3rd try (owner), after fixes D-009 update, D-022, D-023 | 2026-11-13 |
 | 3a tool belt: static compile + `dotnet test` | 0 errors; 44/44 tests passed (Claude) | 2026-11-13 |
 | MT-008 Tool belt | Not yet executed | - |
+| 3b tape measure: static compile + `dotnet test` | 0 errors; 68/68 tests passed (Claude) | 2026-11-13 |
+| MT-009 Tape measure + precision look | Not yet executed | - |
 
 ## Known issues / limitations
 - **Carry feel not liked yet** (owner, 2026-11-13). Ideas for later: smooth follow (lerp/slerp) instead of rigid
@@ -41,5 +43,5 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 - In-game text is English only.
 
 ## Next recommended action
-1. Owner: rebuild the scene, run MT-008 (+ Test Runner 44 tests). Then commit `develop`, fast-forward `main`.
-2. Phase 3b: tape measure (nearest-end hook, live mm reading) + precision look mode (RMB: zoom + lower sensitivity).
+1. Owner: rebuild the scene, run MT-008 + MT-009 (+ Test Runner 68 tests). Then fast-forward `main`.
+2. Phase 3c: pencil marks stored on the board (Length from the reference end) + tolerance check (±1 mm).

@@ -168,3 +168,22 @@ Failure → diagnosis:
 - `InvalidOperationException ... Player/ToolSlot1` → Input Actions not reimported (right-click `InputSystem_Actions` > Reimport).
 - No belt bar → HUD lacks the `toolBelt` reference or `belt` element; rebuild the scene; check Console.
 - Pencil hard to target → it is only 7 mm thick; aim assist should still catch it within ~8 cm. Report if not.
+
+### MT-009: Tape measure + precision look
+Precondition: rebuild the scene (MT-001), take the tape measure (MT-008) and hold it (key 1).
+| Step | Expected |
+|---|---|
+| Hold RMB anywhere | View zooms in smoothly (~25° FOV); mouse look slower; release → back to normal |
+| Aim at a spruce board on the rack | Yellow tape blade drawn on the board's top face from the end nearest to you to the crosshair; readout above the crosshair, e.g. `623 mm   (board 2400 mm)` |
+| Move the aim along the board | Reading changes in 1 mm steps; blade follows |
+| Aim beyond the board's far end, still on the board edge | Reading stops at the full length (2400) |
+| Aim at the wall / floor | Readout and blade disappear |
+| Walk to the other end of a board and aim at it again (look away first) | Hook moves to the end now nearest to you |
+| Hold RMB while measuring | Exact millimetres are easy to hit (e.g. 900 mm) |
+| Press 1 (holster) / Esc | Readout and blade disappear |
+| EditMode tests | 68 tests, all green (new: `TapeMeasureTests`, `Length.RoundTo/Clamp`) |
+
+Failure → diagnosis:
+- `InvalidOperationException ... Player/PrecisionLook` → Input Actions not reimported.
+- No readout, no blade → tape lacks `TapeMeasureTool`/`TapeBlade` (rebuild scene) or the board has no `TimberBoard`.
+- Blade pink → `TapeBlade` material missing; rebuild the scene.

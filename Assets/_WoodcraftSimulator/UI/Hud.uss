@@ -42,6 +42,25 @@
     -unity-text-align: middle-center;
 }
 
+/* Tool readout above the crosshair (e.g. "623 mm"). */
+.readout-anchor {
+    position: absolute;
+    left: 0px;
+    right: 0px;
+    bottom: 54%;
+    align-items: center;
+}
+
+.tool-readout {
+    font-size: 30px;
+    -unity-font-style: bold;
+    color: rgb(255, 230, 120);
+    background-color: rgba(0, 0, 0, 0.55);
+    padding: 4px 14px;
+    border-radius: 4px;
+    -unity-text-align: middle-center;
+}
+
 /* Tool belt bar at the bottom center. */
 .belt {
     position: absolute;

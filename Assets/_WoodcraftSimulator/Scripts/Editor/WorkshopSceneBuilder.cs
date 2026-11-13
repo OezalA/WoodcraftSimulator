@@ -170,9 +170,10 @@ namespace WoodcraftSimulator.Editor
             float frontZ = InteriorDepth / 2f - 0.5f - 0.3f; // 10 cm behind the bench's front edge
 
             // Tape measure housing ≈ 70 × 70 × 35 mm, lying on its side; held upright in the hand.
-            CreatePickupItem("TapeMeasure", tools, ItemAssets.TapeMeasure(), new Vector3(0.07f, 0.035f, 0.07f),
+            GameObject tape = CreatePickupItem("TapeMeasure", tools, ItemAssets.TapeMeasure(), new Vector3(0.07f, 0.035f, 0.07f),
                 new Vector3(-0.6f, benchTop, frontZ), 0f, materials.ToolYellow,
                 handPosition: new Vector3(0.2f, -0.17f, 0.38f), handRotation: new Vector3(0f, -20f, 90f));
+            AddTapeMeasureTool(tape, materials.TapeBlade);
 
             // Carpenter's pencil ≈ 175 × 12 × 7 mm (flat), lying across the bench; held pointing forward.
             CreatePickupItem("CarpenterPencil", tools, ItemAssets.CarpenterPencil(), new Vector3(0.012f, 0.007f, 0.175f),
@@ -180,7 +181,27 @@ namespace WoodcraftSimulator.Editor
                 handPosition: new Vector3(0.16f, -0.14f, 0.32f), handRotation: new Vector3(10f, -15f, 0f));
         }
 
-        private static void CreatePickupItem(string name, Transform parent, ItemDefinition definition, Vector3 size,
+        /// <summary>Tool behaviour + the extended blade (LineRenderer on a child: one Renderer per GameObject).</summary>
+        private static void AddTapeMeasureTool(GameObject tape, Material bladeMaterial)
+        {
+            var bladeObject = new GameObject("TapeBlade");
+            bladeObject.transform.SetParent(tape.transform, false);
+
+            var blade = bladeObject.AddComponent<LineRenderer>();
+            blade.useWorldSpace = true;
+            blade.positionCount = 2;
+            blade.widthMultiplier = 0.016f; // ~16 mm wide blade (real tapes: 16–32 mm)
+            blade.alignment = LineAlignment.View; // always faces the camera, independent of the hand's rotation
+            blade.sharedMaterial = bladeMaterial;
+            blade.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            blade.receiveShadows = false;
+            blade.enabled = false;
+
+            var tool = tape.AddComponent<WoodcraftSimulator.Tools.TapeMeasureTool>();
+            SetReference(tool, "blade", blade);
+        }
+
+        private static GameObject CreatePickupItem(string name, Transform parent, ItemDefinition definition, Vector3 size,
             Vector3 surfacePosition, float yawDegrees, Material material, Vector3 handPosition, Vector3 handRotation)
         {
             // Placeholder geometry: a scaled cube is acceptable for small props (unlike timber, D-016).
@@ -193,6 +214,7 @@ namespace WoodcraftSimulator.Editor
             serialized.FindProperty("handPosition").vector3Value = handPosition;
             serialized.FindProperty("handRotation").vector3Value = handRotation;
             serialized.ApplyModifiedPropertiesWithoutUndo();
+            return item;
         }
 
         private static void BuildWorkbenchLamp(Transform parent, Material switchMaterial)
@@ -546,6 +568,24 @@ namespace WoodcraftSimulator.Editor
             public Material Steel { get; } = GetOrCreate("Steel", new Color(0.36f, 0.38f, 0.42f));
             public Material ToolYellow { get; } = GetOrCreate("ToolYellow", new Color(0.95f, 0.78f, 0.10f));
             public Material PencilRed { get; } = GetOrCreate("PencilRed", new Color(0.75f, 0.15f, 0.12f));
+            public Material TapeBlade { get; } = GetOrCreateUnlit("TapeBlade", new Color(1f, 0.85f, 0.15f));
+
+            /// <summary>Opaque URP Unlit: flat color, unaffected by lighting (good for thin overlays like a tape blade).</summary>
+            private static Material GetOrCreateUnlit(string name, Color color)
+            {
+                string path = $"{MaterialFolder}/{name}.mat";
+                var material = AssetDatabase.LoadAssetAtPath<Material>(path);
+
+                if (material == null)
+                {
+                    material = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
+                    AssetDatabase.CreateAsset(material, path);
+                }
+
+                material.SetColor("_BaseColor", color);
+                EditorUtility.SetDirty(material);
+                return material;
+            }
             public Material Lumber { get; } = GetOrCreate("Lumber", new Color(0.86f, 0.73f, 0.53f));
             public Material PlacementPreview { get; } = GetOrCreateTransparentUnlit("PlacementPreview",
                 new Color(0.3f, 1f, 0.4f, 0.35f));

@@ -2,6 +2,7 @@ using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using WoodcraftSimulator.Handling;
+using WoodcraftSimulator.Tools;
 
 namespace WoodcraftSimulator.Inventory
 {
@@ -18,6 +19,11 @@ namespace WoodcraftSimulator.Inventory
 
         private InputAction[] slotActions;
         private PickupItem[] storedObjects;
+        private HeldToolContext toolContext;
+        private PickupItem equippedObject;
+
+        /// <summary>The tool behaviour of the item in hand, or null (empty hands or an item without one).</summary>
+        public IHeldTool HeldTool { get; private set; }
 
         /// <summary>Domain state (contents and selection). Created in Awake.</summary>
         public ToolBelt Belt { get; private set; }
@@ -40,6 +46,7 @@ namespace WoodcraftSimulator.Inventory
 
             Belt = new ToolBelt(slotCount);
             storedObjects = new PickupItem[slotCount];
+            toolContext = new HeldToolContext(cameraTransform, transform);
             Belt.Changed += OnBeltChanged;
 
             slotActions = new InputAction[slotCount];
@@ -51,6 +58,11 @@ namespace WoodcraftSimulator.Inventory
 
             carrier.CarryingChanged += OnCarryingChanged;
         }
+
+        // Paused (PauseController disables this component): the tool in hand must stop working too.
+        private void OnEnable() => HeldTool?.Equip(toolContext);
+
+        private void OnDisable() => HeldTool?.Unequip();
 
         private void OnDestroy()
         {
@@ -132,7 +144,23 @@ namespace WoodcraftSimulator.Inventory
                 }
             }
 
+            UpdateEquippedTool();
             Changed?.Invoke();
+        }
+
+        /// <summary>Unequips the previous tool and equips the one now in hand (if the item has tool behaviour).</summary>
+        private void UpdateEquippedTool()
+        {
+            PickupItem inHand = ItemInHand;
+            if (inHand == equippedObject)
+            {
+                return;
+            }
+
+            HeldTool?.Unequip();
+            equippedObject = inHand;
+            HeldTool = inHand != null ? inHand.GetComponent<IHeldTool>() : null;
+            HeldTool?.Equip(toolContext);
         }
     }
 }

@@ -41,6 +41,33 @@ namespace WoodcraftSimulator.Measurement
 
         public Length Abs() => new Length(Math.Abs(units));
 
+        /// <summary>
+        /// Rounds to the nearest multiple of <paramref name="step"/> (midpoints away from zero),
+        /// e.g. a tape measure graduated in 1 mm reads 623.5 mm as 624 mm.
+        /// </summary>
+        public Length RoundTo(Length step)
+        {
+            if (step.units <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(step), step, "Rounding step must be positive.");
+            }
+
+            long quotient = units / step.units;
+            long remainder = units % step.units; // same sign as units
+            if (Math.Abs(remainder) * 2 >= step.units)
+            {
+                quotient += Math.Sign(units);
+            }
+
+            return new Length(checked(quotient * step.units));
+        }
+
+        public static Length Min(Length a, Length b) => a <= b ? a : b;
+
+        public static Length Max(Length a, Length b) => a >= b ? a : b;
+
+        public static Length Clamp(Length value, Length min, Length max) => Max(min, Min(value, max));
+
         public static Length operator +(Length a, Length b) => new Length(checked(a.units + b.units));
 
         public static Length operator -(Length a, Length b) => new Length(checked(a.units - b.units));

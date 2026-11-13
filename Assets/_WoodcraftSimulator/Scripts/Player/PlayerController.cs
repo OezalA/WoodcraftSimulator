@@ -26,6 +26,13 @@ namespace WoodcraftSimulator.Player
         [Header("Look")]
         [SerializeField, Range(0f, 90f)] private float maxPitch = 85f;
 
+        [Header("Precision look (hold Player/PrecisionLook)")]
+        [Tooltip("Field of view while looking closely, in degrees. Sensitivity scales with the field of view.")]
+        [SerializeField, Range(5f, 70f)] private float precisionFieldOfView = 25f;
+
+        [Tooltip("How fast the field of view changes, in degrees per second.")]
+        [SerializeField, Min(1f)] private float fieldOfViewSpeed = 200f;
+
         // Small constant downward speed while grounded so isGrounded stays reliable on slopes/steps.
         private const float GroundedStickVelocity = -2f;
 
@@ -34,7 +41,10 @@ namespace WoodcraftSimulator.Player
         private InputAction lookAction;
         private InputAction sprintAction;
         private InputAction jumpAction;
+        private InputAction precisionLookAction;
 
+        private Camera viewCamera;
+        private float normalFieldOfView;
         private float pitch;
         private float verticalVelocity;
         private float lookSensitivity;
@@ -64,18 +74,40 @@ namespace WoodcraftSimulator.Player
             lookAction = actions.FindAction("Player/Look", throwIfNotFound: true);
             sprintAction = actions.FindAction("Player/Sprint", throwIfNotFound: true);
             jumpAction = actions.FindAction("Player/Jump", throwIfNotFound: true);
+            precisionLookAction = actions.FindAction("Player/PrecisionLook", throwIfNotFound: true);
+
+            viewCamera = cameraTransform.GetComponent<Camera>();
+            normalFieldOfView = viewCamera != null ? viewCamera.fieldOfView : 70f;
         }
 
         private void Update()
         {
+            HandlePrecisionLook();
             HandleLook();
             HandleMovement();
+        }
+
+        /// <summary>
+        /// Holding the button narrows the field of view (like leaning in to read a tape measure) so millimetres
+        /// become aimable. While paused this component is disabled, so the zoom simply freezes.
+        /// </summary>
+        private void HandlePrecisionLook()
+        {
+            if (viewCamera == null)
+            {
+                return;
+            }
+
+            float target = precisionLookAction.IsPressed() ? precisionFieldOfView : normalFieldOfView;
+            viewCamera.fieldOfView = Mathf.MoveTowards(viewCamera.fieldOfView, target, fieldOfViewSpeed * Time.deltaTime);
         }
 
         private void HandleLook()
         {
             // Mouse delta is already "per frame", so it must NOT be multiplied by Time.deltaTime.
-            Vector2 delta = lookAction.ReadValue<Vector2>() * lookSensitivity;
+            // Scaling by the current field of view keeps the on-screen speed constant while zoomed in.
+            float zoomFactor = viewCamera != null ? viewCamera.fieldOfView / normalFieldOfView : 1f;
+            Vector2 delta = lookAction.ReadValue<Vector2>() * (lookSensitivity * zoomFactor);
 
             transform.Rotate(0f, delta.x, 0f, Space.Self);
 
