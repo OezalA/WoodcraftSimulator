@@ -7,22 +7,23 @@ Never record a test as passed unless it was executed and the result observed (ma
 |---|---|---|
 | Static inspection | Code review against installed package versions | Claude |
 | Unity compilation | Focus the Unity Editor → it recompiles; check the Console, or `%LOCALAPPDATA%\Unity\Editor\Editor.log` for `error CS` | Owner triggers, Claude can read the log |
-| EditMode tests | *Window > General > Test Runner > EditMode > Run All* | Owner (or Claude via batch mode when the Editor is closed) |
+| EditMode tests (in Unity) | *Window > General > Test Runner > EditMode > Run All* | Owner |
+| EditMode tests (outside Unity) | `dotnet test tools/DomainTests` (domain tests only, D-015) | Claude / owner, Editor may stay open |
 | PlayMode tests | Test Runner > PlayMode | Owner |
 | Manual gameplay | Procedures below | Owner |
 
-EditMode tests start in Phase 3 (assembly `WoodcraftSimulator.Tests.EditMode` under `Assets/_WoodcraftSimulator/Tests/EditMode/`).
+## EditMode tests
+Assembly `WoodcraftSimulator.Tests.EditMode` in `Assets/_WoodcraftSimulator/Tests/EditMode/`, references only
+`WoodcraftSimulator.Domain` + NUnit. Current suites: `LengthTests`, `TimberTests`.
 
-Running tests from the command line (Editor must be **closed**, since a project can be open in only one Editor):
+Running them inside Unity from the command line (Editor must be **closed**: a project can be open in only one Editor):
 ```
 "C:\Program Files\Unity\Hub\Editor\6000.3.28f1\Editor\Unity.exe" -batchmode -projectPath . -runTests -testPlatform EditMode -testResults TestResults/editmode.xml -logFile -
 ```
 
-## Static compile check (Claude, no Editor needed)
-Copy `WoodcraftSimulator.csproj` and `WoodcraftSimulator.Editor.csproj` to a temp folder, replace the
-`<Compile Include>` items with all current `.cs` files (absolute paths), make `<HintPath>Library\…` absolute,
-replace `ProjectReference Unity.InputSystem.csproj` with a `Reference` to `Library/ScriptAssemblies/Unity.InputSystem.dll`,
-then `dotnet build WoodcraftSimulator.Editor.csproj`. See D-010 for what this does and does not prove.
+## Static compile check (no Editor needed)
+`sh tools/static-build.sh` (Git Bash): builds copies of the Unity-generated `.csproj` files with all current
+`.cs` files against the real Unity DLLs. See D-010 for what this does and does not prove.
 
 ## Manual test procedures
 
@@ -86,3 +87,24 @@ Failure → diagnosis:
   with `InputSystemUIInputModule` may be required).
 - Slider label unreadable / unstyled → theme missing on `GameplayPanelSettings`.
 - Game stays frozen after exiting Play Mode → report (PauseController.OnDestroy resets timeScale).
+
+### MT-005: Timber boards and species data
+Precondition: Unity has compiled (Console clean). Rebuild the scene (MT-001).
+| Step | Expected |
+|---|---|
+| Project window: `Assets/_WoodcraftSimulator/ScriptableObjects/WoodSpecies/` | 7 assets: Beech, Douglas_fir, Larch, Oak, Pine, Spruce, Walnut; Inspector shows id, names, density, color, data notes |
+| *Window > General > Test Runner > EditMode > Run All* | 31 tests, all green (`LengthTests`, `TimberTests`) |
+| Scene view / Hierarchy `Environment/Workshop/Timber` | 9 boards: 3 spruce stacked + larch + Douglas fir on the floor along the left wall; pine, oak, walnut, beech on the bench; different colors per species |
+| Select `Spruce_2400x95x45_1` | Transform scale (1, 1, 1); BoxCollider size (0.095, 0.045, 2.4); Rigidbody mass ≈ 4.617 |
+| Play, walk to the boards | Boards rest still (no jitter, no sinking, no falling through); player cannot walk through them but can step over the floor stack |
+
+Failure → diagnosis:
+- Console `TimberBoard ... wood species is not assigned` → species assets missing; rebuild the scene.
+- Pink boards → `Lumber` material missing/invalid; rebuild the scene.
+- Boards visible in the Scene view but invisible/inside-out in Play → mesh winding issue in `BoxMeshBuilder`; report it.
+- Test Runner shows no tests → test assembly not compiled (check Console) or *UNITY_INCLUDE_TESTS* not defined.
+
+## Tips for visual checks in the Editor
+- Game view `Scale` slider must be at **1x**; higher values zoom (upscale) the image and make 3D and UI text blurry.
+- Use a fixed resolution (Game view resolution dropdown, e.g. *Full HD (1920x1080)*) or *Play Maximized*
+  so UI scaling matches the 1080p reference of `GameplayPanelSettings`.

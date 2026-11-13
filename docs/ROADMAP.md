@@ -8,7 +8,7 @@ Legend: ✅ done (verified) · 🟡 in progress · ⬜ not started
 |---|---|---|
 | 0 | Environment and Project Foundation | ✅ |
 | 1 | First-Person Workshop Prototype | ✅ |
-| 2 | Basic Object Handling | ⬜ |
+| 2 | Basic Object Handling | 🟡 |
 | 3 | Measurement Prototype | ⬜ |
 | 4 | Cutting Prototype | ⬜ |
 | 5 | Basic Assembly | ⬜ |
@@ -42,3 +42,12 @@ Legend: ✅ done (verified) · 🟡 in progress · ⬜ not started
 - [x] One basic interactable object: workbench lamp `LightSwitch`
 - [x] Pause and cursor management: `PauseController` + UI Toolkit `PauseMenu` (MT-004 passed, 2026-11-13)
 - [x] Mouse sensitivity setting in the pause menu, persisted
+
+## Phase 2: Basic Object Handling
+Split into steps: **2a** timber data + board, **2b** handling, **2c** storage + inventory.
+- [x] 2a: `Length` (0.1 mm), `BoardDimensions`, `WoodSpecies`, `TimberPiece` + EditMode tests (31/31 green in dotnet test and Unity Test Runner)
+- [x] 2a: Wood species definitions (7 species, approximate densities, D-017)
+- [x] 2a: `TimberBoard` generated from data (mesh, collider, mass, color); boards in the workshop (MT-005 passed, 2026-11-13)
+- [ ] 2b: Pick up, carry, rotate, place a board; placement preview with collision check (invalid placement prevented)
+- [ ] 2c: Simple storage rack
+- [ ] 2c: Small-item inventory prototype

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -6,6 +7,7 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
 using WoodcraftSimulator.Core;
 using WoodcraftSimulator.Interaction;
+using WoodcraftSimulator.Materials;
 using WoodcraftSimulator.Player;
 using WoodcraftSimulator.UI;
 using WoodcraftSimulator.Workshop;
@@ -67,12 +69,13 @@ namespace WoodcraftSimulator.Editor
 
             EnsureFolder(Path.GetDirectoryName(ScenePath).Replace('\\', '/'));
             EnsureFolder(MaterialFolder);
+            EnsureFolder(WoodSpeciesAssets.Folder);
 
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
             ConfigureDefaultObjects(scene);
 
             var materials = new GreyboxMaterials();
-            BuildEnvironment(materials);
+            BuildEnvironment(materials, WoodSpeciesAssets.EnsureDefaults());
             GameObject player = BuildPlayer();
             PanelSettings panelSettings = GetOrCreatePanelSettings(theme);
             BuildHud(player.GetComponent<PlayerInteractor>(), hudLayout, panelSettings);
@@ -103,7 +106,8 @@ namespace WoodcraftSimulator.Editor
             }
         }
 
-        private static void BuildEnvironment(GreyboxMaterials materials)
+        private static void BuildEnvironment(GreyboxMaterials materials,
+            IReadOnlyDictionary<string, WoodSpeciesDefinition> species)
         {
             var environment = new GameObject("Environment").transform;
 
@@ -124,7 +128,7 @@ namespace WoodcraftSimulator.Editor
 
             BuildWalls(workshop, materials.Wall);
             BuildWorkbench(workshop, materials.Workbench);
-            BuildLumberStack(workshop, materials.Lumber);
+            BuildTimber(workshop, materials.Lumber, species);
             BuildWorkbenchLamp(workshop, materials.Wall);
         }
 
@@ -218,23 +222,69 @@ namespace WoodcraftSimulator.Editor
             }
         }
 
-        private static void BuildLumberStack(Transform parent, Material material)
+        private static void BuildTimber(Transform parent, Material material,
+            IReadOnlyDictionary<string, WoodSpeciesDefinition> species)
         {
-            // Placeholder only (no gameplay yet): three 2400 x 95 x 45 mm boards along the left wall.
-            const float length = 2.4f;
-            const float width = 0.095f;
-            const float thickness = 0.045f;
+            var timber = new GameObject("Timber").transform;
+            timber.SetParent(parent, false);
 
-            var stack = new GameObject("LumberStack_Placeholder").transform;
-            stack.SetParent(parent, false);
-            stack.localPosition = new Vector3(-InteriorWidth / 2f + 0.4f, FloorTop, 0f);
-
+            // Construction timber stacked on the floor along the left wall (length along Z).
+            float wallX = -InteriorWidth / 2f;
             for (int i = 0; i < 3; i++)
             {
-                CreateBox($"Board_{i + 1}", stack,
-                    new Vector3(0f, thickness / 2f + i * thickness, 0f),
-                    new Vector3(width, thickness, length), material);
+                CreateBoard($"Spruce_2400x95x45_{i + 1}", timber, species["spruce"], 2400f, 95f, 45f,
+                    new Vector3(wallX + 0.4f, FloorTop + i * 0.046f, 0f), 0f, material);
             }
+
+            CreateBoard("Larch_2000x145x28", timber, species["larch"], 2000f, 145f, 28f,
+                new Vector3(wallX + 0.7f, FloorTop, 0f), 0f, material);
+            CreateBoard("DouglasFir_2400x145x45", timber, species["douglas-fir"], 2400f, 145f, 45f,
+                new Vector3(wallX + 1.0f, FloorTop, 0f), 0f, material);
+
+            // Smaller boards on the workbench (length along X, yaw 90°). Bench surface: FloorTop + 0.9 m.
+            float benchTop = FloorTop + 0.9f;
+            float benchZ = InteriorDepth / 2f - 0.5f;
+            CreateBoard("Pine_1000x200x18", timber, species["pine"], 1000f, 200f, 18f,
+                new Vector3(-0.45f, benchTop, benchZ - 0.05f), 90f, material);
+            CreateBoard("Oak_600x120x22", timber, species["oak"], 600f, 120f, 22f,
+                new Vector3(0.5f, benchTop, benchZ - 0.2f), 90f, material);
+            CreateBoard("Walnut_400x100x25", timber, species["walnut"], 400f, 100f, 25f,
+                new Vector3(0.5f, benchTop, benchZ - 0.02f), 90f, material);
+            CreateBoard("Beech_500x45x45", timber, species["beech"], 500f, 45f, 45f,
+                new Vector3(0.5f, benchTop, benchZ + 0.12f), 90f, material);
+        }
+
+        /// <summary>
+        /// Creates a <see cref="TimberBoard"/> resting on a surface. <paramref name="surfacePosition"/> is the point
+        /// on the supporting surface below the board's center.
+        /// </summary>
+        private static void CreateBoard(string name, Transform parent, WoodSpeciesDefinition species,
+            float lengthMm, float widthMm, float thicknessMm, Vector3 surfacePosition, float yawDegrees, Material material)
+        {
+            var board = new GameObject(name);
+            board.transform.SetParent(parent, false);
+            // +1 mm so the physics engine doesn't start with overlapping colliders.
+            board.transform.localPosition = surfacePosition + Vector3.up * (thicknessMm / 2000f + 0.001f);
+            board.transform.localRotation = Quaternion.Euler(0f, yawDegrees, 0f);
+
+            board.AddComponent<MeshFilter>();
+            board.AddComponent<MeshRenderer>().sharedMaterial = material;
+            board.AddComponent<BoxCollider>();
+
+            var body = board.AddComponent<Rigidbody>();
+            body.interpolation = RigidbodyInterpolation.Interpolate;
+            body.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
+
+            var timberBoard = board.AddComponent<TimberBoard>();
+            var serialized = new SerializedObject(timberBoard);
+            serialized.FindProperty("species").objectReferenceValue = species;
+            serialized.FindProperty("lengthMillimeters").floatValue = lengthMm;
+            serialized.FindProperty("widthMillimeters").floatValue = widthMm;
+            serialized.FindProperty("thicknessMillimeters").floatValue = thicknessMm;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+
+            // Generate mesh/collider now so the board is visible in the Editor; Awake regenerates at runtime.
+            timberBoard.Rebuild();
         }
 
         private static GameObject BuildPlayer()

@@ -19,6 +19,9 @@
 - Project-wide actions = `Assets/InputSystem_Actions.inputactions` → `InputSystem.actions.FindAction("Player/Move")`.
 - The Unity Editor is usually open during sessions and recompiles on focus. Check compilation results in
   `%LOCALAPPDATA%\Unity\Editor\Editor.log` (search `error CS`, `WoodcraftSimulator.dll`).
+- Verify without the Editor: `sh tools/static-build.sh` (compile vs Unity DLLs) and
+  `dotnet test tools/DomainTests` (runs EditMode domain tests). Report them as such, not as Unity results.
+- Domain code (`Scripts/Domain`, assembly `WoodcraftSimulator.Domain`) must not use UnityEngine; C# 9 only (no records/init).
 - Git LFS enabled for binary assets. Remote `origin` = https://github.com/OezalA/WoodcraftSimulator (**public**).
 - Branch workflow: work on `feature/...` branches, push, merge into `main` via PR. `origin/main` started at the
   template commit; `feature/phase-0-1-foundation` holds Phase 0 + Phase 1 interaction work.

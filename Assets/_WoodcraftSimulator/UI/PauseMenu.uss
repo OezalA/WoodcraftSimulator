@@ -26,17 +26,30 @@
     margin-bottom: 24px;
 }
 
-.pause-button {
+/* Selectors are scoped to .pause-panel (two classes) so they win over the default theme's
+   single-class rules such as .unity-button and .unity-base-field__label. Font size is not inherited
+   by the slider's internal label/input elements, so they are targeted directly. */
+.pause-panel .pause-button {
     height: 44px;
     font-size: 20px;
     margin-top: 6px;
     margin-bottom: 6px;
 }
 
-.pause-slider {
+.pause-panel .pause-slider {
     margin-top: 18px;
     margin-bottom: 18px;
+}
+
+.pause-panel .unity-base-field__label {
+    font-size: 18px;
+    min-width: 190px;
+    color: rgb(60, 45, 30);
+}
+
+.pause-panel .unity-base-text-field__input {
     font-size: 16px;
+    min-width: 56px;
 }
 
 .hidden {

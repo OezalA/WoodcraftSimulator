@@ -23,6 +23,7 @@ Unity world space uses meters (physics default). Authoritative timber dimensions
 measurements are stored as integer millimeters, converted to meters only for presentation.
 **Why:** avoids float drift through repeated cuts and conversions (master prompt §6.4).
 **Open question (Phase 3):** whether 1 mm resolution is enough (e.g. kerf 2.5 mm). Alternative: 0.1 mm integer units.
+**Update:** resolution changed to 0.1 mm, see D-014.
 
 ## D-005: CharacterController for the player (Accepted, 2026-11-13)
 Per master prompt §6.1. Kinematic, predictable, cheap; no fighting with rigidbody physics.
@@ -55,7 +56,7 @@ In-game text is English for now; localization is out of scope until the UI grows
 
 ## D-010: Static compile check outside Unity (Accepted, 2026-11-13)
 Claude verifies code with `dotnet build` on temporary copies of the Unity-generated `.csproj` files
-(in the session scratchpad, new files added, `HintPath`s made absolute). This catches C# and API errors
+(new files added, `HintPath`s made absolute), scripted in `tools/static-build.sh`. This catches C# and API errors
 against the real Unity DLLs without touching the open Editor. It does **not** replace Unity compilation
 (Unity's own compiler, ILPP, asmdef rules) or play testing.
 
@@ -74,3 +75,33 @@ a separate versioned save system (master prompt §6.16). `UserPreferences` holds
 ## D-013: Public GitHub repo, feature branches + PRs (Accepted, 2026-11-13)
 `origin` = https://github.com/OezalA/WoodcraftSimulator (public, owner's choice). `main` starts at the template
 commit; work happens on `feature/...` branches merged via pull requests.
+
+## D-014: `Length` with 0.1 mm integer resolution (Accepted, 2026-11-13, refines D-004)
+`Length` stores a `long` count of tenths of a millimeter. 1 mm was too coarse for saw kerf (≈ 1.5–3 mm) and
+fractional measurements; 0.1 mm is finer than any tape measure reading and still exact under addition.
+Doubles (from UI or Unity) are rounded to the nearest 0.1 mm (midpoint away from zero) when converted in.
+**Consequence:** all domain lengths use `Length`; float meters only at the Unity boundary.
+
+## D-015: Pure C# Domain assembly, tests runnable outside Unity (Accepted, 2026-11-13)
+`WoodcraftSimulator.Domain` has `noEngineReferences: true`, so the compiler rejects any `UnityEngine` use in
+game rules. EditMode tests reference only this assembly + NUnit, which lets them run both in Unity's Test Runner
+and with `dotnet test tools/DomainTests` (C# 9 like Unity). This is how Claude executes tests while the Editor is open.
+**Consequence:** domain code can't use `Mathf`, `Vector3`, `Debug` etc.; conversions live in the Unity layer.
+Avoid C# features Unity lacks (`record`, `init` need `IsExternalInit`).
+
+## D-016: Timber geometry generated from data; dynamic rigidbodies for now (Accepted, 2026-11-13)
+`TimberBoard` generates its mesh and collider from `TimberPiece.Dimensions`; transform scale stays 1
+(scaled transforms complicate child objects, physics and later cutting). Color per species via
+`MaterialPropertyBlock` on one shared material (no material per board). Boards are dynamic rigidbodies with
+mass from density × volume. Phase 2b will decide the carried/placed physics states.
+**Alternative considered:** a unit cube scaled by the transform (simpler, but scale leaks into everything).
+
+## D-017: Initial species data are approximate placeholders (Accepted, 2026-11-13)
+Densities (kg/m³, ~12 % MC): spruce 450, pine 520, oak 710, beech 720, walnut 640, larch 590, Douglas fir 530.
+These are rounded typical values from general knowledge, **not verified against a cited source**; each asset's
+`dataNotes` says so (master prompt §15.19). Verify before any feature claims real-world accuracy.
+
+## D-018: MSAA 4x on the PC quality level (Accepted, 2026-11-13)
+The template's `PC_RPAsset` had MSAA off, so geometry edges were jagged. `m_MSAA` set to 4 (Forward+ supports MSAA).
+Moderate GPU cost; revisit with profiling in Phase 13 (alternatives: SMAA/FXAA post-process AA, or MSAA 2x).
+Note: softness seen in the Editor was mainly the Game view zoom (`Scale` > 1x), not the render resolution.

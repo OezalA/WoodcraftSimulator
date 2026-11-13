@@ -2,7 +2,8 @@
     "name": "WoodcraftSimulator.Editor",
     "rootNamespace": "WoodcraftSimulator.Editor",
     "references": [
-        "WoodcraftSimulator"
+        "WoodcraftSimulator",
+        "WoodcraftSimulator.Domain"
     ],
     "includePlatforms": [
         "Editor"

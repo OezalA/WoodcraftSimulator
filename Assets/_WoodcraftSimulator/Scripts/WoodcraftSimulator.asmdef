@@ -2,7 +2,8 @@
     "name": "WoodcraftSimulator",
     "rootNamespace": "WoodcraftSimulator",
     "references": [
-        "Unity.InputSystem"
+        "Unity.InputSystem",
+        "WoodcraftSimulator.Domain"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

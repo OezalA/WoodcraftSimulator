@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Runs the WoodcraftSimulator.Domain EditMode tests outside Unity (docs/DECISIONS.md D-015).
+    Usage (from the repository root):  dotnet test tools/DomainTests
+    The same test files also run inside Unity (Window > General > Test Runner > EditMode).
+    LangVersion matches Unity 6's C# 9; Domain code must not reference UnityEngine.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../Assets/_WoodcraftSimulator/Scripts/Domain/**/*.cs" />
+    <Compile Include="../../Assets/_WoodcraftSimulator/Tests/EditMode/**/*.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="NUnit" Version="3.14.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
+  </ItemGroup>
+</Project>

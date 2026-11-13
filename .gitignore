@@ -52,3 +52,10 @@ desktop.ini
 
 # Test results (command-line runs)
 /TestResults/
+
+# Local tool outputs
+/tools/.static-build/
+/tools/**/bin/
+/tools/**/obj/
+# Hand-written tool projects are source, unlike the Unity-generated *.csproj above
+!/tools/**/*.csproj
