@@ -9,7 +9,8 @@ namespace WoodcraftSimulator.Inventory
     /// <summary>
     /// Scene side of the player's <see cref="ToolBelt"/>: stores <see cref="PickupItem"/> objects, selects them
     /// with the ToolSlot1..N keys, and shows the selected one in hand.
-    /// Hands-full rule: picking up a large object holsters the tool, and slots can't be switched while carrying.
+    /// Hands-full rule: picking up a large object holsters the tool, and slots can't be switched while carrying;
+    /// the tool comes back into the hand when the object is put down.
     /// </summary>
     public sealed class PlayerToolBelt : MonoBehaviour
     {
@@ -21,6 +22,7 @@ namespace WoodcraftSimulator.Inventory
         private PickupItem[] storedObjects;
         private HeldToolContext toolContext;
         private PickupItem equippedObject;
+        private int slotBeforeCarry = ToolBelt.NoSelection;
 
         /// <summary>The tool behaviour of the item in hand, or null (empty hands or an item without one).</summary>
         public IHeldTool HeldTool { get; private set; }
@@ -117,7 +119,8 @@ namespace WoodcraftSimulator.Inventory
             pickup.SetStored(true);
             pickup.gameObject.SetActive(false);
 
-            if (Belt.SelectedSlot == ToolBelt.NoSelection && !carrier.IsCarrying)
+            // The item just taken goes straight into the hand (the previous one goes onto the belt).
+            if (!carrier.IsCarrying)
             {
                 Belt.Select(slot);
             }
@@ -129,7 +132,18 @@ namespace WoodcraftSimulator.Inventory
         {
             if (isCarrying)
             {
+                // Hands full: holster, but remember the tool so it comes back after the object is put down.
+                slotBeforeCarry = Belt.SelectedSlot;
                 Belt.Holster();
+            }
+            else if (slotBeforeCarry != ToolBelt.NoSelection)
+            {
+                int slot = slotBeforeCarry;
+                slotBeforeCarry = ToolBelt.NoSelection;
+                if (Belt.SelectedSlot == ToolBelt.NoSelection && Belt.GetItem(slot) != null)
+                {
+                    Belt.Select(slot);
+                }
             }
         }
 
