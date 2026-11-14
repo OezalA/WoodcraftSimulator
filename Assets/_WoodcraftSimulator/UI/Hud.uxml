@@ -11,5 +11,9 @@
         </ui:VisualElement>
         <!-- Tool belt slots are created from code (slot count comes from PlayerToolBelt). -->
         <ui:VisualElement name="belt" class="belt" picking-mode="Ignore" />
+        <!-- Quality report of a completed assembly, shown for a while on the right. -->
+        <ui:VisualElement name="report-anchor" class="report-anchor" picking-mode="Ignore">
+            <ui:Label name="assembly-report" class="assembly-report hidden" picking-mode="Ignore" text="" />
+        </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

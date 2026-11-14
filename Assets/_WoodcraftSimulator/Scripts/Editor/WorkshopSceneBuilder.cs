@@ -101,6 +101,7 @@ namespace WoodcraftSimulator.Editor
             EnsureFolder(ItemAssets.Folder);
             EnsureFolder(SawAssets.Folder);
             EnsureFolder(BlueprintAssets.Folder);
+            EnsureFolder(BlueprintAssets.FastenerFolder);
 
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
             ConfigureDefaultObjects(scene);
@@ -306,6 +307,18 @@ namespace WoodcraftSimulator.Editor
             var station = table.gameObject.AddComponent<AssemblyStation>();
             SetReference(station, "blueprint", BlueprintAssets.Frame600x300());
             SetReference(station, "ghostMaterial", materials.BlueprintGhost);
+            SetReference(station, "pointMarkerMaterial", materials.CutGuide);
+            SetReference(station, "screwHeadMaterial", materials.Steel);
+            SetReference(station, "waste", Object.FindFirstObjectByType<WorkshopWaste>());
+
+            // Cordless drill-driver lying on the table beside the frame (placeholder box: 200 mm tall body,
+            // 70 mm wide, 160 mm long), held upright and pointing forward. Not a child of the station, so aiming at
+            // it is aiming at a pickup, not at the assembly.
+            GameObject drill = CreatePickupItem("DrillDriver", parent, ItemAssets.DrillDriver(),
+                new Vector3(0.2f, 0.07f, 0.16f), table.localPosition + new Vector3(0.45f, 0f, -0.27f), 0f,
+                materials.DrillTeal, handPosition: new Vector3(0.2f, -0.2f, 0.42f), handRotation: new Vector3(0f, -8f, 90f));
+            var drillTool = drill.AddComponent<DrillDriverTool>();
+            SetReference(drillTool, "fastener", BlueprintAssets.WoodScrew5x80());
         }
 
         private static void BuildWorkbenchLamp(Transform parent, Material switchMaterial)
@@ -566,6 +579,18 @@ namespace WoodcraftSimulator.Editor
             SetReference(hud, "interactor", interactor);
             SetReference(hud, "carrier", carrier);
             SetReference(hud, "toolBelt", carrier.GetComponent<PlayerToolBelt>());
+
+            // Completion reports of every assembly station in the scene.
+            AssemblyStation[] stations = Object.FindObjectsByType<AssemblyStation>(FindObjectsSortMode.None);
+            var serializedHud = new SerializedObject(hud);
+            SerializedProperty stationsProperty = serializedHud.FindProperty("stations");
+            stationsProperty.arraySize = stations.Length;
+            for (int i = 0; i < stations.Length; i++)
+            {
+                stationsProperty.GetArrayElementAtIndex(i).objectReferenceValue = stations[i];
+            }
+
+            serializedHud.ApplyModifiedPropertiesWithoutUndo();
         }
 
         private static void BuildPauseSystem(GameObject player, VisualTreeAsset layout, PanelSettings panelSettings)
@@ -665,6 +690,7 @@ namespace WoodcraftSimulator.Editor
             public Material PencilMark { get; } = GetOrCreateUnlit("PencilMark", new Color(0.12f, 0.12f, 0.13f));
             public Material CutGuide { get; } = GetOrCreateUnlit("CutGuide", new Color(1f, 0.45f, 0.1f));
             public Material MarkPreview { get; } = GetOrCreateUnlit("MarkPreview", new Color(0.2f, 0.5f, 1f));
+            public Material DrillTeal { get; } = GetOrCreate("DrillTeal", new Color(0.1f, 0.55f, 0.5f));
             public Material Paper { get; } = GetOrCreate("Paper", new Color(0.93f, 0.93f, 0.90f));
 
             /// <summary>Opaque URP Unlit: flat color, unaffected by lighting (good for thin overlays like a tape blade).</summary>

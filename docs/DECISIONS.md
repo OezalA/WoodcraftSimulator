@@ -313,3 +313,18 @@ assistance. Owner chose **"B now, A later as an option"**.
   wheel hint until the first line is drawn.
 - What stays a skill: reading the right value, from the right end, and computing the needed dimension (e.g. 210 mm).
 - **Deferred (owner): option A** as an assist setting (type the dimension) in the pause/settings menu.
+
+## D-035: Drill-driver, fastening points, completion report (Accepted, 2026-11-15)
+Phase 5c, following D-032/D-033.
+- **Drill-driver** = 4th belt item (on the assembly table). It drives the one fastener type it is loaded with
+  (`FastenerDefinition` asset, wood screw 5 × 80 mm, generic size only). Aim at a fastening point (snap within 3 cm),
+  hold Use ~0.8 s; the domain decides (`AssemblyBuild.TryFasten`). Screws are unlimited until Phase 7.
+- **Fastening points** come from the blueprint asset (position + driving direction per point). The station shows an
+  orange marker only where a screw can go now (both parts installed, point empty) and a screw head where one went.
+- **Order rule visible in play:** a screwed part can't be taken out (`Screwed into the Frame ...`).
+- **Completion:** `AssemblyStation.Completed` (from the domain event) → HUD panel on the right shows the quality report
+  for 20 s: status, parts installed / accurate with each length and deviation, fasteners n/m, sawdust so far
+  (from `WorkshopWaste`), and the note that it is not a structural safety check (§6.12). Text formatting is domain
+  code (`AssemblyReportText`) and tested.
+- The finished frame stays on the table as installed (kinematic, locked) parts; making it one carryable object is
+  Phase 6 (delivering a job).

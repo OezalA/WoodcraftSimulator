@@ -24,14 +24,14 @@ Assets/
         Materials/BoardDimensions.cs, WoodSpecies.cs, TimberPiece.cs
         Inventory/InventoryItem.cs, ToolBelt.cs
         Cutting/Saw.cs, Crosscut.cs (+ CrosscutResult, CutWaste), MaterialWasteLog.cs
-        Construction/Blueprint.cs (+ PartSlot, ConnectionSpec, FastenerSpec), AssemblyBuild.cs (+ SlotFit, quality report)
+        Construction/Blueprint.cs (+ PartSlot, ConnectionSpec, FastenerSpec), AssemblyBuild.cs (+ SlotFit, quality report), AssemblyReportText.cs
       Core/PauseController.cs, UserPreferences.cs, BoxMeshBuilder.cs, PhysicsQueries.cs
       Materials/WoodSpeciesDefinition.cs, TimberBoard.cs
       Inventory/ItemDefinition.cs, PickupItem.cs, PlayerToolBelt.cs
       Tools/IHeldTool.cs (+ HeldToolContext), BoardAim.cs (+ TapeBladeView), TapeMeasureTool.cs, PencilTool.cs, CutList.cs,
-            HandSawTool.cs
+            HandSawTool.cs, DrillDriverTool.cs
       Cutting/SawDefinition.cs, WorkshopWaste.cs
-      Construction/BlueprintDefinition.cs, AssemblyStation.cs
+      Construction/BlueprintDefinition.cs, FastenerDefinition.cs, AssemblyStation.cs
       Handling/IPlacementTarget.cs (+ SnapPlacement)
       Player/PlayerController.cs
       Interaction/IInteractable.cs, IDescribable.cs, PlayerInteractor.cs
@@ -179,6 +179,9 @@ Unity side:
   material). `TimberBoard.SetPiece(piece, marks)` re-targets a board (used for the halves of a cut).
 - `IPlacementTarget` (D-033): `PlayerCarrier.TrySnap` asks the aimed collider's parents for a snap pose before free
   placement; `AssemblyStation` implements it (ghost slots, fit messages, install / release, `Carryable.InstalledIn`).
+- `DrillDriverTool` (D-035): ray → `AssemblyStation.TryFindOpenPoint` (3 cm) → hold Use → `AssemblyStation.Fasten`
+  (domain `TryFasten`, screw head visual, markers updated). Station report text cached per `Changed`. HUD shows
+  `AssemblyStation.ReportText` on `Completed` (panel `assembly-report`, 20 s).
 - `Carryable` settling (D-031): `RequestSupportCheck` / `RequestSupportCheckAbove`; ray below the center of mass at the
   next FixedUpdate; unsupported → non-kinematic until at rest → kinematic. Called by `PlayerCarrier.TryPickUp` and
   `HandSawTool` after a cut.

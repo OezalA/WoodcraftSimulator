@@ -290,6 +290,26 @@ Failure → diagnosis:
 - `InvalidOperationException ... Player/AdjustTool` → Input Actions not reimported.
 - Wheel does nothing → Console errors? Report whether `(wheel)` appears.
 
+### MT-015: Screwing and completing the frame (Phase 5c)
+Precondition: stop Play, rebuild the scene (MT-001). Press Play. Parts as in MT-013 (2 × 600, 2 × 210 mm; optionally
+one side 1–5 mm off to see an "inaccurate" line). Belt: tape, pencil, saw, drill-driver (teal box on the assembly
+table) = 4 slots.
+| Step | Expected |
+|---|---|
+| Install the front rail and the left side | Two small orange squares appear on the front rail's outer face at the left corner |
+| Take the drill-driver in hand, aim at the table | `Frame 600 × 300 mm: parts 2/4, screws 0/8` + `Aim at an orange screw point` |
+| Aim at an orange square | `Hold LMB to drive a Wood screw 5 × 80 mm` |
+| Hold LMB | Driver pushes forward, `Driving NN%`; after ~1 s a grey screw head replaces the orange square; `screws 1/8` |
+| Look at the front rail / left side (E prompt) | `Screwed into the Frame 600 × 300 mm`; E does nothing |
+| Look at the other installed parts | Still `Take ... out of ...` while no screw is in them |
+| Install all parts and drive all 8 screws | Report on the right for ~20 s: `Frame 600 × 300 mm: COMPLETE`, parts 4/4 with each length and OK / inaccurate, `Fasteners 8/8`, sawdust so far, safety note; drill readout `Frame ... complete: see the report` |
+| Aim at the finished frame with the drill | `Frame 600 × 300 mm is complete` |
+| EditMode tests | 145 tests, all green (new: `ReportText_*`) |
+
+Failure → diagnosis:
+- No orange squares → both parts of that corner must be installed; else the station lacks the marker material (rebuild).
+- Driving does nothing → the drill lacks `DrillDriverTool` / fastener asset (rebuild); Console error names it.
+
 ## Game view setup (corrects the earlier tip)
 A fixed resolution such as *Full HD (1920x1080)* at `Scale 1x` **crops** the image when the Game view window is
 smaller than 1920×1080: the bottom (tool belt bar) and the lower right (tool in hand) are cut off.

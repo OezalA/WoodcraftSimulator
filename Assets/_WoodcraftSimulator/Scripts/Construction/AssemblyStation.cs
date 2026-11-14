@@ -25,10 +25,28 @@ namespace WoodcraftSimulator.Construction
         [Tooltip("A carried board snaps when the aim point is within this distance (m) of an empty slot.")]
         [SerializeField, Min(0.01f)] private float snapDistance = 0.08f;
 
+        [Header("Fastening points")]
+        [Tooltip("Marker of a fastening point that can be screwed now (both parts installed).")]
+        [SerializeField] private Material pointMarkerMaterial;
+
+        [Tooltip("Material of the visible screw heads.")]
+        [SerializeField] private Material screwHeadMaterial;
+
+        [Tooltip("Optional: the workshop's sawdust total, shown in the quality report.")]
+        [SerializeField] private Cutting.WorkshopWaste waste;
+
+        // Visual sizes (meters): an 8 mm marker square and a 9 mm screw head standing 1 mm proud of the surface.
+        private const float MarkerSize = 0.008f;
+        private const float ScrewHeadSize = 0.009f;
+        private const float ScrewHeadHeight = 0.0015f;
+
+        private static Mesh unitCube;
+
         private readonly List<Mesh> ghostMeshes = new List<Mesh>();
         private GameObject[] ghosts;
         private Carryable[] installed;
         private Transform[] parentsBeforeInstall;
+        private GameObject[][] pointMarkers;
 
         public AssemblyBuild Build { get; private set; }
 
@@ -36,8 +54,11 @@ namespace WoodcraftSimulator.Construction
 
         public string DisplayName => Build != null ? Build.Blueprint.DisplayName : name;
 
-        /// <summary>Raised after a part was installed or taken out (fastening is reported by the build itself).</summary>
+        /// <summary>Raised after a part was installed or taken out, or a fastener was driven.</summary>
         public event Action Changed;
+
+        /// <summary>Raised once when the last part / fastener completes the structure.</summary>
+        public event Action Completed;
 
         private void Awake()
         {
@@ -57,6 +78,116 @@ namespace WoodcraftSimulator.Construction
             {
                 ghosts[i] = CreateGhost(blueprint.Slots[i]);
             }
+
+            unitCube ??= BoxMeshBuilder.Create(Vector3.one, "Unit cube");
+            pointMarkers = new GameObject[blueprint.Connections.Count][];
+            for (int c = 0; c < pointMarkers.Length; c++)
+            {
+                BlueprintDefinition.FasteningPoint[] points = blueprint.Connections[c].points;
+                pointMarkers[c] = new GameObject[points.Length];
+                for (int p = 0; p < points.Length; p++)
+                {
+                    pointMarkers[c][p] = CreateFlatBox($"Point {blueprint.Connections[c].id}.{p}", c, p,
+                        MarkerSize, 0.0005f, pointMarkerMaterial);
+                }
+            }
+
+            Build.Completed += () => Completed?.Invoke();
+            UpdatePointMarkers();
+        }
+
+        public Vector3 PointPosition(int connection, int point) =>
+            transform.TransformPoint(blueprint.Connections[connection].points[point].localPosition);
+
+        public Vector3 PointDirection(int connection, int point) =>
+            transform.TransformDirection(blueprint.Connections[connection].points[point].localDirection).normalized;
+
+        /// <summary>
+        /// The fastening point nearest to <paramref name="worldPoint"/> (within <paramref name="maxDistance"/> m) that
+        /// can be fastened now: both parts installed and no fastener in it yet.
+        /// </summary>
+        public bool TryFindOpenPoint(Vector3 worldPoint, float maxDistance, out int connection, out int point)
+        {
+            connection = -1;
+            point = -1;
+            float best = maxDistance;
+            for (int c = 0; c < blueprint.Connections.Count; c++)
+            {
+                for (int p = 0; p < blueprint.Connections[c].points.Length; p++)
+                {
+                    if (!IsOpen(c, p))
+                    {
+                        continue;
+                    }
+
+                    float distance = Vector3.Distance(worldPoint, PointPosition(c, p));
+                    if (distance <= best)
+                    {
+                        best = distance;
+                        connection = c;
+                        point = p;
+                    }
+                }
+            }
+
+            return connection >= 0;
+        }
+
+        /// <summary>Drives a fastener into a point (domain rules) and shows its head.</summary>
+        public FastenResult Fasten(int connection, int point, FastenerSpec fastener)
+        {
+            FastenResult result = Build.TryFasten(blueprint.Connections[connection].id, point, fastener);
+            if (result == FastenResult.Fastened)
+            {
+                CreateFlatBox($"Screw {blueprint.Connections[connection].id}.{point}", connection, point,
+                    ScrewHeadSize, ScrewHeadHeight, screwHeadMaterial);
+                UpdatePointMarkers();
+                Changed?.Invoke();
+            }
+
+            return result;
+        }
+
+        /// <summary>The quality report as text (every component on its own line).</summary>
+        public string ReportText(string fastenerName)
+        {
+            double? sawdust = waste != null ? waste.Log.TotalVolumeCubicMeters * 1e6 : (double?)null;
+            return AssemblyReportText.Format(Build.Blueprint, Build.CreateReport(), fastenerName, sawdust);
+        }
+
+        private bool IsOpen(int connection, int point)
+        {
+            BlueprintDefinition.Connection spec = blueprint.Connections[connection];
+            return Build.GetPiece(spec.partA) != null && Build.GetPiece(spec.partB) != null &&
+                   !Build.IsFastened(spec.id, point);
+        }
+
+        private void UpdatePointMarkers()
+        {
+            for (int c = 0; c < pointMarkers.Length; c++)
+            {
+                for (int p = 0; p < pointMarkers[c].Length; p++)
+                {
+                    pointMarkers[c][p].SetActive(IsOpen(c, p));
+                }
+            }
+        }
+
+        /// <summary>A small square on the surface at a fastening point, facing outwards (against the driving direction).</summary>
+        private GameObject CreateFlatBox(string objectName, int connection, int point, float size, float height,
+            Material material)
+        {
+            var box = new GameObject(objectName);
+            box.transform.SetParent(transform, false);
+            Vector3 direction = PointDirection(connection, point);
+            box.transform.SetPositionAndRotation(PointPosition(connection, point) - direction * (height / 2f),
+                Quaternion.LookRotation(direction));
+            box.transform.localScale = new Vector3(size, size, height);
+            box.AddComponent<MeshFilter>().sharedMesh = unitCube;
+            var meshRenderer = box.AddComponent<MeshRenderer>();
+            meshRenderer.sharedMaterial = material;
+            meshRenderer.shadowCastingMode = ShadowCastingMode.Off;
+            return box;
         }
 
         private void OnDestroy()
@@ -144,6 +275,7 @@ namespace WoodcraftSimulator.Construction
             carryable.SetInstalled(this);
             installed[index] = carryable;
             ghosts[index].SetActive(false);
+            UpdatePointMarkers();
             Changed?.Invoke();
         }
 
@@ -167,6 +299,7 @@ namespace WoodcraftSimulator.Construction
             carryable.SetInstalled(null);
             installed[index] = null;
             ghosts[index].SetActive(true);
+            UpdatePointMarkers();
             Changed?.Invoke();
         }
 

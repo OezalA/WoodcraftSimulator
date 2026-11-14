@@ -11,7 +11,30 @@ namespace WoodcraftSimulator.Editor
     public static class BlueprintAssets
     {
         public const string Folder = "Assets/_WoodcraftSimulator/ScriptableObjects/Blueprints";
+        public const string FastenerFolder = "Assets/_WoodcraftSimulator/ScriptableObjects/Fasteners";
         public const string WoodScrewId = "wood-screw-5x80";
+
+        /// <summary>Generic 5 × 80 mm wood screw (dimensions only, no product data; D-032).</summary>
+        public static FastenerDefinition WoodScrew5x80()
+        {
+            string path = $"{FastenerFolder}/WoodScrew5x80.asset";
+            var definition = AssetDatabase.LoadAssetAtPath<FastenerDefinition>(path);
+            if (definition != null)
+            {
+                return definition;
+            }
+
+            definition = ScriptableObject.CreateInstance<FastenerDefinition>();
+            AssetDatabase.CreateAsset(definition, path);
+            var serialized = new SerializedObject(definition);
+            serialized.FindProperty("id").stringValue = WoodScrewId;
+            serialized.FindProperty("displayName").stringValue = "Wood screw 5 × 80 mm";
+            serialized.FindProperty("diameterMillimeters").floatValue = 5f;
+            serialized.FindProperty("lengthMillimeters").floatValue = 80f;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            AssetDatabase.SaveAssetIfDirty(definition);
+            return definition;
+        }
 
         /// <summary>
         /// Phase 5 frame (D-032): 600 × 300 mm outside, 95 mm deep, lying on the table with the boards on edge.

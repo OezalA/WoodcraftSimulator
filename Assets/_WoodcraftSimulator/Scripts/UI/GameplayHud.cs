@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UIElements;
+using WoodcraftSimulator.Construction;
 using WoodcraftSimulator.Handling;
 using WoodcraftSimulator.Interaction;
 using WoodcraftSimulator.Inventory;
@@ -27,6 +28,16 @@ namespace WoodcraftSimulator.UI
         [SerializeField] private PlayerInteractor interactor;
         [SerializeField] private PlayerCarrier carrier;
         [SerializeField] private PlayerToolBelt toolBelt;
+
+        [Tooltip("Assembly stations whose quality report is shown when their structure is completed.")]
+        [SerializeField] private AssemblyStation[] stations = System.Array.Empty<AssemblyStation>();
+
+        [Tooltip("How long the completion report stays on screen, in seconds.")]
+        [SerializeField, Min(1f)] private float reportSeconds = 20f;
+
+        private Label reportLabel;
+        private float reportHideTime = -1f;
+        private System.Action[] completionHandlers;
 
         private VisualElement crosshair;
         private Label promptLabel;
@@ -73,8 +84,44 @@ namespace WoodcraftSimulator.UI
             carrier.CarryingChanged += OnCarryingChanged;
             carrier.PlacementStatusChanged += Refresh;
             toolBelt.Changed += OnBeltChanged;
+
+            // Optional element: older layouts without it simply show no report.
+            reportLabel = root.Q<Label>("assembly-report");
+            completionHandlers = new System.Action[stations.Length];
+            for (int i = 0; i < stations.Length; i++)
+            {
+                AssemblyStation station = stations[i];
+                if (station != null)
+                {
+                    completionHandlers[i] = () => ShowReport(station);
+                    station.Completed += completionHandlers[i];
+                }
+            }
+
             Refresh();
             OnBeltChanged();
+        }
+
+        private void Update()
+        {
+            if (reportHideTime > 0f && Time.unscaledTime >= reportHideTime)
+            {
+                reportHideTime = -1f;
+                reportLabel.EnableInClassList(HiddenClass, true);
+            }
+        }
+
+        /// <summary>Shows the station's quality report for <see cref="reportSeconds"/> (on completion).</summary>
+        private void ShowReport(AssemblyStation station)
+        {
+            if (reportLabel == null)
+            {
+                return;
+            }
+
+            reportLabel.text = station.ReportText(null);
+            reportLabel.EnableInClassList(HiddenClass, false);
+            reportHideTime = Time.unscaledTime + reportSeconds;
         }
 
         private void OnBeltChanged()
@@ -173,6 +220,19 @@ namespace WoodcraftSimulator.UI
             if (toolBelt != null)
             {
                 toolBelt.Changed -= OnBeltChanged;
+            }
+
+            if (completionHandlers != null)
+            {
+                for (int i = 0; i < stations.Length; i++)
+                {
+                    if (stations[i] != null && completionHandlers[i] != null)
+                    {
+                        stations[i].Completed -= completionHandlers[i];
+                    }
+                }
+
+                completionHandlers = null;
             }
 
             if (observedTool != null)

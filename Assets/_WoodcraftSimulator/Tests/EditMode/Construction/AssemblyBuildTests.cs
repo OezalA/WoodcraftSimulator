@@ -228,6 +228,39 @@ namespace WoodcraftSimulator.Tests.Construction
         }
 
         [Test]
+        public void ReportText_ListsEveryComponent()
+        {
+            var build = new AssemblyBuild(Frame());
+            build.TryPlace("bottom", Piece(600));
+            build.TryPlace("top", Piece(602.5));
+            build.TryPlace("left", Piece(210));
+
+            string text = AssemblyReportText.Format(build.Blueprint, build.CreateReport(), "Wood screw 5 × 80 mm", 17.1);
+
+            Assert.That(text, Does.StartWith("Frame 600 × 300 mm: in progress"));
+            Assert.That(text, Does.Contain("Parts 3/4 installed, 2/3 accurate (±1 mm)"));
+            Assert.That(text, Does.Contain("Top rail: 602.5 mm  (+2.5 mm)  inaccurate"));
+            Assert.That(text, Does.Contain("Bottom rail: 600 mm  OK"));
+            Assert.That(text, Does.Contain("Right side: missing"));
+            Assert.That(text, Does.Contain("Fasteners 0/8 (Wood screw 5 × 80 mm)"));
+            Assert.That(text, Does.Contain("Sawdust so far: 17.1 cm³"));
+            Assert.That(text, Does.EndWith(AssemblyReportText.SafetyNote));
+        }
+
+        [Test]
+        public void ReportText_Complete()
+        {
+            AssemblyBuild build = FullyPlaced();
+            FastenAll(build);
+
+            string text = AssemblyReportText.Format(build.Blueprint, build.CreateReport(), null, null);
+
+            Assert.That(text, Does.StartWith("Frame 600 × 300 mm: COMPLETE"));
+            Assert.That(text, Does.Contain("Fasteners 8/8\n"));
+            Assert.That(text, Does.Not.Contain("Sawdust"));
+        }
+
+        [Test]
         public void Blueprint_InvalidDefinitions_Throw()
         {
             BoardDimensions dims = BoardDimensions.FromMillimeters(600, 95, 45);

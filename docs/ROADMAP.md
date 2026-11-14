@@ -72,5 +72,5 @@ Plan approved by the owner on 2026-11-14 ("tamam"), D-032. First structure: fram
 spruce 95 × 45, butt joints, 2 screws 5 × 80 mm per corner).
 - [x] 5a: Domain assembly model: `Blueprint` (slots, connections, prerequisites, accuracy ±1 / fit ±5 mm),
   `AssemblyBuild` (place / remove / fasten rules, completion), `AssemblyQualityReport`; 19 new tests (131 total)
-- [ ] 5b: Assembly table with a blueprint ghost; carried pieces snap into fitting slots, fit feedback (code done, awaiting MT-013, D-033)
-- [ ] 5c: Drill-driver on the belt, driving screws at fastening points, completion + quality report in the HUD
+- [ ] 5b: Assembly table with a blueprint ghost; carried pieces snap into fitting slots, fit feedback (code done, awaiting MT-013, D-033; owner: marking "gayet düzgün çalışıyor")
+- [ ] 5c: Drill-driver on the belt, driving screws at fastening points, completion + quality report in the HUD (code done, awaiting MT-015, D-035)

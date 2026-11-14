@@ -1,12 +1,13 @@
 # Current State
 
-_Last updated: 2026-11-14_
+_Last updated: 2026-11-15_
 
 ## Current milestone
 **Phase 4 (Cutting Prototype) done**: accepted by the owner on 2026-11-14 ("tamamdır devam edebilirsin") after
 MT-011 and MT-012 ("parça gayet iyi düşüyor, kesme işlemi de ok"); `main` fast-forwarded to `develop`.
 **Phase 5 (Basic Assembly) in progress**: plan approved (D-032). 5a (domain model) done.
-**5b (assembly table, snapping into slots; D-033) implemented, NOT yet tested in Unity** (MT-013).
+5b (assembly table, snapping; D-033) implemented; owner tested the fine marking (D-034): "gayet düzgün çalışıyor".
+**5c (drill-driver, screws, completion report; D-035) implemented, NOT yet tested in Unity** (MT-013 + MT-015).
 Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 
 ## Completed
@@ -50,6 +51,8 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 | 5a assembly model: static compile + `dotnet test` | 0 errors, 0 warnings; 130/130 tests passed (Claude). Domain only, nothing to play-test | 2026-11-14 |
 | 5b assembly table + snapping: static compile + `dotnet test` | 0 errors, 0 warnings; 131/131 tests passed (Claude). Unity play-test pending (MT-013) | 2026-11-14 |
 | D-034 pencil on graduations + wheel fine adjustment: static compile + `dotnet test` | 0 errors, 0 warnings; 143/143 tests passed (Claude). Unity play-test pending (MT-014) | 2026-11-14 |
+| MT-014 fine marking (owner) | Passed: "gayet düzgün çalışıyor" | 2026-11-15 |
+| 5c drill-driver + completion: static compile + `dotnet test` | 0 errors, 0 warnings; 145/145 tests passed (Claude). Unity play-test pending (MT-015) | 2026-11-15 |
 
 ## Known issues / limitations
 - **Carry feel not liked yet** (owner, 2026-11-13). Ideas for later: smooth follow (lerp/slerp) instead of rigid
@@ -68,6 +71,5 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
   Recompile After Finished Playing* (an editor preference, not a project setting).
 
 ## Next recommended action
-1. Owner: stop Play, rebuild the scene, run MT-014 (fine marking) and MT-013 (assembly table) (+ Test Runner 143 tests).
-2. Then 5c: drill-driver on the belt (4th slot), screws at the blueprint's fastening points, completion + quality
-   report in the HUD.
+1. Owner: stop Play, rebuild the scene, run MT-013 (assembly table) + MT-015 (screws, completion) (+ Test Runner 145).
+2. If both pass: Phase 5 accepted → fast-forward `main`. Then Phase 6 plan (first complete job: shelf).
