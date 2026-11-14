@@ -10,7 +10,7 @@ Legend: ✅ done (verified) · 🟡 in progress · ⬜ not started
 | 1 | First-Person Workshop Prototype | ✅ |
 | 2 | Basic Object Handling | ✅ |
 | 3 | Measurement Prototype | ✅ |
-| 4 | Cutting Prototype | 🟡 |
+| 4 | Cutting Prototype | ✅ |
 | 5 | Basic Assembly | ⬜ |
 | 6 | First Complete Crafting Job (vertical slice) | ⬜ |
 | 7 | Inventory and Material Economy | ⬜ |
@@ -64,4 +64,5 @@ Plan approved by the owner on 2026-11-14 ("devam et"), D-029.
 - [x] 4a: Domain cut model: `Saw` (kerf), `Crosscut` (at a pencil mark, kerf on the waste side, marks handed over,
   minimum piece 5 mm), `CutWaste`, `MaterialWasteLog`; 19 new tests (108 total, `dotnet test`)
 - [x] 4b: Hand saw on the belt, sawing interaction (hold LMB at a mark), two boards generated from the result (MT-011 passed, D-030)
-- [ ] 4c: Unsupported pieces fall and settle (also fixes floating boards), cut checked against the target, edge-case tests (112 total) (code done, awaiting MT-012, D-031)
+- [x] 4c: Unsupported pieces fall and settle (also fixes floating boards), cut checked against the target, edge-case tests (112 total) (MT-012 passed, D-031)
+- Owner accepted Phase 4 on 2026-11-14 ("tamamdır devam edebilirsin"); `main` fast-forwarded.

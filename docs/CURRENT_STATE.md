@@ -3,12 +3,9 @@
 _Last updated: 2026-11-14_
 
 ## Current milestone
-**Phase 3 (Measurement Prototype) done**: accepted by the owner on 2026-11-14 ("tamamdır şimdi oldu devam edelim")
-after the cut list fix; `main` fast-forwarded to `develop`. The owner confirmed it working as a whole; individual
-MT-008..MT-010 steps were not reported one by one.
-**Phase 4 (Cutting Prototype) in progress**: plan approved (D-029). 4a (domain cut model + tests) done;
-4b (hand saw, sawing, splitting boards; D-030) **works (owner: "gayet iyi çalıştı")**.
-**4c (falling offcuts / unsupported boards, cut vs target, edge-case tests; D-031) implemented, NOT yet tested in Unity** (MT-012).
+**Phase 4 (Cutting Prototype) done**: accepted by the owner on 2026-11-14 ("tamamdır devam edebilirsin") after
+MT-011 and MT-012 ("parça gayet iyi düşüyor, kesme işlemi de ok"); `main` fast-forwarded to `develop`.
+**Phase 5 (Basic Assembly): plan proposed, awaiting the owner's approval.**
 Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 
 ## Completed
@@ -23,6 +20,8 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
   HUD explains refused placements (D-022); all casts from the eyes skip the player's own collider (D-023) (MT-007 passed).
 - Phase 3: tool belt with tape measure + pencil (D-024, D-027), tape measure with sticky hook and precision look
   (D-025, D-026), pencil marks + cut list target + ±1 mm tolerance check (D-028); 89 EditMode tests.
+- Phase 4: domain crosscut at a pencil mark with kerf on the waste side and waste log (D-029), hand saw splitting
+  boards in the scene (D-030), unsupported pieces fall and settle, cut checked against the target (D-031); 112 tests.
 - Visual: MSAA 4x on PC quality (D-018), pause menu fonts fixed.
 
 ## Latest verification
@@ -45,6 +44,8 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 | 4b hand saw: static compile + `dotnet test` | 0 errors, 0 warnings; 108/108 tests passed (Claude). Unity play-test pending (MT-011) | 2026-11-14 |
 | MT-011 Hand saw (owner) | Passed: "gayet iyi çalıştı" | 2026-11-14 |
 | 4c: static compile + `dotnet test` | 0 errors, 0 warnings; 112/112 tests passed (Claude). Unity play-test pending (MT-012) | 2026-11-14 |
+| MT-012 (owner) | Passed: offcut falls, cut OK; a 315 mm line instead of 300 was cut where marked (correct) | 2026-11-14 |
+| Phase 4 as a whole (owner) | Accepted: "tamamdır devam edebilirsin" | 2026-11-14 |
 
 ## Known issues / limitations
 - **Carry feel not liked yet** (owner, 2026-11-13). Ideas for later: smooth follow (lerp/slerp) instead of rigid
@@ -62,5 +63,6 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
   Recompile After Finished Playing* (an editor preference, not a project setting).
 
 ## Next recommended action
-1. Owner: stop Play, rebuild the scene, run MT-012 (+ Test Runner 112 tests).
-2. If it passes: Phase 4 accepted → fast-forward `main`, mark Phase 4 done. Then Phase 5 (Basic Assembly) plan.
+1. Owner: approve the Phase 5 plan (proposed 2026-11-14): 5a domain assembly model (blueprint with slots for
+   pieces, connections needing screws, order rules, completion) + tests; 5b placing pieces into a blueprint with
+   snapping and alignment feedback; 5c screws (drill/driver), fastener data, completion detection.
