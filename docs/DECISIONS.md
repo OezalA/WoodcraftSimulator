@@ -265,3 +265,19 @@ one floating" and the new one "an offcut over the bench edge floats".
   cut list target with ±1 mm: `Cut: 600 mm (target 600 mm, OK ±1 mm) + 1798 mm ...`. This is the result that
   counts; the pencil's check (D-028) is the preview.
 - Piece positions after a cut need no extra domain code: they follow from `KerfStart/EndFromStart` (tested).
+
+## D-032: Assembly model: blueprint slots, connections, tolerances, explained quality (Accepted, 2026-11-14)
+Phase 5 plan approved by the owner ("tamam") with all recommended choices:
+- **First structure:** a 600 × 300 mm frame of spruce 95 × 45: two 600 mm rails, two 210 mm sides (300 − 2 × 45,
+  butt joints), two 5 × 80 mm wood screws per corner (through 45 mm, ~35 mm into the other part). Base for the
+  Phase 6 shelf. Screw size is a generic dimension, not a product.
+- **Slots and anchors first** (master prompt §6.7): pieces go into predefined slots; free assembly later.
+- **Tolerances:** within ±1 mm a part is accurate; up to ±5 mm it still fits but is reported as inaccurate; beyond,
+  it doesn't fit. Checked per dimension (length, width, thickness).
+- **Order rules:** a connection needs both parts placed; a part with any fastener in one of its connections can't be
+  removed; optional slot prerequisites ("first this part") are supported but not used by the frame.
+- **Fastening points** are tracked individually (`TryFasten(connection, point, fastener)`); the fastener type must
+  match. Unlimited screws until the material economy (Phase 7).
+- **Quality report** = separate components (parts installed, accurate parts with deviations, fasteners n/m,
+  completion), no single score; it does not certify structural safety (§6.12).
+- **Namespace `WoodcraftSimulator.Construction`** (not `Assembly`, which clashes with `System.Reflection.Assembly`).

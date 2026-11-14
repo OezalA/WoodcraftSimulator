@@ -24,6 +24,7 @@ Assets/
         Materials/BoardDimensions.cs, WoodSpecies.cs, TimberPiece.cs
         Inventory/InventoryItem.cs, ToolBelt.cs
         Cutting/Saw.cs, Crosscut.cs (+ CrosscutResult, CutWaste), MaterialWasteLog.cs
+        Construction/Blueprint.cs (+ PartSlot, ConnectionSpec, FastenerSpec), AssemblyBuild.cs (+ SlotFit, quality report)
       Core/PauseController.cs, UserPreferences.cs, BoxMeshBuilder.cs, PhysicsQueries.cs
       Materials/WoodSpeciesDefinition.cs, TimberBoard.cs
       Inventory/ItemDefinition.cs, PickupItem.cs, PlayerToolBelt.cs

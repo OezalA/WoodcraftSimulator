@@ -11,7 +11,7 @@ Legend: ✅ done (verified) · 🟡 in progress · ⬜ not started
 | 2 | Basic Object Handling | ✅ |
 | 3 | Measurement Prototype | ✅ |
 | 4 | Cutting Prototype | ✅ |
-| 5 | Basic Assembly | ⬜ |
+| 5 | Basic Assembly | 🟡 |
 | 6 | First Complete Crafting Job (vertical slice) | ⬜ |
 | 7 | Inventory and Material Economy | ⬜ |
 | 8 | Workshop Development | ⬜ |
@@ -66,3 +66,11 @@ Plan approved by the owner on 2026-11-14 ("devam et"), D-029.
 - [x] 4b: Hand saw on the belt, sawing interaction (hold LMB at a mark), two boards generated from the result (MT-011 passed, D-030)
 - [x] 4c: Unsupported pieces fall and settle (also fixes floating boards), cut checked against the target, edge-case tests (112 total) (MT-012 passed, D-031)
 - Owner accepted Phase 4 on 2026-11-14 ("tamamdır devam edebilirsin"); `main` fast-forwarded.
+
+## Phase 5: Basic Assembly
+Plan approved by the owner on 2026-11-14 ("tamam"), D-032. First structure: frame 600 × 300 mm (2 × 600 + 2 × 210 mm
+spruce 95 × 45, butt joints, 2 screws 5 × 80 mm per corner).
+- [x] 5a: Domain assembly model: `Blueprint` (slots, connections, prerequisites, accuracy ±1 / fit ±5 mm),
+  `AssemblyBuild` (place / remove / fasten rules, completion), `AssemblyQualityReport`; 18 new tests (130 total)
+- [ ] 5b: Assembly table with a blueprint ghost; carried pieces snap into fitting slots, fit feedback
+- [ ] 5c: Drill-driver on the belt, driving screws at fastening points, completion + quality report in the HUD
