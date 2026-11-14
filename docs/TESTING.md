@@ -273,6 +273,23 @@ Failure → diagnosis:
 - No ghosts → the table lacks `AssemblyStation` / blueprint asset (rebuild the scene); Console error names it.
 - Snap never happens → aim closer to the ghost (within 8 cm of its box); report where you aimed.
 
+### MT-014: Fine marking with the mouse wheel (D-034)
+Precondition: stop Play, rebuild the scene (MT-001). Take tape measure and pencil, pencil in hand.
+| Step | Expected |
+|---|---|
+| Aim roughly at ~600 mm on a spruce board | Readout e.g. `597 mm   target 900 mm` + `Wheel: ±1 mm   Shift + wheel: ±10 mm`; blue preview line across the board at the reading, tape blade up to it |
+| Scroll the wheel up / down one notch | Reading +1 / −1 mm, `(wheel)` appears; the blue line moves 1 mm; small mouse movements don't change the reading |
+| Hold Shift and scroll | ±10 mm per notch |
+| Bring it to exactly 600 and click LMB | Dark line exactly where the blue preview was; `Marked at 600 mm  (0 mm)  OK ±1 mm` (with target 600) |
+| Move the aim clearly along the board (> 2 cm) | `(wheel)` disappears, the mouse sets the reading again |
+| Scroll at the far end of the board | Stops at the board's length; scroll down stops at 0 |
+| Without scrolling, click | Line on the graduation shown (whole mm) |
+| EditMode tests | 143 tests, all green (new: `TapeMeasure.PositionFromStart` / `Nudge`) |
+
+Failure → diagnosis:
+- `InvalidOperationException ... Player/AdjustTool` → Input Actions not reimported.
+- Wheel does nothing → Console errors? Report whether `(wheel)` appears.
+
 ## Game view setup (corrects the earlier tip)
 A fixed resolution such as *Full HD (1920x1080)* at `Scale 1x` **crops** the image when the Game view window is
 smaller than 1920×1080: the bottom (tool belt bar) and the lower right (tool in hand) are cut off.

@@ -56,7 +56,7 @@ Split into steps: **2a** timber data + board, **2b** handling, **2c** timber rac
 ## Phase 3: Measurement Prototype
 - [x] 3a: Small-item inventory = tool belt (D-024, D-027): tape measure + pencil, keys 1–4
 - [x] 3b: Tape measure: hooks on the nearest board end, live mm reading, sticky hook, precision look mode (D-025, D-026)
-- [x] 3c: Pencil marks stored on the board (Length from the reference end), cut list target, tolerance check (default ±1 mm), tests (D-028)
+- [x] 3c: Pencil marks stored on the board (Length from the reference end), cut list target, tolerance check (default ±1 mm), tests (D-028; amended by D-034: marks on graduations, wheel fine adjustment)
 - Owner accepted Phase 3 on 2026-11-14 ("tamamdır şimdi oldu devam edelim") after the cut list fix; `main` fast-forwarded.
 
 ## Phase 4: Cutting Prototype

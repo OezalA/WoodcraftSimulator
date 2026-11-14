@@ -159,7 +159,10 @@ namespace WoodcraftSimulator.Tools
         // Slightly above the surface to avoid z-fighting.
         private const float SurfaceOffset = 0.001f;
 
-        public static void Show(LineRenderer blade, BoardAimPoint point)
+        public static void Show(LineRenderer blade, BoardAimPoint point) => Show(blade, point, point.PointZ);
+
+        /// <summary>Blade from the hook to <paramref name="endZ"/> (local Z on the board, clamped to the board).</summary>
+        public static void Show(LineRenderer blade, BoardAimPoint point, float endZ)
         {
             if (blade == null)
             {
@@ -168,7 +171,7 @@ namespace WoodcraftSimulator.Tools
 
             float y = point.FaceY(SurfaceOffset);
             float hookZ = point.HookedEnd == BoardEnd.Start ? -point.HalfLength : point.HalfLength;
-            float endZ = Mathf.Clamp(point.PointZ, -point.HalfLength, point.HalfLength);
+            endZ = Mathf.Clamp(endZ, -point.HalfLength, point.HalfLength);
             Transform boardTransform = point.Board.transform;
 
             blade.SetPosition(0, boardTransform.TransformPoint(new Vector3(0f, y, hookZ)));

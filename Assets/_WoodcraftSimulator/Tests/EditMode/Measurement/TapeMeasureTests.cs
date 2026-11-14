@@ -88,5 +88,39 @@ namespace WoodcraftSimulator.Tests.Measurement
             Assert.That(Length.Clamp(Mm(3000), Length.Zero, Board), Is.EqualTo(Board));
             Assert.That(Length.Clamp(Mm(900), Length.Zero, Board), Is.EqualTo(Mm(900)));
         }
+
+        [TestCase(600.0, BoardEnd.Start, 600.0)]
+        [TestCase(600.0, BoardEnd.End, 1800.0)]
+        [TestCase(-5.0, BoardEnd.Start, 0.0)]
+        [TestCase(2500.0, BoardEnd.End, 0.0)]
+        public void PositionFromStart_IsTheInverseOfDistanceFromHook(double distance, BoardEnd hooked, double expected)
+        {
+            Assert.That(TapeMeasure.PositionFromStart(Board, Mm(distance), hooked), Is.EqualTo(Mm(expected)));
+        }
+
+        [TestCase(1234.5, BoardEnd.Start)]
+        [TestCase(1234.5, BoardEnd.End)]
+        public void PositionFromStart_RoundTrips(double pointFromStart, BoardEnd hooked)
+        {
+            Length distance = TapeMeasure.DistanceFromHook(Board, Mm(pointFromStart), hooked);
+            Assert.That(TapeMeasure.PositionFromStart(Board, distance, hooked), Is.EqualTo(Mm(pointFromStart)));
+        }
+
+        [TestCase(600.0, 1, 601.0)]
+        [TestCase(600.0, -10, 590.0)]
+        [TestCase(599.6, 0, 600.0)]   // snaps onto the graduation first
+        [TestCase(3.0, -10, 0.0)]     // not below the hook
+        [TestCase(2395.0, 10, 2400.0)] // not beyond the piece
+        public void Nudge_MovesByGraduations_WithinThePiece(double reading, int steps, double expected)
+        {
+            Assert.That(TapeMeasure.Nudge(Board, Mm(reading), steps, OneMillimeter), Is.EqualTo(Mm(expected)));
+        }
+
+        [Test]
+        public void Nudge_StopsAtTheLastGraduationInsideTheBoard()
+        {
+            // 697.6 mm piece: the last 1 mm graduation on it is 697 mm.
+            Assert.That(TapeMeasure.Nudge(Mm(697.6), Mm(690), 50, OneMillimeter), Is.EqualTo(Mm(697)));
+        }
     }
 }

@@ -37,6 +37,35 @@ namespace WoodcraftSimulator.Measurement
         }
 
         /// <summary>
+        /// Inverse of <see cref="DistanceFromHook"/>: where a point at the given distance from the hooked end lies,
+        /// measured from the Start end, clamped to the piece.
+        /// </summary>
+        public static Length PositionFromStart(Length pieceLength, Length distanceFromHook, BoardEnd hookedEnd)
+        {
+            RequirePositive(pieceLength, nameof(pieceLength));
+            Length onPiece = Length.Clamp(distanceFromHook, Length.Zero, pieceLength);
+            return hookedEnd == BoardEnd.Start ? onPiece : pieceLength - onPiece;
+        }
+
+        /// <summary>
+        /// Moves a tape reading by whole graduations (fine adjustment of the pencil along the tape), staying on a
+        /// graduation and on the piece (0 … last graduation within the piece).
+        /// </summary>
+        public static Length Nudge(Length pieceLength, Length reading, int steps, Length resolution)
+        {
+            RequirePositive(pieceLength, nameof(pieceLength));
+            if (resolution <= Length.Zero)
+            {
+                throw new ArgumentOutOfRangeException(nameof(resolution), resolution, "Resolution must be positive.");
+            }
+
+            long step = resolution.TenthsOfMillimeter;
+            Length lastGraduation = Length.FromTenthsOfMillimeter(pieceLength.TenthsOfMillimeter / step * step);
+            Length moved = reading.RoundTo(resolution) + resolution * steps;
+            return Length.Clamp(moved, Length.Zero, lastGraduation);
+        }
+
+        /// <summary>
         /// The end closest to a position along the piece axis (e.g. the player's position projected onto it).
         /// The position may lie outside the piece. Ties go to <see cref="BoardEnd.Start"/>.
         /// </summary>

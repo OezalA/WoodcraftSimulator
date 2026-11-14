@@ -201,6 +201,7 @@ namespace WoodcraftSimulator.Editor
                 handPosition: new Vector3(0.12f, -0.1f, 0.3f), handRotation: new Vector3(10f, -15f, 0f));
             var pencilTool = pencil.AddComponent<PencilTool>();
             SetReference(pencilTool, "blade", CreateTapeBlade(pencil, materials.TapeBlade));
+            SetReference(pencilTool, "markPreview", CreateLine(pencil, "MarkPreview", materials.MarkPreview, 0.0015f));
             SetReference(pencilTool, "cutList", cutList);
 
             // Hand saw: placeholder box for a ~500 mm blade (120 mm tall, 4 mm thick for visibility), lying flat on the
@@ -663,6 +664,7 @@ namespace WoodcraftSimulator.Editor
             public Material TapeBlade { get; } = GetOrCreateUnlit("TapeBlade", new Color(1f, 0.85f, 0.15f));
             public Material PencilMark { get; } = GetOrCreateUnlit("PencilMark", new Color(0.12f, 0.12f, 0.13f));
             public Material CutGuide { get; } = GetOrCreateUnlit("CutGuide", new Color(1f, 0.45f, 0.1f));
+            public Material MarkPreview { get; } = GetOrCreateUnlit("MarkPreview", new Color(0.2f, 0.5f, 1f));
             public Material Paper { get; } = GetOrCreate("Paper", new Color(0.93f, 0.93f, 0.90f));
 
             /// <summary>Opaque URP Unlit: flat color, unaffected by lighting (good for thin overlays like a tape blade).</summary>

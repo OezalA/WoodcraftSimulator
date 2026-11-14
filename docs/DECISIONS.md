@@ -296,3 +296,20 @@ Phase 5b, following D-032.
   again while no screw is in them; support checks skip them; the saw refuses to cut them.
 - The frame lies on the table with the boards on edge (width vertical), so the 2 × 45 mm rail thickness lies in the
   frame plane and the sides are 300 − 2 × 45 = 210 mm.
+
+## D-034: Pencil snaps to the tape graduation; mouse-wheel fine adjustment (Accepted, 2026-11-14, amends D-028)
+Owner feedback: setting the exact millimetre with the mouse is hard; proposal "type the mm and the line is drawn".
+Options presented: (A) type the dimension — fast but removes measuring/marking from the game; (B) realistic
+assistance. Owner chose **"B now, A later as an option"**.
+- **The line goes onto the graduation shown** (whole mm): a carpenter ticks at the tape's mark; precision is limited
+  by the graduation, not by hand tremor. This replaces D-028's "exact aimed position" (the mark is still stored in
+  0.1 mm; it simply lies on a graduation now).
+- **Mouse wheel ±1 mm, Shift + wheel ±10 mm** (`Player/AdjustTool` scroll / d-pad, `Player/CoarseAdjust` Shift / LB):
+  moves the pencil along the tape and holds that graduation; small mouse movements don't disturb it. Moving the aim
+  more than 20 mm along the board, or onto another board / hook end, hands control back to the mouse. Domain:
+  `TapeMeasure.Nudge` (stays on graduations and on the piece) and `TapeMeasure.PositionFromStart` (inverse of the
+  hook distance), both tested.
+- A blue preview line shows where the pencil line will go; the readout says `(wheel)` while adjusted and shows the
+  wheel hint until the first line is drawn.
+- What stays a skill: reading the right value, from the right end, and computing the needed dimension (e.g. 210 mm).
+- **Deferred (owner): option A** as an assist setting (type the dimension) in the pause/settings menu.

@@ -49,6 +49,7 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 | Phase 4 as a whole (owner) | Accepted: "tamamdır devam edebilirsin" | 2026-11-14 |
 | 5a assembly model: static compile + `dotnet test` | 0 errors, 0 warnings; 130/130 tests passed (Claude). Domain only, nothing to play-test | 2026-11-14 |
 | 5b assembly table + snapping: static compile + `dotnet test` | 0 errors, 0 warnings; 131/131 tests passed (Claude). Unity play-test pending (MT-013) | 2026-11-14 |
+| D-034 pencil on graduations + wheel fine adjustment: static compile + `dotnet test` | 0 errors, 0 warnings; 143/143 tests passed (Claude). Unity play-test pending (MT-014) | 2026-11-14 |
 
 ## Known issues / limitations
 - **Carry feel not liked yet** (owner, 2026-11-13). Ideas for later: smooth follow (lerp/slerp) instead of rigid
@@ -61,11 +62,12 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 - Mouse look tuned for mouse only; gamepad right stick would be far too slow.
 - In-game text is English only.
 - Pencil marks: no eraser, not saved, only on the board's flat faces, no squared lines / angles (D-028).
+- Assist option "type the dimension, the line is drawn" (owner's option A, D-034) deferred to a settings menu.
 - Recompiling scripts while in Play Mode resets non-serialized state (seen once: `NullReferenceException` in
   `PlayerToolBelt.ItemInHand`). Avoid with Unity *Preferences > General > Script Changes While Playing >
   Recompile After Finished Playing* (an editor preference, not a project setting).
 
 ## Next recommended action
-1. Owner: stop Play, rebuild the scene, run MT-013 (+ Test Runner 131 tests).
+1. Owner: stop Play, rebuild the scene, run MT-014 (fine marking) and MT-013 (assembly table) (+ Test Runner 143 tests).
 2. Then 5c: drill-driver on the belt (4th slot), screws at the blueprint's fastening points, completion + quality
    report in the HUD.
