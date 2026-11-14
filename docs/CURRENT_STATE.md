@@ -6,7 +6,8 @@ _Last updated: 2026-11-14_
 **Phase 3 (Measurement Prototype) done**: accepted by the owner on 2026-11-14 ("tamamdır şimdi oldu devam edelim")
 after the cut list fix; `main` fast-forwarded to `develop`. The owner confirmed it working as a whole; individual
 MT-008..MT-010 steps were not reported one by one.
-**Phase 4 (Cutting Prototype): plan proposed, awaiting the owner's approval.**
+**Phase 4 (Cutting Prototype) in progress**: plan approved (D-029). **4a (domain cut model + tests) done**;
+next 4b (hand saw + sawing interaction in the scene).
 Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 
 ## Completed
@@ -39,6 +40,7 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 | 3c 1st try (owner) | Cut list prompt showed the NEXT target and was read as the current one → now shows the current target; static compile 0 errors (Claude), re-test pending | 2026-11-14 |
 | 3c pencil + cut list + tolerance (D-028): static compile + `dotnet test` | 0 errors, 0 warnings; 89/89 tests passed (Claude) | 2026-11-14 |
 | Phase 3 as a whole (owner, after the cut list fix) | Accepted: "tamamdır şimdi oldu" | 2026-11-14 |
+| 4a cut model: static compile + `dotnet test` | 0 errors, 0 warnings; 108/108 tests passed (Claude). Nothing to play-test yet (domain only) | 2026-11-14 |
 
 ## Known issues / limitations
 - **Carry feel not liked yet** (owner, 2026-11-13). Ideas for later: smooth follow (lerp/slerp) instead of rigid
@@ -56,7 +58,7 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
   Recompile After Finished Playing* (an editor preference, not a project setting).
 
 ## Next recommended action
-1. Owner: approve the Phase 4 plan (proposed 2026-11-14): 4a domain cut model (crosscut at a mark, kerf on the waste
-   side, waste tracking, tests), 4b hand saw on the belt + sawing interaction, two new boards generated from the
-   resulting pieces (parametric meshes), 4c edge cases / repeated cuts.
-2. Then implement 4a (pure domain + tests first).
+1. Optional for the owner: Test Runner EditMode → 108 tests green (new `CrosscutTests`).
+2. Phase 4b: hand saw item on the belt (`SawDefinition` SO, kerf 2 mm), `HandSawTool` (snaps to the pencil line
+   nearest the crosshair, hold LMB ~3 s while the board rests on a surface), replace the board by two
+   `TimberBoard`s built from `CrosscutResult` (positions from `KerfStart/EndFromStart`), waste in `MaterialWasteLog`.

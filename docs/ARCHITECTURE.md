@@ -23,6 +23,7 @@ Assets/
         Measurement/Length.cs, TapeMeasure.cs, Tolerance.cs, PencilMark.cs, BoardMarks.cs
         Materials/BoardDimensions.cs, WoodSpecies.cs, TimberPiece.cs
         Inventory/InventoryItem.cs, ToolBelt.cs
+        Cutting/Saw.cs, Crosscut.cs (+ CrosscutResult, CutWaste), MaterialWasteLog.cs
       Core/PauseController.cs, UserPreferences.cs, BoxMeshBuilder.cs, PhysicsQueries.cs
       Materials/WoodSpeciesDefinition.cs, TimberBoard.cs
       Inventory/ItemDefinition.cs, PickupItem.cs, PlayerToolBelt.cs

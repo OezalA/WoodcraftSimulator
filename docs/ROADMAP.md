@@ -10,7 +10,7 @@ Legend: ✅ done (verified) · 🟡 in progress · ⬜ not started
 | 1 | First-Person Workshop Prototype | ✅ |
 | 2 | Basic Object Handling | ✅ |
 | 3 | Measurement Prototype | ✅ |
-| 4 | Cutting Prototype | ⬜ |
+| 4 | Cutting Prototype | 🟡 |
 | 5 | Basic Assembly | ⬜ |
 | 6 | First Complete Crafting Job (vertical slice) | ⬜ |
 | 7 | Inventory and Material Economy | ⬜ |
@@ -58,3 +58,10 @@ Split into steps: **2a** timber data + board, **2b** handling, **2c** timber rac
 - [x] 3b: Tape measure: hooks on the nearest board end, live mm reading, sticky hook, precision look mode (D-025, D-026)
 - [x] 3c: Pencil marks stored on the board (Length from the reference end), cut list target, tolerance check (default ±1 mm), tests (D-028)
 - Owner accepted Phase 3 on 2026-11-14 ("tamamdır şimdi oldu devam edelim") after the cut list fix; `main` fast-forwarded.
+
+## Phase 4: Cutting Prototype
+Plan approved by the owner on 2026-11-14 ("devam et"), D-029.
+- [x] 4a: Domain cut model: `Saw` (kerf), `Crosscut` (at a pencil mark, kerf on the waste side, marks handed over,
+  minimum piece 5 mm), `CutWaste`, `MaterialWasteLog`; 19 new tests (108 total, `dotnet test`)
+- [ ] 4b: Hand saw on the belt, sawing interaction (hold LMB at a mark), two boards generated from the result
+- [ ] 4c: Repeated cuts, edge cases, polish

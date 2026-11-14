@@ -216,3 +216,22 @@ from the target reported).
 - **Text uses ASCII/Latin-1 only** ("OK", "±", "×"): symbols like ✓ or → may be missing from the runtime font.
 **Deferred:** eraser / removing marks, marking width or angles (square), several marks shown as a list, marks on
 side faces, saving marks.
+
+## D-029: Cutting model: parametric pieces, kerf on the waste side (Accepted, 2026-11-14)
+Phase 4 plan approved by the owner ("devam et") with all recommended choices:
+- **Parametric regeneration** (master prompt §6.6 asks for the trade-off): a cut produces two new domain
+  `TimberPiece`s, and each gets a freshly generated box mesh, like every board today. Exact and simple for straight
+  cuts; data stays the source of truth. Mesh slicing (needed for angled / free cuts) and predefined cut regions
+  (inflexible) are not used now.
+- **Crosscuts only**, at an existing pencil mark (`Crosscut.TryCut`); no free cuts. The skill element is the marking
+  accuracy for now; saw drift may come later. Rip cuts and angled cuts are deferred.
+- **Kerf on the waste side:** away from the end the mark was measured from, so the measured piece keeps exactly the
+  marked length (`MeasuredPiece`); the other piece loses the kerf. Start piece + kerf + end piece = original, exactly
+  (integer 0.1 mm lengths).
+- **Hand saw kerf 2 mm: approximate, unverified placeholder** (like the densities, D-017).
+- **Marks** are handed over: inside the kerf (incl. the cut line) they are sawn away; on the end piece positions are
+  shifted to its own Start end, reference end unchanged.
+- **Minimum piece length 5 mm** (`Crosscut.DefaultMinimumPieceLength`): shorter slivers are refused (`PieceTooShort`).
+- **Waste = sawdust only** (`CutWaste`: kerf × cross-section, volume and mass; `MaterialWasteLog` totals). Offcuts
+  remain usable pieces until the material economy (Phase 7) decides otherwise.
+- The board must rest on a surface to be cut (not while carried); clamping is deferred. (Applies from 4b.)
