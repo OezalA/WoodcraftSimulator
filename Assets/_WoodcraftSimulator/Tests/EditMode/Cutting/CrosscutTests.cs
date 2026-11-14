@@ -137,6 +137,52 @@ namespace WoodcraftSimulator.Tests.Cutting
         }
 
         [Test]
+        public void MarksAtTheVeryEnds_StayOnTheirPieces()
+        {
+            TimberPiece piece = Board();
+            var marks = new BoardMarks(piece.Dimensions.Length);
+            var atStart = new PencilMark(Mm(0), BoardEnd.Start);
+            var cut = new PencilMark(Mm(900), BoardEnd.Start);
+            var atEnd = new PencilMark(Mm(2400), BoardEnd.Start);
+            marks.Add(atStart);
+            marks.Add(cut);
+            marks.Add(atEnd);
+
+            Crosscut.TryCut(piece, marks, cut, HandSaw, out CrosscutResult result);
+
+            Assert.That(result.StartMarks.All[0].PositionFromStart, Is.EqualTo(Mm(0)));
+            // The end piece is 1498 mm long; the mark keeps lying exactly on its far end.
+            Assert.That(result.EndMarks.All[0].PositionFromStart, Is.EqualTo(result.EndPiece.Dimensions.Length));
+        }
+
+        [TestCase(902.0, 0)]   // exactly on the far edge of the kerf: sawn away
+        [TestCase(902.1, 1)]   // 0.1 mm beyond: stays on the end piece, at 0.1 mm
+        public void MarkAtTheKerfEdge_IsSawnAwayOnlyInsideTheKerf(double position, int expectedOnEndPiece)
+        {
+            TimberPiece piece = Board();
+            var marks = new BoardMarks(piece.Dimensions.Length);
+            var cut = new PencilMark(Mm(900), BoardEnd.Start);
+            marks.Add(cut);
+            marks.Add(new PencilMark(Mm(position), BoardEnd.Start));
+
+            Crosscut.TryCut(piece, marks, cut, HandSaw, out CrosscutResult result);
+
+            Assert.That(result.EndMarks.Count, Is.EqualTo(expectedOnEndPiece));
+        }
+
+        [Test]
+        public void CuttingInTheMiddle_GivesTwoPiecesOneKerfApart()
+        {
+            var (piece, marks, mark) = Marked(1200, BoardEnd.Start);
+
+            Crosscut.TryCut(piece, marks, mark, HandSaw, out CrosscutResult result);
+
+            Assert.That(result.StartPiece.Dimensions.Length, Is.EqualTo(Mm(1200)));
+            Assert.That(result.EndPiece.Dimensions.Length, Is.EqualTo(Mm(1198)));
+            Assert.That(result.KerfEndFromStart - result.KerfStartFromStart, Is.EqualTo(HandSaw.Kerf));
+        }
+
+        [Test]
         public void RepeatedCuts_OnTheRemainder_StayExact()
         {
             // Cut three 600 mm pieces off a 2400 mm board, always measuring from the Start end of the remainder.

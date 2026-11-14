@@ -208,6 +208,7 @@ namespace WoodcraftSimulator.Editor
             var sawTool = saw.AddComponent<HandSawTool>();
             SetReference(sawTool, "definition", SawAssets.HandSaw());
             SetReference(sawTool, "waste", waste);
+            SetReference(sawTool, "cutList", cutList);
             SetReference(sawTool, "cutGuide", CreateLine(saw, "CutGuide", materials.CutGuide, 0.003f));
         }
 

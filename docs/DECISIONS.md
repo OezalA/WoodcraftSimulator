@@ -250,3 +250,18 @@ Phase 4b, following D-029.
   pieces stay where they were, 2 mm apart. Copied mark visuals are dropped and rebuilt from the handed-over marks
   (all visuals live under one `PencilMarks` child). `PencilMark.Face` (Top/Bottom) keeps lines on the right face.
 - **Waste:** `WorkshopWaste` (scene) holds the `MaterialWasteLog`; the readout shows the cut and the total sawdust.
+
+## D-031: Unsupported objects fall and settle; cut checked against the target (Accepted, 2026-11-14)
+Phase 4c (owner: "4c'ye geçebilirsin"). Fixes the known issue "removing a board from under another leaves the upper
+one floating" and the new one "an offcut over the bench edge floats".
+- **Settling** extends D-019 with a controlled, temporary physics state. When a resting object's support may have
+  changed (after a cut: both pieces; on pick-up: objects lying on the picked one), it checks at the next physics
+  step whether anything is directly below its center of mass (short ray). If not, it becomes non-kinematic and
+  falls; physics decides tipping and where it lands. At rest (< 2 cm/s, < 0.1 rad/s for 0.3 s, sleeping, or after
+  6 s) it is kinematic again. Objects lying on a settling object settle along. Supported objects never switch to
+  physics, so placed and cut boards don't jitter or move.
+- "Above" = the other object's lowest point is at least at this one's top (side-by-side boards are not affected).
+- **Cut vs target:** the saw's result line checks the measured piece (the one on the reference side) against the
+  cut list target with ±1 mm: `Cut: 600 mm (target 600 mm, OK ±1 mm) + 1798 mm ...`. This is the result that
+  counts; the pencil's check (D-028) is the preview.
+- Piece positions after a cut need no extra domain code: they follow from `KerfStart/EndFromStart` (tested).

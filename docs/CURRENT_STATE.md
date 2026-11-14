@@ -7,7 +7,8 @@ _Last updated: 2026-11-14_
 after the cut list fix; `main` fast-forwarded to `develop`. The owner confirmed it working as a whole; individual
 MT-008..MT-010 steps were not reported one by one.
 **Phase 4 (Cutting Prototype) in progress**: plan approved (D-029). 4a (domain cut model + tests) done;
-**4b (hand saw, sawing, splitting boards; D-030) implemented, NOT yet tested in Unity** (MT-011).
+4b (hand saw, sawing, splitting boards; D-030) **works (owner: "gayet iyi çalıştı")**.
+**4c (falling offcuts / unsupported boards, cut vs target, edge-case tests; D-031) implemented, NOT yet tested in Unity** (MT-012).
 Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 
 ## Completed
@@ -42,13 +43,15 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 | Phase 3 as a whole (owner, after the cut list fix) | Accepted: "tamamdır şimdi oldu" | 2026-11-14 |
 | 4a cut model: static compile + `dotnet test` | 0 errors, 0 warnings; 108/108 tests passed (Claude). Nothing to play-test yet (domain only) | 2026-11-14 |
 | 4b hand saw: static compile + `dotnet test` | 0 errors, 0 warnings; 108/108 tests passed (Claude). Unity play-test pending (MT-011) | 2026-11-14 |
+| MT-011 Hand saw (owner) | Passed: "gayet iyi çalıştı" | 2026-11-14 |
+| 4c: static compile + `dotnet test` | 0 errors, 0 warnings; 112/112 tests passed (Claude). Unity play-test pending (MT-012) | 2026-11-14 |
 
 ## Known issues / limitations
 - **Carry feel not liked yet** (owner, 2026-11-13). Ideas for later: smooth follow (lerp/slerp) instead of rigid
   attachment, hold pose depending on size/mass (long boards on the shoulder), slower movement with heavy/long
   items, carried object avoiding walls (sweep test), subtle sway/bob. Ask the owner what feels wrong first.
 - Carried boards can visually clip into walls (no collision while carried, D-019).
-- Removing a board from under another leaves the upper one floating (kinematic, D-019). No free "drop".
+- No free "drop" of a carried object (only validated placement). Unsupported objects fall and settle (D-031).
 - Species densities are approximate, unverified placeholders (D-017).
 - Build Settings: `Workshop` enabled; deleted `SampleScene` still listed (disabled, harmless).
 - Mouse look tuned for mouse only; gamepad right stick would be far too slow.
@@ -59,5 +62,5 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
   Recompile After Finished Playing* (an editor preference, not a project setting).
 
 ## Next recommended action
-1. Owner: stop Play, rebuild the scene, run MT-011 (+ Test Runner 108 tests).
-2. Then 4c: repeated cuts / edge cases / polish from the owner's feedback; then Phase 4 acceptance and `main`.
+1. Owner: stop Play, rebuild the scene, run MT-012 (+ Test Runner 112 tests).
+2. If it passes: Phase 4 accepted → fast-forward `main`, mark Phase 4 done. Then Phase 5 (Basic Assembly) plan.

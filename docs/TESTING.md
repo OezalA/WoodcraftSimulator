@@ -235,6 +235,23 @@ Failure → diagnosis:
 - Saw has no readout → saw lacks `HandSawTool` / `SawDefinition` (rebuild the scene); see Console for the error.
 - Pieces overlap or jump → report the board name and where it was lying; the piece positions come from `KerfStart/EndFromStart`.
 
+### MT-012: Falling offcuts, unsupported boards, cut vs target (Phase 4c)
+Precondition: stop Play, rebuild the scene (MT-001). Press Play. Take tape measure, pencil and saw.
+| Step | Expected |
+|---|---|
+| Pick up the pine board (1000 mm), press R so it points away from the bench, place it with the crosshair ~20 cm behind the bench's front edge | About half of the board sticks out over the front edge; it stays (its center is on the bench) |
+| Mark ~250 mm from the overhanging end and saw there | The overhanging offcut drops to the floor (may tip); the other piece stays on the bench |
+| Pick up the offcut from the floor | Works as usual |
+| Place a small board (walnut) on top of another board (oak), then pick up the oak board | The walnut board drops onto the bench instead of floating |
+| Set the cut list to 600 mm, mark 600 mm and saw | `Cut: 600 mm (target 600 mm, OK ±1 mm) + ...` |
+| Mark clearly off target (e.g. 610 mm) and saw | `Cut: 610 mm (target 600 mm, OUT OF TOLERANCE ±1 mm) + ...` |
+| Saw a board lying fully on the bench | Both pieces stay exactly where they were (no jump) |
+| EditMode tests | 112 tests, all green |
+
+Failure → diagnosis:
+- A piece keeps jittering or sliding → note where it lies; settling ends after 0.3 s at rest (6 s at most).
+- A piece falls through the floor or bench → report it with the board size.
+
 ## Game view setup (corrects the earlier tip)
 A fixed resolution such as *Full HD (1920x1080)* at `Scale 1x` **crops** the image when the Game view window is
 smaller than 1920×1080: the bottom (tool belt bar) and the lower right (tool in hand) are cut off.

@@ -3,6 +3,7 @@ using System.Globalization;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using WoodcraftSimulator.Cutting;
+using WoodcraftSimulator.Handling;
 using WoodcraftSimulator.Inventory;
 using WoodcraftSimulator.Materials;
 using WoodcraftSimulator.Measurement;
@@ -21,6 +22,12 @@ namespace WoodcraftSimulator.Tools
 
         [Tooltip("Where the sawdust of every cut is recorded.")]
         [SerializeField] private WorkshopWaste waste;
+
+        [Tooltip("Target dimension the measured piece is checked against. Optional.")]
+        [SerializeField] private CutList cutList;
+
+        [Tooltip("Allowed deviation of the measured piece from the target, in millimeters.")]
+        [SerializeField, Min(0f)] private float toleranceMillimeters = 1f;
 
         [Tooltip("Line across the board showing where the saw will cut (the kerf).")]
         [SerializeField] private LineRenderer cutGuide;
@@ -216,6 +223,12 @@ namespace WoodcraftSimulator.Tools
                 waste.Log.Record(result.Waste);
             }
 
+            // Whatever lay on the board now rests on the pieces, or on nothing if it was over the kerf.
+            if (original.TryGetComponent(out Carryable originalCarryable))
+            {
+                originalCarryable.RequestSupportCheckAbove();
+            }
+
             Destroy(original.gameObject);
             aim.Release();
             ClearTarget();
@@ -231,12 +244,28 @@ namespace WoodcraftSimulator.Tools
                     originalTransform.parent);
                 copy.name = $"{piece.Species.DisplayName}_{piece.Dimensions.Length.FormatMillimeters()}";
                 copy.GetComponent<TimberBoard>().SetPiece(piece, marks);
+
+                // An offcut sticking out over an edge has nothing under it any more: it falls (D-031).
+                if (copy.TryGetComponent(out Carryable carryable))
+                {
+                    carryable.RequestSupportCheck();
+                }
             }
         }
 
         private string FormatResult(CrosscutResult result)
         {
-            string text = $"Cut: {result.MeasuredPiece.Dimensions.Length} + {result.OtherPiece.Dimensions.Length}" +
+            Length measured = result.MeasuredPiece.Dimensions.Length;
+            string measuredText = measured.ToString();
+            if (cutList != null)
+            {
+                // The cut piece against the job's target: this is what counts, not the pencil line (D-031).
+                var tolerance = new Tolerance(Length.FromMillimeters((double)toleranceMillimeters));
+                ToleranceCheck check = tolerance.Check(cutList.Target, measured);
+                measuredText += $" (target {cutList.Target}, {(check.IsWithin ? "OK" : "OUT OF TOLERANCE")} {tolerance})";
+            }
+
+            string text = $"Cut: {measuredText} + {result.OtherPiece.Dimensions.Length}" +
                           $"   (kerf {result.Waste.Kerf}, sawdust {CubicCentimeters(result.Waste.VolumeCubicMeters)} cm³)";
             if (waste != null && waste.Log.CutCount > 1)
             {

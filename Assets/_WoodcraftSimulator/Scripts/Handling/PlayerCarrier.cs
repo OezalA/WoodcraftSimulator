@@ -123,6 +123,9 @@ namespace WoodcraftSimulator.Handling
                 return false;
             }
 
+            // Whatever lies on it loses its support: those objects check it at the next physics step (D-031).
+            carryable.RequestSupportCheckAbove();
+
             carried = carryable;
             carryRotation = Quaternion.Inverse(YawRotation()) * carryable.transform.rotation;
             carried.SetCarried(true);

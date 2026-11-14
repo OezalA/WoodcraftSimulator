@@ -174,6 +174,9 @@ Unity side:
   the `CutList` target. `CutList`: note on the bench, E cycles preset targets (300/450/600/900/1200 mm).
 - `TimberBoard.Marks` (`BoardMarks`) + mark visuals under a `PencilMarks` child (shared unit cube mesh, `PencilMark`
   material). `TimberBoard.SetPiece(piece, marks)` re-targets a board (used for the halves of a cut).
+- `Carryable` settling (D-031): `RequestSupportCheck` / `RequestSupportCheckAbove`; ray below the center of mass at the
+  next FixedUpdate; unsupported → non-kinematic until at rest → kinematic. Called by `PlayerCarrier.TryPickUp` and
+  `HandSawTool` after a cut.
 - `HandSawTool` (D-030): `BoardAim` + snap to the nearest pencil line (30 mm), evaluates `Crosscut.TryCut` once per
   target, hold `Player/UseTool` for `SawDefinition.SawingSeconds(cross-section)`, stroke animation through
   `PickupItem.HandOffset`; on completion two `Instantiate` copies of the board get `SetPiece`, the original is
