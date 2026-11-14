@@ -27,7 +27,9 @@ Assets/
       Core/PauseController.cs, UserPreferences.cs, BoxMeshBuilder.cs, PhysicsQueries.cs
       Materials/WoodSpeciesDefinition.cs, TimberBoard.cs
       Inventory/ItemDefinition.cs, PickupItem.cs, PlayerToolBelt.cs
-      Tools/IHeldTool.cs (+ HeldToolContext), BoardAim.cs (+ TapeBladeView), TapeMeasureTool.cs, PencilTool.cs, CutList.cs
+      Tools/IHeldTool.cs (+ HeldToolContext), BoardAim.cs (+ TapeBladeView), TapeMeasureTool.cs, PencilTool.cs, CutList.cs,
+            HandSawTool.cs
+      Cutting/SawDefinition.cs, WorkshopWaste.cs
       Player/PlayerController.cs
       Interaction/IInteractable.cs, IDescribable.cs, PlayerInteractor.cs
       Handling/Carryable.cs, PlayerCarrier.cs
@@ -35,7 +37,7 @@ Assets/
       Workshop/LightSwitch.cs
       Editor/
         WoodcraftSimulator.Editor.asmdef   editor-only assembly
-        WorkshopSceneBuilder.cs, WoodSpeciesAssets.cs, ItemAssets.cs
+        WorkshopSceneBuilder.cs, WoodSpeciesAssets.cs, ItemAssets.cs, SawAssets.cs
     Tests/EditMode/                assembly "WoodcraftSimulator.Tests.EditMode" (NUnit)
   InputSystem_Actions.inputactions  project-wide input actions (template asset)
   Settings/                          URP pipeline assets (template; SampleSceneProfile is referenced by PC/Mobile_RPAsset)
@@ -170,7 +172,12 @@ Unity side:
 - `PencilTool` (D-028): needs a tape measure on the belt; live reading + target; `Player/UseTool` (LMB/RT) adds a
   domain `PencilMark` (exact position, reference end) via `TimberBoard.AddMark` and reports `Tolerance.Check` against
   the `CutList` target. `CutList`: note on the bench, E cycles preset targets (300/450/600/900/1200 mm).
-- `TimberBoard.Marks` (`BoardMarks`) + mark visuals (child quads, shared unit cube mesh, `PencilMark` material).
+- `TimberBoard.Marks` (`BoardMarks`) + mark visuals under a `PencilMarks` child (shared unit cube mesh, `PencilMark`
+  material). `TimberBoard.SetPiece(piece, marks)` re-targets a board (used for the halves of a cut).
+- `HandSawTool` (D-030): `BoardAim` + snap to the nearest pencil line (30 mm), evaluates `Crosscut.TryCut` once per
+  target, hold `Player/UseTool` for `SawDefinition.SawingSeconds(cross-section)`, stroke animation through
+  `PickupItem.HandOffset`; on completion two `Instantiate` copies of the board get `SetPiece`, the original is
+  destroyed, the waste goes to `WorkshopWaste.Log`. Orange `CutGuide` line marks the kerf.
 - Readout strings are rebuilt only when their inputs change. HUD shows the readout above the crosshair (`tool-readout`).
 
 ### Workshop objects (`WoodcraftSimulator.Workshop`)

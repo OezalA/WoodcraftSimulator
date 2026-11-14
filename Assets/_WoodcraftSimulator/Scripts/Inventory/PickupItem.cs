@@ -26,6 +26,9 @@ namespace WoodcraftSimulator.Inventory
 
         public Quaternion HandRotation => Quaternion.Euler(handRotation);
 
+        /// <summary>Extra offset (camera space, meters) a tool can animate, e.g. saw strokes. Zero when idle.</summary>
+        public Vector3 HandOffset { get; set; }
+
         public string Description => Item != null ? Item.DisplayName : name;
 
         public string InteractionPrompt => $"Take {Description}";

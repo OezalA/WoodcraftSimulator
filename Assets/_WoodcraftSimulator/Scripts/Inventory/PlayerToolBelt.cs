@@ -101,7 +101,7 @@ namespace WoodcraftSimulator.Inventory
             }
 
             inHand.transform.SetPositionAndRotation(
-                cameraTransform.TransformPoint(inHand.HandPosition),
+                cameraTransform.TransformPoint(inHand.HandPosition + inHand.HandOffset),
                 cameraTransform.rotation * inHand.HandRotation);
         }
 

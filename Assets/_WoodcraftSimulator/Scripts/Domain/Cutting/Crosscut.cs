@@ -141,7 +141,7 @@ namespace WoodcraftSimulator.Cutting
                 }
                 else if (position > kerfEnd)
                 {
-                    endMarks.Add(new PencilMark(position - kerfEnd, mark.MeasuredFrom));
+                    endMarks.Add(new PencilMark(position - kerfEnd, mark.MeasuredFrom, mark.Face));
                 }
             }
 

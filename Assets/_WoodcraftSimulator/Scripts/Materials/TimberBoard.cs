@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Globalization;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -20,6 +19,13 @@ namespace WoodcraftSimulator.Materials
     {
         private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
 
+        // Pencil line visual: drawn wider than a real 0.5 mm line so it stays visible from a normal working
+        // distance. Only the visual; the authoritative position is the domain PencilMark (0.1 mm).
+        private const float MarkLineWidth = 0.0015f;
+        private const float MarkLineHeight = 0.0003f;
+        private const float MarkSurfaceOffset = 0.0005f;
+        private const string MarksContainerName = "PencilMarks";
+
         [SerializeField] private WoodSpeciesDefinition species;
 
         [Header("Actual dimensions (mm)")]
@@ -27,26 +33,20 @@ namespace WoodcraftSimulator.Materials
         [SerializeField, Min(1f)] private float widthMillimeters = 95f;
         [SerializeField, Min(1f)] private float thicknessMillimeters = 45f;
 
-        private Mesh generatedMesh;
-        private MaterialPropertyBlock propertyBlock;
-
         [Tooltip("Material of pencil lines drawn on this board.")]
         [SerializeField] private Material markMaterial;
 
-        // Pencil line visual: drawn wider than a real 0.5 mm line so it stays visible from a normal working
-        // distance. Only the visual; the authoritative position is the domain PencilMark (0.1 mm).
-        private const float MarkLineWidth = 0.0015f;
-        private const float MarkLineHeight = 0.0003f;
-        private const float MarkSurfaceOffset = 0.0005f;
-
         private static Mesh unitCube; // shared by all mark visuals, scaled per mark
-        private readonly List<GameObject> markVisuals = new List<GameObject>();
 
-        /// <summary>Pencil marks on this board (created together with <see cref="Piece"/>).</summary>
-        public BoardMarks Marks { get; private set; }
+        private Mesh generatedMesh;
+        private MaterialPropertyBlock propertyBlock;
+        private Transform marksContainer;
 
         /// <summary>Authoritative timber data. Null until <see cref="Rebuild"/> has run.</summary>
         public TimberPiece Piece { get; private set; }
+
+        /// <summary>Pencil marks on this board (created together with <see cref="Piece"/>).</summary>
+        public BoardMarks Marks { get; private set; }
 
         public WoodSpeciesDefinition SpeciesDefinition => species;
 
@@ -66,7 +66,7 @@ namespace WoodcraftSimulator.Materials
             }
         }
 
-        /// <summary>Recreates the domain piece and everything derived from it (mesh, collider, mass, color).</summary>
+        /// <summary>Recreates the domain piece from the serialized fields, and everything derived from it.</summary>
         public void Rebuild()
         {
             if (species == null)
@@ -75,10 +75,35 @@ namespace WoodcraftSimulator.Materials
                 return;
             }
 
-            Piece = new TimberPiece(species.ToDomain(),
+            var piece = new TimberPiece(species.ToDomain(),
                 BoardDimensions.FromMillimeters(lengthMillimeters, widthMillimeters, thicknessMillimeters));
-            Marks = new BoardMarks(Piece.Dimensions.Length);
-            ClearMarkVisuals();
+            Apply(piece, new BoardMarks(piece.Dimensions.Length));
+        }
+
+        /// <summary>
+        /// Makes this board represent another piece (e.g. one half of a cut) with its marks. The species asset stays;
+        /// the serialized dimensions are updated so the Inspector shows the truth.
+        /// </summary>
+        public void SetPiece(TimberPiece piece, BoardMarks marks)
+        {
+            BoardDimensions dimensions = piece.Dimensions;
+            lengthMillimeters = (float)dimensions.Length.Millimeters;
+            widthMillimeters = (float)dimensions.Width.Millimeters;
+            thicknessMillimeters = (float)dimensions.Thickness.Millimeters;
+            Apply(piece, marks);
+        }
+
+        /// <summary>Adds a pencil line across the board: stored in <see cref="Marks"/> and drawn on its face.</summary>
+        public void AddMark(PencilMark mark)
+        {
+            Marks.Add(mark); // validates that the mark lies on the board
+            CreateMarkVisual(mark);
+        }
+
+        private void Apply(TimberPiece piece, BoardMarks marks)
+        {
+            Piece = piece;
+            Marks = marks;
 
             BoardDimensions dimensions = Piece.Dimensions;
             var size = new Vector3(
@@ -103,22 +128,42 @@ namespace WoodcraftSimulator.Materials
             meshRenderer.GetPropertyBlock(propertyBlock);
             propertyBlock.SetColor(BaseColorId, species.GreyboxColor);
             meshRenderer.SetPropertyBlock(propertyBlock);
+
+            RebuildMarkVisuals();
         }
 
-        /// <summary>
-        /// Adds a pencil line across the board: stored in <see cref="Marks"/> (authoritative) and drawn on the face
-        /// given by <paramref name="faceSign"/> (+1 = local +Y face, −1 = −Y face).
-        /// </summary>
-        public void AddMark(PencilMark mark, float faceSign)
+        private void RebuildMarkVisuals()
         {
-            Marks.Add(mark); // validates that the mark lies on the board
+            // All mark visuals live under one child, so a copied board (Instantiate) can drop the copied ones.
+            Transform existing = transform.Find(MarksContainerName);
+            if (existing != null)
+            {
+                existing.SetParent(null);
+                DestroyEverywhere(existing.gameObject);
+            }
+
+            marksContainer = null;
+            foreach (PencilMark mark in Marks.All)
+            {
+                CreateMarkVisual(mark);
+            }
+        }
+
+        private void CreateMarkVisual(PencilMark mark)
+        {
+            if (marksContainer == null)
+            {
+                marksContainer = new GameObject(MarksContainerName).transform;
+                marksContainer.SetParent(transform, false);
+            }
 
             var visual = new GameObject($"PencilMark {mark.PositionFromStart}");
-            visual.transform.SetParent(transform, false);
+            visual.transform.SetParent(marksContainer, false);
 
             BoardDimensions dimensions = Piece.Dimensions;
             float halfLength = (float)(dimensions.Length.Meters / 2.0);
-            float y = Mathf.Sign(faceSign) * ((float)(dimensions.Thickness.Meters / 2.0) + MarkSurfaceOffset);
+            float faceSign = mark.Face == BoardFace.Top ? 1f : -1f;
+            float y = faceSign * ((float)(dimensions.Thickness.Meters / 2.0) + MarkSurfaceOffset);
             visual.transform.localPosition = new Vector3(0f, y, (float)mark.PositionFromStart.Meters - halfLength);
             visual.transform.localScale = new Vector3((float)dimensions.Width.Meters, MarkLineHeight, MarkLineWidth);
 
@@ -127,36 +172,25 @@ namespace WoodcraftSimulator.Materials
             var meshRenderer = visual.AddComponent<MeshRenderer>();
             meshRenderer.sharedMaterial = markMaterial;
             meshRenderer.shadowCastingMode = ShadowCastingMode.Off;
-            markVisuals.Add(visual);
         }
 
-        private void ClearMarkVisuals()
+        private static void DestroyEverywhere(Object target)
         {
-            foreach (GameObject visual in markVisuals)
+            if (Application.isPlaying)
             {
-                if (visual != null)
-                {
-                    Destroy(visual);
-                }
+                Destroy(target);
             }
-
-            markVisuals.Clear();
+            else
+            {
+                DestroyImmediate(target);
+            }
         }
 
         private static void DestroyMesh(Mesh mesh)
         {
-            if (mesh == null)
+            if (mesh != null)
             {
-                return;
-            }
-
-            if (Application.isPlaying)
-            {
-                Destroy(mesh);
-            }
-            else
-            {
-                DestroyImmediate(mesh);
+                DestroyEverywhere(mesh);
             }
         }
     }

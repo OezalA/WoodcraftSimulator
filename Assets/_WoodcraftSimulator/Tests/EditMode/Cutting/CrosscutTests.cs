@@ -117,7 +117,7 @@ namespace WoodcraftSimulator.Tests.Cutting
             var before = new PencilMark(Mm(300), BoardEnd.Start);
             var cut = new PencilMark(Mm(900), BoardEnd.Start);
             var insideKerf = new PencilMark(Mm(901), BoardEnd.Start);
-            var after = new PencilMark(Mm(1500), BoardEnd.End);
+            var after = new PencilMark(Mm(1500), BoardEnd.End, BoardFace.Bottom);
             marks.Add(before);
             marks.Add(cut);
             marks.Add(insideKerf);
@@ -131,6 +131,7 @@ namespace WoodcraftSimulator.Tests.Cutting
             Assert.That(result.EndMarks.Count, Is.EqualTo(1));
             Assert.That(result.EndMarks.All[0].PositionFromStart, Is.EqualTo(Mm(1500 - 902)));
             Assert.That(result.EndMarks.All[0].MeasuredFrom, Is.EqualTo(BoardEnd.End));
+            Assert.That(result.EndMarks.All[0].Face, Is.EqualTo(BoardFace.Bottom));
             // Still 900 mm from the (unchanged) End end of the end piece.
             Assert.That(result.EndMarks.All[0].DistanceFromReference(result.EndPiece.Dimensions.Length), Is.EqualTo(Mm(900)));
         }

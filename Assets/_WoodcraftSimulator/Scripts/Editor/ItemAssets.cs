@@ -15,6 +15,10 @@ namespace WoodcraftSimulator.Editor
         public static ItemDefinition TapeMeasure() =>
             GetOrCreate("TapeMeasure", "tape-measure", "Tape measure", ItemSizeClass.Small);
 
+        // A hand saw hangs on the belt in this prototype (Small); a proper tool wall / toolbox comes later.
+        public static ItemDefinition HandSaw() =>
+            GetOrCreate("HandSaw", "hand-saw", "Hand saw", ItemSizeClass.Small);
+
         public static ItemDefinition CarpenterPencil() =>
             GetOrCreate("CarpenterPencil", "carpenter-pencil", "Carpenter's pencil", ItemSizeClass.Small);
 

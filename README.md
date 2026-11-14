@@ -30,6 +30,7 @@ First-person, realistic woodworking and construction simulator built with Unity.
 | Tool belt: take tool in hand / holster | 1–4 (same key again = holster) |
 | Precision look (zoom in) | Hold right mouse button |
 | Draw a pencil line (pencil in hand, tape measure on the belt) | Left click |
+| Saw at a pencil line (saw in hand) | Hold left mouse button |
 | Change the target dimension | E on the cut list (white sheet on the bench) |
 | Pause menu | Esc |
 

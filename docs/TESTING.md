@@ -212,6 +212,29 @@ Failure → diagnosis:
 - No line visible but the result text appears → board lacks the `PencilMark` material reference; rebuild the scene.
 - Nothing happens with the pencil → the pencil lacks `PencilTool` (rebuild the scene).
 
+### MT-011: Hand saw crosscut (Phase 4b)
+Precondition: stop Play, rebuild the scene (MT-001). Press Play. Take the tape measure, pencil and hand saw (grey
+blade at the front of the bench; 3 belt slots).
+| Step | Expected |
+|---|---|
+| With the pencil, mark 300 mm on the pine board (1000 mm) on the bench (MT-010) | Line + `Marked at ...` |
+| Take the saw in hand, aim at the board away from any line | `No pencil line here: mark the cut first` |
+| Aim near the line (within ~3 cm) | Orange cut line across the board right next to the pencil line (on the waste side); `Hold LMB to saw at 300 mm` (or the exact mark) |
+| Hold LMB | Saw moves back and forth; `Sawing  NN%` counts up (~1.5 s for 200 × 18 mm) |
+| Release halfway, then hold again | Continues from the same percentage |
+| Finish | The board becomes two boards with a 2 mm gap; readout `Cut: 300 mm + 698 mm   (kerf 2 mm, sawdust 7.2 cm³)` (lengths depend on your mark) |
+| Look at each piece | Description shows its new length, e.g. `Pine 300 × 200 × 18 mm (...)` |
+| Pick up and place both pieces | Carry/place works; other pencil lines on them moved along |
+| Cut one of the pieces again | Works; second line `Total sawdust ... cm³ in 2 cuts` |
+| Mark 3 mm from an end and try to saw there | `Too close to the end: pieces must be at least 5 mm`; nothing happens |
+| Esc → Resume (click) with the saw in hand while aiming at a line | No sawing starts by the click |
+| EditMode tests | 108 tests, all green (new: `CrosscutTests`) |
+
+Failure → diagnosis:
+- `InvalidOperationException ... Player/UseTool` → Input Actions not reimported.
+- Saw has no readout → saw lacks `HandSawTool` / `SawDefinition` (rebuild the scene); see Console for the error.
+- Pieces overlap or jump → report the board name and where it was lying; the piece positions come from `KerfStart/EndFromStart`.
+
 ## Game view setup (corrects the earlier tip)
 A fixed resolution such as *Full HD (1920x1080)* at `Scale 1x` **crops** the image when the Game view window is
 smaller than 1920×1080: the bottom (tool belt bar) and the lower right (tool in hand) are cut off.

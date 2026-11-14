@@ -112,8 +112,9 @@ namespace WoodcraftSimulator.Tools
             }
 
             // Exact position (0.1 mm), not the rounded tape reading: where the pencil actually is.
-            var mark = new PencilMark(point.PointFromStart, point.HookedEnd);
-            point.Board.AddMark(mark, point.FaceSign);
+            var face = point.FaceSign > 0f ? BoardFace.Top : BoardFace.Bottom;
+            var mark = new PencilMark(point.PointFromStart, point.HookedEnd, face);
+            point.Board.AddMark(mark);
 
             Length distance = mark.DistanceFromReference(point.BoardLength);
             SetLines(liveLine, cutList != null

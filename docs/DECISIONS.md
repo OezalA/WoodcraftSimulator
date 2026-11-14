@@ -235,3 +235,18 @@ Phase 4 plan approved by the owner ("devam et") with all recommended choices:
 - **Waste = sawdust only** (`CutWaste`: kerf × cross-section, volume and mass; `MaterialWasteLog` totals). Offcuts
   remain usable pieces until the material economy (Phase 7) decides otherwise.
 - The board must rest on a surface to be cut (not while carried); clamping is deferred. (Applies from 4b.)
+
+## D-030: Hand saw interaction and splitting boards in the scene (Accepted, 2026-11-14)
+Phase 4b, following D-029.
+- **Hand saw** = a small item on the belt (prototype: a 500 mm saw "hangs on the belt"; a tool wall comes later).
+  Data in a `SawDefinition` asset (kerf 2 mm, gameplay sawing time 0.07 s per cm² of cross-section, 1.5–8 s).
+- **Targeting:** the saw snaps to the pencil line nearest to the aimed point (within 30 mm along the board). The cut
+  is evaluated once per target (`Crosscut.TryCut`); a refused cut is explained before the player starts sawing.
+  An orange guide line shows the kerf on the waste side next to the pencil line.
+- **Sawing:** hold Use (LMB/RT); progress is kept when released and resumed on the same line, reset when the target
+  changes. The saw in hand moves back and forth (`PickupItem.HandOffset`, camera space). No skill element / drift yet.
+- **Splitting:** the board is copied twice with `Instantiate` (keeps all component settings: kinematic body,
+  carryable, materials) and each copy gets its piece via `TimberBoard.SetPiece`; the original is destroyed. The
+  pieces stay where they were, 2 mm apart. Copied mark visuals are dropped and rebuilt from the handed-over marks
+  (all visuals live under one `PencilMarks` child). `PencilMark.Face` (Top/Bottom) keeps lines on the right face.
+- **Waste:** `WorkshopWaste` (scene) holds the `MaterialWasteLog`; the readout shows the cut and the total sawdust.

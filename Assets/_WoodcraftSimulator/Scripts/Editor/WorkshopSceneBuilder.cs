@@ -6,6 +6,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
 using WoodcraftSimulator.Core;
+using WoodcraftSimulator.Cutting;
 using WoodcraftSimulator.Handling;
 using WoodcraftSimulator.Interaction;
 using WoodcraftSimulator.Inventory;
@@ -97,6 +98,7 @@ namespace WoodcraftSimulator.Editor
             EnsureFolder(MaterialFolder);
             EnsureFolder(WoodSpeciesAssets.Folder);
             EnsureFolder(ItemAssets.Folder);
+            EnsureFolder(SawAssets.Folder);
 
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
             ConfigureDefaultObjects(scene);
@@ -162,13 +164,17 @@ namespace WoodcraftSimulator.Editor
         }
 
         /// <summary>
-        /// First small items at the front-left of the workbench: a tape measure, a carpenter's pencil and a cut list
+        /// Small items at the front of the workbench: tape measure, carpenter's pencil, cut list and hand saw
         /// (placeholder boxes with real-world sizes).
         /// </summary>
         private static void BuildBenchTools(Transform parent, GreyboxMaterials materials)
         {
             var tools = new GameObject("Tools").transform;
             tools.SetParent(parent, false);
+
+            // Records the sawdust of every cut (shared by all saws).
+            var waste = new GameObject("WorkshopWaste").AddComponent<WorkshopWaste>();
+            waste.transform.SetParent(parent, false);
 
             float benchTop = FloorTop + 0.9f;
             float frontZ = InteriorDepth / 2f - 0.5f - 0.3f; // 10 cm behind the bench's front edge
@@ -193,23 +199,37 @@ namespace WoodcraftSimulator.Editor
             var pencilTool = pencil.AddComponent<PencilTool>();
             SetReference(pencilTool, "blade", CreateTapeBlade(pencil, materials.TapeBlade));
             SetReference(pencilTool, "cutList", cutList);
+
+            // Hand saw: placeholder box for a ~500 mm blade (120 mm tall, 4 mm thick for visibility), lying flat on the
+            // bench; held upright, pointing forward and slightly down.
+            GameObject saw = CreatePickupItem("HandSaw", tools, ItemAssets.HandSaw(), new Vector3(0.12f, 0.004f, 0.5f),
+                new Vector3(0f, benchTop, frontZ - 0.03f), 90f, materials.Steel,
+                handPosition: new Vector3(0.2f, -0.24f, 0.5f), handRotation: new Vector3(15f, -5f, 90f));
+            var sawTool = saw.AddComponent<HandSawTool>();
+            SetReference(sawTool, "definition", SawAssets.HandSaw());
+            SetReference(sawTool, "waste", waste);
+            SetReference(sawTool, "cutGuide", CreateLine(saw, "CutGuide", materials.CutGuide, 0.003f));
         }
 
         /// <summary>
         /// The extended tape blade drawn by a tool (LineRenderer on a child: one Renderer per GameObject). The pencil
         /// has its own, standing for the tape laid along the board while marking.
         /// </summary>
-        private static LineRenderer CreateTapeBlade(GameObject tool, Material bladeMaterial)
+        private static LineRenderer CreateTapeBlade(GameObject tool, Material bladeMaterial) =>
+            CreateLine(tool, "TapeBlade", bladeMaterial, 0.016f); // ~16 mm wide blade (real tapes: 16–32 mm)
+
+        /// <summary>A camera-facing 2-point line on a child object (hidden until the tool shows it).</summary>
+        private static LineRenderer CreateLine(GameObject tool, string name, Material material, float width)
         {
-            var bladeObject = new GameObject("TapeBlade");
+            var bladeObject = new GameObject(name);
             bladeObject.transform.SetParent(tool.transform, false);
 
             var blade = bladeObject.AddComponent<LineRenderer>();
             blade.useWorldSpace = true;
             blade.positionCount = 2;
-            blade.widthMultiplier = 0.016f; // ~16 mm wide blade (real tapes: 16–32 mm)
+            blade.widthMultiplier = width;
             blade.alignment = LineAlignment.View; // always faces the camera, independent of the hand's rotation
-            blade.sharedMaterial = bladeMaterial;
+            blade.sharedMaterial = material;
             blade.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             blade.receiveShadows = false;
             blade.enabled = false;
@@ -601,6 +621,7 @@ namespace WoodcraftSimulator.Editor
             public Material PencilRed { get; } = GetOrCreate("PencilRed", new Color(0.75f, 0.15f, 0.12f));
             public Material TapeBlade { get; } = GetOrCreateUnlit("TapeBlade", new Color(1f, 0.85f, 0.15f));
             public Material PencilMark { get; } = GetOrCreateUnlit("PencilMark", new Color(0.12f, 0.12f, 0.13f));
+            public Material CutGuide { get; } = GetOrCreateUnlit("CutGuide", new Color(1f, 0.45f, 0.1f));
             public Material Paper { get; } = GetOrCreate("Paper", new Color(0.93f, 0.93f, 0.90f));
 
             /// <summary>Opaque URP Unlit: flat color, unaffected by lighting (good for thin overlays like a tape blade).</summary>
