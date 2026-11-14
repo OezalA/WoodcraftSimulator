@@ -51,6 +51,9 @@ namespace WoodcraftSimulator.Editor
         private static readonly float[] RackShelfTops = { 0.30f, 0.90f, 1.50f };
         private static readonly float[] RackUprightZ = { -1.2f, 0f, 1.2f };
 
+        // Minimum size (m) of a small item's grab collider in every direction (visual can be smaller).
+        private const float MinGrabSize = 0.05f;
+
         private const float PlayerHeight = 1.8f;
         private const float PlayerRadius = 0.3f;
         private const float EyeHeight = 1.65f;
@@ -172,13 +175,13 @@ namespace WoodcraftSimulator.Editor
             // Tape measure housing ≈ 70 × 70 × 35 mm, lying on its side; held upright in the hand.
             GameObject tape = CreatePickupItem("TapeMeasure", tools, ItemAssets.TapeMeasure(), new Vector3(0.07f, 0.035f, 0.07f),
                 new Vector3(-0.6f, benchTop, frontZ), 0f, materials.ToolYellow,
-                handPosition: new Vector3(0.2f, -0.17f, 0.38f), handRotation: new Vector3(0f, -20f, 90f));
+                handPosition: new Vector3(0.15f, -0.12f, 0.36f), handRotation: new Vector3(0f, -20f, 90f));
             AddTapeMeasureTool(tape, materials.TapeBlade);
 
             // Carpenter's pencil ≈ 175 × 12 × 7 mm (flat), lying across the bench; held pointing forward.
             CreatePickupItem("CarpenterPencil", tools, ItemAssets.CarpenterPencil(), new Vector3(0.012f, 0.007f, 0.175f),
                 new Vector3(-0.35f, benchTop, frontZ), 90f, materials.PencilRed,
-                handPosition: new Vector3(0.16f, -0.14f, 0.32f), handRotation: new Vector3(10f, -15f, 0f));
+                handPosition: new Vector3(0.12f, -0.1f, 0.3f), handRotation: new Vector3(10f, -15f, 0f));
         }
 
         /// <summary>Tool behaviour + the extended blade (LineRenderer on a child: one Renderer per GameObject).</summary>
@@ -207,6 +210,14 @@ namespace WoodcraftSimulator.Editor
             // Placeholder geometry: a scaled cube is acceptable for small props (unlike timber, D-016).
             GameObject item = CreateBox(name, parent, surfacePosition + Vector3.up * (size.y / 2f + 0.001f), size, material);
             item.transform.localRotation = Quaternion.Euler(0f, yawDegrees, 0f);
+
+            // Grab area larger than the visual: at least MinGrabSize in every direction, so a 7 mm pencil is easy to
+            // aim at. BoxCollider.size is in local units, i.e. relative to the scaled cube.
+            var grabCollider = item.GetComponent<BoxCollider>();
+            grabCollider.size = new Vector3(
+                Mathf.Max(1f, MinGrabSize / size.x),
+                Mathf.Max(1f, MinGrabSize / size.y),
+                Mathf.Max(1f, MinGrabSize / size.z));
 
             var pickup = item.AddComponent<PickupItem>();
             var serialized = new SerializedObject(pickup);

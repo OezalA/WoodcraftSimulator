@@ -25,6 +25,12 @@ namespace WoodcraftSimulator.Tools
 
         [SerializeField] private LayerMask measureMask = Physics.DefaultRaycastLayers;
 
+        [Tooltip("Once hooked, keep measuring while the aim passes within this distance (m) of the board's axis.")]
+        [SerializeField, Min(0f)] private float stickyDistance = 0.25f;
+
+        [Tooltip("Once hooked, keep measuring up to this far (m) beyond the board's ends (reading stays at full length).")]
+        [SerializeField, Min(0f)] private float stickyOvershoot = 0.6f;
+
         // Blade drawn slightly above the surface to avoid z-fighting.
         private const float BladeSurfaceOffset = 0.001f;
 
@@ -73,8 +79,28 @@ namespace WoodcraftSimulator.Tools
             Transform eyes = context.Eyes;
             var ray = new Ray(eyes.position, eyes.forward);
 
-            if (!PhysicsQueries.RaycastIgnoring(ray, range, measureMask, context.PlayerRoot, hitBuffer, out RaycastHit hit)
-                || !hit.collider.TryGetComponent(out TimberBoard board) || board.Piece == null)
+            TimberBoard board = null;
+            float pointZ = 0f; // aimed point along the board's length axis, local meters from its center
+
+            if (PhysicsQueries.RaycastIgnoring(ray, range, measureMask, context.PlayerRoot, hitBuffer, out RaycastHit hit)
+                && hit.collider.TryGetComponent(out TimberBoard hitBoard) && hitBoard.Piece != null)
+            {
+                // Aiming directly at a board: hook onto it (if new) and read where the ray hits.
+                board = hitBoard;
+                if (board != hookedBoard)
+                {
+                    Hook(board);
+                }
+
+                pointZ = board.transform.InverseTransformPoint(hit.point).z;
+            }
+            else if (hookedBoard != null && TryProjectOntoHookedBoard(ray, out pointZ))
+            {
+                // Sticky hook: the aim slid off the board (or past its end) but stays close to its axis,
+                // like a tape that stays hooked while you look slightly beside it.
+                board = hookedBoard;
+            }
+            else
             {
                 hookedBoard = null;
                 ClearReading();
@@ -83,21 +109,64 @@ namespace WoodcraftSimulator.Tools
 
             Length boardLength = board.Piece.Dimensions.Length;
             float halfLength = (float)(boardLength.Meters / 2.0);
-
-            if (board != hookedBoard)
-            {
-                // Hook onto the end closest to the player (player position projected onto the board axis).
-                float playerZ = board.transform.InverseTransformPoint(context.PlayerRoot.position).z;
-                hookedBoard = board;
-                hookedEnd = TapeMeasure.NearestEnd(boardLength, Length.FromMeters(playerZ + halfLength));
-            }
-
-            Vector3 localPoint = board.transform.InverseTransformPoint(hit.point);
-            Length pointFromStart = Length.FromMeters(localPoint.z + halfLength);
+            Length pointFromStart = Length.FromMeters(pointZ + halfLength);
             Length reading = TapeMeasure.Read(boardLength, pointFromStart, hookedEnd, resolution);
 
-            UpdateBlade(board, halfLength, localPoint.z);
+            UpdateBlade(board, halfLength, pointZ);
             SetReading(reading, boardLength);
+        }
+
+        private void Hook(TimberBoard board)
+        {
+            // Hook onto the end closest to the player (player position projected onto the board axis).
+            Length boardLength = board.Piece.Dimensions.Length;
+            float halfLength = (float)(boardLength.Meters / 2.0);
+            float playerZ = board.transform.InverseTransformPoint(context.PlayerRoot.position).z;
+            hookedBoard = board;
+            hookedEnd = TapeMeasure.NearestEnd(boardLength, Length.FromMeters(playerZ + halfLength));
+        }
+
+        /// <summary>
+        /// Closest approach between the aim ray and the hooked board's length axis (a line through its center along
+        /// local Z). Succeeds while the ray passes within <see cref="stickyDistance"/> of the axis, in front of the
+        /// eyes and within range, and not too far beyond the board's ends.
+        /// </summary>
+        private bool TryProjectOntoHookedBoard(Ray ray, out float pointZ)
+        {
+            pointZ = 0f;
+            if (hookedBoard.Piece == null)
+            {
+                return false;
+            }
+
+            Transform boardTransform = hookedBoard.transform;
+            Vector3 axisOrigin = boardTransform.position;
+            Vector3 axisDirection = boardTransform.forward;
+
+            // Minimise |(o + t·d) − (a + s·u)| for unit d and u.
+            Vector3 w0 = ray.origin - axisOrigin;
+            float b = Vector3.Dot(ray.direction, axisDirection);
+            float denominator = 1f - b * b;
+            if (denominator < 1e-6f)
+            {
+                return false; // looking straight along the board
+            }
+
+            float dw = Vector3.Dot(ray.direction, w0);
+            float uw = Vector3.Dot(axisDirection, w0);
+            float t = (b * uw - dw) / denominator; // along the ray
+            float s = uw + t * b;                  // along the board axis (local Z, transform scale is 1)
+
+            float halfLength = (float)(hookedBoard.Piece.Dimensions.Length.Meters / 2.0);
+            Vector3 gap = ray.GetPoint(t) - (axisOrigin + axisDirection * s);
+
+            if (t < 0f || t > range || gap.magnitude > stickyDistance || Mathf.Abs(s) > halfLength + stickyOvershoot)
+            {
+                return false;
+            }
+
+            pointZ = s;
+            return true;
         }
 
         private void UpdateBlade(TimberBoard board, float halfLength, float pointZ)

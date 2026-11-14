@@ -173,3 +173,13 @@ Placeholder item geometry may use scaled cubes (exception to D-016, which is abo
 - **Precision look** (owner-approved): hold RMB / gamepad LT → FOV 70° → 25° (200°/s) and mouse sensitivity scaled
   by FOV/normal FOV, so millimetres become aimable. Available always, not only with tools.
 **Deferred:** choosing the hook end manually, measuring between arbitrary points, measuring width/thickness.
+
+## D-026: Sticky tape hook and enlarged grab areas (Accepted, 2026-11-14)
+Owner feedback after first 3a/3b try: the reading vanished as soon as the aim slipped off the board or past its
+end; the pencil was hard to target.
+- **Sticky hook:** once hooked, `TapeMeasureTool` keeps measuring while the aim ray passes within 0.25 m of the
+  board's length axis (closest approach ray↔axis), up to 0.6 m beyond the ends (reading clamped to full length).
+  Aiming at another board re-hooks; aiming far away releases.
+- **Grab areas:** small items get a BoxCollider of at least 5 cm in every direction (visual unchanged), because the
+  aim-assist sphere barely helps with flat objects lying on a surface (the sphere touches the surface first).
+- Hand poses moved closer to the screen centre so tools stay visible in a small Game view.

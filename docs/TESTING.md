@@ -105,9 +105,9 @@ Failure → diagnosis:
 - Test Runner shows no tests → test assembly not compiled (check Console) or *UNITY_INCLUDE_TESTS* not defined.
 
 ## Tips for visual checks in the Editor
-- Game view `Scale` slider must be at **1x**; higher values zoom (upscale) the image and make 3D and UI text blurry.
-- Use a fixed resolution (Game view resolution dropdown, e.g. *Full HD (1920x1080)*) or *Play Maximized*
-  so UI scaling matches the 1080p reference of `GameplayPanelSettings`.
+- Game view `Scale` above 1x zooms (upscales) the image and blurs 3D and UI text; see "Game view setup" below.
+- Prefer **16:9 Aspect** or *Play Maximized*; a fixed resolution larger than the window gets cropped (see below).
+
 
 ### MT-006: Pick up, carry, rotate and place boards
 Precondition: rebuild the scene (MT-001). Press Play.
@@ -167,7 +167,7 @@ Precondition: rebuild the scene (MT-001). Press Play.
 Failure → diagnosis:
 - `InvalidOperationException ... Player/ToolSlot1` → Input Actions not reimported (right-click `InputSystem_Actions` > Reimport).
 - No belt bar → HUD lacks the `toolBelt` reference or `belt` element; rebuild the scene; check Console.
-- Pencil hard to target → it is only 7 mm thick; aim assist should still catch it within ~8 cm. Report if not.
+- Pencil hard to target → its grab area is ≥ 5 cm (D-026); rebuild the scene if it is not.
 
 ### MT-009: Tape measure + precision look
 Precondition: rebuild the scene (MT-001), take the tape measure (MT-008) and hold it (key 1).
@@ -176,7 +176,8 @@ Precondition: rebuild the scene (MT-001), take the tape measure (MT-008) and hol
 | Hold RMB anywhere | View zooms in smoothly (~25° FOV); mouse look slower; release → back to normal |
 | Aim at a spruce board on the rack | Yellow tape blade drawn on the board's top face from the end nearest to you to the crosshair; readout above the crosshair, e.g. `623 mm   (board 2400 mm)` |
 | Move the aim along the board | Reading changes in 1 mm steps; blade follows |
-| Aim beyond the board's far end, still on the board edge | Reading stops at the full length (2400) |
+| Aim beyond the board's far end (up to ~60 cm past it) | Reading stays at the full length (2400), blade to the end |
+| Let the aim slip slightly beside the board (≤ ~25 cm) | Reading continues (sticky hook, D-026) |
 | Aim at the wall / floor | Readout and blade disappear |
 | Walk to the other end of a board and aim at it again (look away first) | Hook moves to the end now nearest to you |
 | Hold RMB while measuring | Exact millimetres are easy to hit (e.g. 900 mm) |
@@ -187,3 +188,9 @@ Failure → diagnosis:
 - `InvalidOperationException ... Player/PrecisionLook` → Input Actions not reimported.
 - No readout, no blade → tape lacks `TapeMeasureTool`/`TapeBlade` (rebuild scene) or the board has no `TimberBoard`.
 - Blade pink → `TapeBlade` material missing; rebuild the scene.
+
+## Game view setup (corrects the earlier tip)
+A fixed resolution such as *Full HD (1920x1080)* at `Scale 1x` **crops** the image when the Game view window is
+smaller than 1920×1080: the bottom (tool belt bar) and the lower right (tool in hand) are cut off.
+Use instead: resolution dropdown → **16:9 Aspect** (the view always fits the window), Scale slider at its leftmost
+value; or, outside Play Mode, set **Play Maximized** in the Play Focused dropdown (or press Shift+Space over the Game view).
