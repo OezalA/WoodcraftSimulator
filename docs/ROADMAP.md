@@ -71,6 +71,6 @@ Plan approved by the owner on 2026-11-14 ("devam et"), D-029.
 Plan approved by the owner on 2026-11-14 ("tamam"), D-032. First structure: frame 600 × 300 mm (2 × 600 + 2 × 210 mm
 spruce 95 × 45, butt joints, 2 screws 5 × 80 mm per corner).
 - [x] 5a: Domain assembly model: `Blueprint` (slots, connections, prerequisites, accuracy ±1 / fit ±5 mm),
-  `AssemblyBuild` (place / remove / fasten rules, completion), `AssemblyQualityReport`; 18 new tests (130 total)
-- [ ] 5b: Assembly table with a blueprint ghost; carried pieces snap into fitting slots, fit feedback
+  `AssemblyBuild` (place / remove / fasten rules, completion), `AssemblyQualityReport`; 19 new tests (131 total)
+- [ ] 5b: Assembly table with a blueprint ghost; carried pieces snap into fitting slots, fit feedback (code done, awaiting MT-013, D-033)
 - [ ] 5c: Drill-driver on the belt, driving screws at fastening points, completion + quality report in the HUD

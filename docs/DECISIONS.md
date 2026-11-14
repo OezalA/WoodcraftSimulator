@@ -281,3 +281,18 @@ Phase 5 plan approved by the owner ("tamam") with all recommended choices:
 - **Quality report** = separate components (parts installed, accurate parts with deviations, fasteners n/m,
   completion), no single score; it does not certify structural safety (§6.12).
 - **Namespace `WoodcraftSimulator.Construction`** (not `Assembly`, which clashes with `System.Reflection.Assembly`).
+
+## D-033: Snapping into assembly slots through a generic placement target (Accepted, 2026-11-14)
+Phase 5b, following D-032.
+- **`IPlacementTarget`** (Handling): anything with predefined places offers a snap pose for the carried object;
+  `PlayerCarrier` asks the aimed collider's parents before free placement. The carrier knows nothing about
+  assemblies; later fixed places (racks with bays, jigs) can use the same interface.
+- **`AssemblyStation`** (Construction) on the assembly table root (origin = table top center): builds the domain
+  `AssemblyBuild` from a `BlueprintDefinition` asset (slots with poses and nominal sizes, connections with fastening
+  points for 5c), shows translucent ghosts (no colliders) of empty slots, and offers a snap when the aim point is
+  within 8 cm of an empty slot's box, preferring the nearest slot the piece fits into. Not fitting → red preview with
+  the reason; fits but inaccurate → green with the deviation.
+- **Installed parts** are parented to the station, kinematic, and `Carryable.InstalledIn` is set: E takes them out
+  again while no screw is in them; support checks skip them; the saw refuses to cut them.
+- The frame lies on the table with the boards on edge (width vertical), so the 2 × 45 mm rail thickness lies in the
+  frame plane and the sides are 300 − 2 × 45 = 210 mm.

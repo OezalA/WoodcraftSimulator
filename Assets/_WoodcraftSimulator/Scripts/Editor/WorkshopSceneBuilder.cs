@@ -5,6 +5,7 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
+using WoodcraftSimulator.Construction;
 using WoodcraftSimulator.Core;
 using WoodcraftSimulator.Cutting;
 using WoodcraftSimulator.Handling;
@@ -99,6 +100,7 @@ namespace WoodcraftSimulator.Editor
             EnsureFolder(WoodSpeciesAssets.Folder);
             EnsureFolder(ItemAssets.Folder);
             EnsureFolder(SawAssets.Folder);
+            EnsureFolder(BlueprintAssets.Folder);
 
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
             ConfigureDefaultObjects(scene);
@@ -161,6 +163,7 @@ namespace WoodcraftSimulator.Editor
             BuildTimber(workshop, materials, species);
             BuildBenchTools(workshop, materials);
             BuildWorkbenchLamp(workshop, materials.Wall);
+            BuildAssemblyTable(workshop, materials);
         }
 
         /// <summary>
@@ -265,6 +268,43 @@ namespace WoodcraftSimulator.Editor
             serialized.FindProperty("handRotation").vector3Value = handRotation;
             serialized.ApplyModifiedPropertiesWithoutUndo();
             return item;
+        }
+
+        /// <summary>
+        /// Assembly table (1.2 × 0.8 m, 0.75 m high) on the right side of the room with the Phase 5 frame blueprint.
+        /// The <see cref="AssemblyStation"/> sits on the root, whose origin is the table top center: the table's
+        /// colliders are its children, so aiming at the table finds the station (D-033).
+        /// </summary>
+        private static void BuildAssemblyTable(Transform parent, GreyboxMaterials materials)
+        {
+            const float length = 1.2f;
+            const float depth = 0.8f;
+            const float surfaceHeight = 0.75f;
+            const float topThickness = 0.04f;
+            const float legSize = 0.06f;
+            const float legInset = 0.06f;
+
+            var table = new GameObject("AssemblyTable").transform;
+            table.SetParent(parent, false);
+            table.localPosition = new Vector3(2.6f, FloorTop + surfaceHeight, 0.5f);
+
+            CreateBox("Top", table, new Vector3(0f, -topThickness / 2f, 0f),
+                new Vector3(length, topThickness, depth), materials.Workbench);
+
+            float legHeight = surfaceHeight - topThickness;
+            float legX = length / 2f - legInset;
+            float legZ = depth / 2f - legInset;
+            for (int i = 0; i < 4; i++)
+            {
+                float x = (i % 2 == 0) ? -legX : legX;
+                float z = (i < 2) ? -legZ : legZ;
+                CreateBox($"Leg_{i + 1}", table, new Vector3(x, -topThickness - legHeight / 2f, z),
+                    new Vector3(legSize, legHeight, legSize), materials.Workbench);
+            }
+
+            var station = table.gameObject.AddComponent<AssemblyStation>();
+            SetReference(station, "blueprint", BlueprintAssets.Frame600x300());
+            SetReference(station, "ghostMaterial", materials.BlueprintGhost);
         }
 
         private static void BuildWorkbenchLamp(Transform parent, Material switchMaterial)
@@ -642,6 +682,8 @@ namespace WoodcraftSimulator.Editor
                 return material;
             }
             public Material Lumber { get; } = GetOrCreate("Lumber", new Color(0.86f, 0.73f, 0.53f));
+            public Material BlueprintGhost { get; } = GetOrCreateTransparentUnlit("BlueprintGhost",
+                new Color(0.45f, 0.75f, 1f, 0.25f));
             public Material PlacementPreview { get; } = GetOrCreateTransparentUnlit("PlacementPreview",
                 new Color(0.3f, 1f, 0.4f, 0.35f));
 

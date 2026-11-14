@@ -212,6 +212,12 @@ namespace WoodcraftSimulator.UI
         /// <summary>Why the carried object can't be placed right now; null when placement is possible.</summary>
         private string PlacementStatusText()
         {
+            // A snap target (e.g. an assembly slot) explains its own result.
+            if (carrier.StatusMessage != null)
+            {
+                return carrier.StatusMessage;
+            }
+
             switch (carrier.Status)
             {
                 case PlacementStatus.NoSurface:

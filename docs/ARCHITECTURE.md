@@ -31,6 +31,8 @@ Assets/
       Tools/IHeldTool.cs (+ HeldToolContext), BoardAim.cs (+ TapeBladeView), TapeMeasureTool.cs, PencilTool.cs, CutList.cs,
             HandSawTool.cs
       Cutting/SawDefinition.cs, WorkshopWaste.cs
+      Construction/BlueprintDefinition.cs, AssemblyStation.cs
+      Handling/IPlacementTarget.cs (+ SnapPlacement)
       Player/PlayerController.cs
       Interaction/IInteractable.cs, IDescribable.cs, PlayerInteractor.cs
       Handling/Carryable.cs, PlayerCarrier.cs
@@ -38,7 +40,7 @@ Assets/
       Workshop/LightSwitch.cs
       Editor/
         WoodcraftSimulator.Editor.asmdef   editor-only assembly
-        WorkshopSceneBuilder.cs, WoodSpeciesAssets.cs, ItemAssets.cs, SawAssets.cs
+        WorkshopSceneBuilder.cs, WoodSpeciesAssets.cs, ItemAssets.cs, SawAssets.cs, BlueprintAssets.cs
     Tests/EditMode/                assembly "WoodcraftSimulator.Tests.EditMode" (NUnit)
   InputSystem_Actions.inputactions  project-wide input actions (template asset)
   Settings/                          URP pipeline assets (template; SampleSceneProfile is referenced by PC/Mobile_RPAsset)
@@ -175,6 +177,8 @@ Unity side:
   the `CutList` target. `CutList`: note on the bench, E cycles preset targets (300/450/600/900/1200 mm).
 - `TimberBoard.Marks` (`BoardMarks`) + mark visuals under a `PencilMarks` child (shared unit cube mesh, `PencilMark`
   material). `TimberBoard.SetPiece(piece, marks)` re-targets a board (used for the halves of a cut).
+- `IPlacementTarget` (D-033): `PlayerCarrier.TrySnap` asks the aimed collider's parents for a snap pose before free
+  placement; `AssemblyStation` implements it (ghost slots, fit messages, install / release, `Carryable.InstalledIn`).
 - `Carryable` settling (D-031): `RequestSupportCheck` / `RequestSupportCheckAbove`; ray below the center of mass at the
   next FixedUpdate; unsupported → non-kinematic until at rest → kinematic. Called by `PlayerCarrier.TryPickUp` and
   `HandSawTool` after a cut.

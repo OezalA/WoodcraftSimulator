@@ -214,15 +214,15 @@ namespace WoodcraftSimulator.Construction
             return result;
         }
 
-        public RemoveResult TryRemove(string slotId, out TimberPiece piece)
+        /// <summary>Whether the slot's piece could be removed now, without removing it.</summary>
+        public RemoveResult CanRemove(string slotId)
         {
-            piece = null;
             if (!Blueprint.TryGetSlot(slotId, out _))
             {
                 return RemoveResult.UnknownSlot;
             }
 
-            if (!installed.TryGetValue(slotId, out TimberPiece current))
+            if (!installed.ContainsKey(slotId))
             {
                 return RemoveResult.SlotEmpty;
             }
@@ -235,8 +235,20 @@ namespace WoodcraftSimulator.Construction
                 }
             }
 
+            return RemoveResult.Removed;
+        }
+
+        public RemoveResult TryRemove(string slotId, out TimberPiece piece)
+        {
+            piece = null;
+            RemoveResult result = CanRemove(slotId);
+            if (result != RemoveResult.Removed)
+            {
+                return result;
+            }
+
+            piece = installed[slotId];
             installed.Remove(slotId);
-            piece = current;
             NotifyChanged(wasComplete: false);
             return RemoveResult.Removed;
         }

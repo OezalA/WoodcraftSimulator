@@ -5,7 +5,8 @@ _Last updated: 2026-11-14_
 ## Current milestone
 **Phase 4 (Cutting Prototype) done**: accepted by the owner on 2026-11-14 ("tamamdır devam edebilirsin") after
 MT-011 and MT-012 ("parça gayet iyi düşüyor, kesme işlemi de ok"); `main` fast-forwarded to `develop`.
-**Phase 5 (Basic Assembly) in progress**: plan approved (D-032). **5a (domain assembly model + tests) done**; next 5b.
+**Phase 5 (Basic Assembly) in progress**: plan approved (D-032). 5a (domain model) done.
+**5b (assembly table, snapping into slots; D-033) implemented, NOT yet tested in Unity** (MT-013).
 Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 
 ## Completed
@@ -47,6 +48,7 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 | MT-012 (owner) | Passed: offcut falls, cut OK; a 315 mm line instead of 300 was cut where marked (correct) | 2026-11-14 |
 | Phase 4 as a whole (owner) | Accepted: "tamamdır devam edebilirsin" | 2026-11-14 |
 | 5a assembly model: static compile + `dotnet test` | 0 errors, 0 warnings; 130/130 tests passed (Claude). Domain only, nothing to play-test | 2026-11-14 |
+| 5b assembly table + snapping: static compile + `dotnet test` | 0 errors, 0 warnings; 131/131 tests passed (Claude). Unity play-test pending (MT-013) | 2026-11-14 |
 
 ## Known issues / limitations
 - **Carry feel not liked yet** (owner, 2026-11-13). Ideas for later: smooth follow (lerp/slerp) instead of rigid
@@ -64,7 +66,6 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
   Recompile After Finished Playing* (an editor preference, not a project setting).
 
 ## Next recommended action
-1. Phase 5b: `BlueprintDefinition` asset (frame: slots with local poses + dimensions, connections with screw points),
-   assembly table + translucent ghost slots, `PlayerCarrier` snaps a carried board into a fitting slot (green) or
-   explains the misfit ("needs 210 mm, this one 225 mm"), placed parts locked (E to remove while unscrewed).
-2. Then 5c: drill-driver + screws + completion/quality report in the HUD.
+1. Owner: stop Play, rebuild the scene, run MT-013 (+ Test Runner 131 tests).
+2. Then 5c: drill-driver on the belt (4th slot), screws at the blueprint's fastening points, completion + quality
+   report in the HUD.

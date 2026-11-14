@@ -70,6 +70,10 @@ namespace WoodcraftSimulator.Handling
         private Vector3 placementPosition;
         private Quaternion placementRotation;
 
+        // Set while the aim offers a snap into an IPlacementTarget (e.g. an assembly slot) instead of free placement.
+        private IPlacementTarget snapTarget;
+        private SnapPlacement snap;
+
         public bool IsCarrying => carried != null;
 
         public Carryable Carried => carried;
@@ -78,6 +82,9 @@ namespace WoodcraftSimulator.Handling
 
         /// <summary>First collider blocking the placement while <see cref="Status"/> is Blocked, otherwise null.</summary>
         public Collider Blocker { get; private set; }
+
+        /// <summary>Text from a snap target (why it doesn't fit, or a note on an allowed snap), otherwise null.</summary>
+        public string StatusMessage { get; private set; }
 
         /// <summary>Raised with true on pick-up and false after placing.</summary>
         public event Action<bool> CarryingChanged;
@@ -188,6 +195,13 @@ namespace WoodcraftSimulator.Handling
                 out RaycastHit hit);
             lastSurfaceHit = hit;
             lastSurfaceHitValid = hasHit;
+            snapTarget = null;
+
+            // Predefined places (e.g. assembly slots) win over free placement when the aim is close to one.
+            if (hasHit && TrySnap(hit))
+            {
+                return;
+            }
 
             if (!hasHit || hit.normal.y < minNormalY)
             {
@@ -219,10 +233,39 @@ namespace WoodcraftSimulator.Handling
             previewRenderer.SetPropertyBlock(previewBlock);
         }
 
+        /// <summary>Shows and selects a snap pose if the aimed object belongs to an <see cref="IPlacementTarget"/>.</summary>
+        private bool TrySnap(RaycastHit hit)
+        {
+            var target = hit.collider.GetComponentInParent<IPlacementTarget>();
+            if (target == null || !target.TryGetSnap(carried, hit.point, out SnapPlacement offered))
+            {
+                return false;
+            }
+
+            snapTarget = target;
+            snap = offered;
+            placementPosition = offered.Position;
+            placementRotation = offered.Rotation;
+            hasPlacement = offered.Allowed;
+            SetStatus(offered.Allowed ? PlacementStatus.Valid : PlacementStatus.Blocked, null, offered.Message);
+
+            preview.SetActive(true);
+            preview.transform.SetPositionAndRotation(placementPosition, placementRotation);
+            previewBlock.SetColor(BaseColorId, offered.Allowed ? ValidColor : BlockedColor);
+            previewRenderer.SetPropertyBlock(previewBlock);
+            return true;
+        }
+
         private void Place()
         {
             carried.transform.SetPositionAndRotation(placementPosition, placementRotation);
             carried.SetCarried(false);
+            if (snapTarget != null)
+            {
+                snapTarget.Install(carried, snap);
+                snapTarget = null;
+            }
+
             carried = null;
             hasPlacement = false;
 
@@ -259,15 +302,16 @@ namespace WoodcraftSimulator.Handling
                       $"size={carried.Size} {surface}{blockers} eyes={cameraTransform.position}", this);
         }
 
-        private void SetStatus(PlacementStatus status, Collider blocker)
+        private void SetStatus(PlacementStatus status, Collider blocker, string message = null)
         {
-            if (status == Status && blocker == Blocker)
+            if (status == Status && blocker == Blocker && message == StatusMessage)
             {
                 return;
             }
 
             Status = status;
             Blocker = blocker;
+            StatusMessage = message;
             PlacementStatusChanged?.Invoke();
         }
 

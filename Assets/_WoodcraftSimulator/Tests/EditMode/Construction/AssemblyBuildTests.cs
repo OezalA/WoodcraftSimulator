@@ -170,6 +170,18 @@ namespace WoodcraftSimulator.Tests.Construction
         }
 
         [Test]
+        public void CanRemove_AnswersWithoutChangingTheBuild()
+        {
+            AssemblyBuild build = FullyPlaced();
+            build.TryFasten("bottom-left", 0, Screw);
+
+            Assert.That(build.CanRemove("right"), Is.EqualTo(RemoveResult.Removed));
+            Assert.That(build.CanRemove("bottom"), Is.EqualTo(RemoveResult.Fastened));
+            Assert.That(build.CanRemove("shelf"), Is.EqualTo(RemoveResult.UnknownSlot));
+            Assert.That(build.GetPiece("right"), Is.Not.Null);
+        }
+
+        [Test]
         public void TryRemove_FastenedPart_IsRefused_OtherPartsStillFree()
         {
             AssemblyBuild build = FullyPlaced();

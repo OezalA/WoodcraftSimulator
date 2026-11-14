@@ -252,6 +252,27 @@ Failure → diagnosis:
 - A piece keeps jittering or sliding → note where it lies; settling ends after 0.3 s at rest (6 s at most).
 - A piece falls through the floor or bench → report it with the board size.
 
+### MT-013: Assembly table, snapping parts into the frame (Phase 5b)
+Precondition: stop Play, rebuild the scene (MT-001). Press Play.
+Material: cut from the spruce boards (rack, bottom shelf, 2400 × 95 × 45): 2 × 600 mm and 2 × 210 mm (MT-011), plus
+one wrong piece, e.g. 225 mm.
+| Step | Expected |
+|---|---|
+| Look at the new table on the right side of the room | Light-blue translucent frame 600 × 300 mm: two long rails, two short sides, boards on edge |
+| Carry a 600 mm piece and aim at the table close to the front rail ghost | Green preview snaps exactly into the ghost; HUD `Front rail: fits` |
+| Click LMB | The piece sits in the frame, its ghost disappears |
+| Carry the 225 mm piece to a side ghost | Red preview in the slot; `Doesn't fit Left side: needs 210 × 95 × 45 mm, this one 225 × 95 × 45 mm`; LMB does nothing |
+| A piece 1–5 mm off (e.g. 212 mm) | Green, `Left side: fits, but 2 mm too long (inaccurate)` |
+| Aim at the table away from the ghosts | Normal free placement on the table works as before |
+| Look at an installed piece | `[E]  Take Spruce 600 × 95 × 45 mm ... out of the Frame 600 × 300 mm` → E picks it up, the ghost reappears |
+| Fill all four slots | Frame complete visually (screws come in 5c) |
+| With the saw, aim at a pencil line on an installed piece | `Take it out of the Frame 600 × 300 mm to cut it` |
+| EditMode tests | 131 tests, all green (new: `AssemblyBuildTests`) |
+
+Failure → diagnosis:
+- No ghosts → the table lacks `AssemblyStation` / blueprint asset (rebuild the scene); Console error names it.
+- Snap never happens → aim closer to the ghost (within 8 cm of its box); report where you aimed.
+
 ## Game view setup (corrects the earlier tip)
 A fixed resolution such as *Full HD (1920x1080)* at `Scale 1x` **crops** the image when the Game view window is
 smaller than 1920×1080: the bottom (tool belt bar) and the lower right (tool in hand) are cut off.

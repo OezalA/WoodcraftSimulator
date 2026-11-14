@@ -46,7 +46,23 @@ namespace WoodcraftSimulator.Handling
 
         public string Description => describable != null ? describable.Description : name;
 
-        public string InteractionPrompt => $"Pick up {Description}";
+        /// <summary>The target this object is installed in (e.g. an assembly slot), or null.</summary>
+        public IPlacementTarget InstalledIn { get; private set; }
+
+        public string InteractionPrompt
+        {
+            get
+            {
+                if (InstalledIn == null)
+                {
+                    return $"Pick up {Description}";
+                }
+
+                return InstalledIn.CanRelease(this, out string reason)
+                    ? $"Take {Description} out of {InstalledIn.DisplayName}"
+                    : reason;
+            }
+        }
 
         private void Awake()
         {
@@ -58,10 +74,31 @@ namespace WoodcraftSimulator.Handling
 
         public void Interact(PlayerInteractor interactor)
         {
-            if (interactor.TryGetComponent(out PlayerCarrier carrier))
+            if (!interactor.TryGetComponent(out PlayerCarrier carrier) || carrier.IsCarrying)
             {
-                carrier.TryPickUp(this);
+                return;
             }
+
+            if (InstalledIn != null)
+            {
+                if (!InstalledIn.CanRelease(this, out _))
+                {
+                    return;
+                }
+
+                InstalledIn.Release(this);
+            }
+
+            carrier.TryPickUp(this);
+        }
+
+        /// <summary>Called by an <see cref="IPlacementTarget"/>: installed (null = free again). Stays kinematic.</summary>
+        public void SetInstalled(IPlacementTarget target)
+        {
+            InstalledIn = target;
+            supportCheckPending = false;
+            settling = false;
+            body.isKinematic = true;
         }
 
         /// <summary>Called by <see cref="PlayerCarrier"/> when the object is picked up or placed.</summary>
@@ -88,7 +125,7 @@ namespace WoodcraftSimulator.Handling
         /// </summary>
         public void RequestSupportCheck()
         {
-            if (!IsCarried)
+            if (!IsCarried && InstalledIn == null)
             {
                 supportCheckPending = true;
             }
@@ -159,7 +196,7 @@ namespace WoodcraftSimulator.Handling
 
         private void ForceSettling()
         {
-            if (!IsCarried && !settling)
+            if (!IsCarried && !settling && InstalledIn == null)
             {
                 StartSettling();
             }

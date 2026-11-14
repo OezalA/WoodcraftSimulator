@@ -31,6 +31,8 @@ First-person, realistic woodworking and construction simulator built with Unity.
 | Precision look (zoom in) | Hold right mouse button |
 | Draw a pencil line (pencil in hand, tape measure on the belt) | Left click |
 | Saw at a pencil line (saw in hand) | Hold left mouse button |
+| Put a piece into the assembly frame | Carry it to the table, aim at the light-blue slot, left click |
+| Take a piece out of the frame (before screwing) | E |
 | Change the target dimension | E on the cut list (white sheet on the bench) |
 | Pause menu | Esc |
 

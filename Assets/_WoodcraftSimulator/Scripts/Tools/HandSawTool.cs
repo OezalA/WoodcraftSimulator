@@ -130,6 +130,13 @@ namespace WoodcraftSimulator.Tools
                 return;
             }
 
+            // A part installed in an assembly would leave its slot holding a piece that no longer exists.
+            if (point.Board.TryGetComponent(out Carryable carryable) && carryable.InstalledIn != null)
+            {
+                SetLines($"Take it out of the {carryable.InstalledIn.DisplayName} to cut it", resultLine);
+                return;
+            }
+
             Length atDistance = mark.DistanceFromReference(point.BoardLength);
             bool sawing = useAction.IsPressed() && Time.frameCount != ignoreInputFrame;
             if (!sawing)
