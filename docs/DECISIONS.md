@@ -183,3 +183,12 @@ end; the pencil was hard to target.
 - **Grab areas:** small items get a BoxCollider of at least 5 cm in every direction (visual unchanged), because the
   aim-assist sphere barely helps with flat objects lying on a surface (the sphere touches the surface first).
 - Hand poses moved closer to the screen centre so tools stay visible in a small Game view.
+
+## D-027: Newly taken tool goes into the hand; tool returns after carrying (Accepted, 2026-11-14)
+Owner feedback: after taking the pencil, taking the tape measure made the tape "vanish" (it went onto the belt
+because the hand was busy), and after carrying a board both tools seemed gone.
+- Taking an item from the world now always puts it in the hand (the previous one goes onto the belt), unless carrying.
+- Picking up a large object still holsters the tool; putting the object down takes the same tool back in hand.
+- Belt items stay invisible in the world; the belt bar is their only representation (a visible belt on the body is
+  deferred until there is a player body).
+- Also found: the belt bar was cut off because the Game view Scale was above 1x; with Scale < 1x it is visible.

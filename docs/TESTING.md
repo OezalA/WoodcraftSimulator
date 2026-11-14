@@ -156,10 +156,11 @@ Precondition: rebuild the scene (MT-001). Press Play.
 | Start | Belt bar at the bottom: `1 —  2 —  3 —  4 —` (all empty, dimmed) |
 | Look at the yellow box at the front-left of the workbench | `[E]  Take Tape measure` |
 | Press E | Tape measure disappears from the bench and appears in your hand (lower right); slot 1 shows "Tape measure", highlighted |
-| Take the red pencil | Goes to slot 2; tape stays in hand (hands were not empty) |
-| Press 2 / 1 / 1 | Pencil in hand / tape in hand / hands empty (slot 1 pressed again holsters) |
+| Take the red pencil | Goes to slot 2 and into your hand; the tape goes onto the belt (D-027) |
+| Press 1 / 2 / 2 | Tape in hand / pencil in hand / hands empty (slot 2 pressed again holsters) |
 | Press 3 (empty slot) while holding something | Hands empty |
 | With a tool in hand, pick up a board (E) | Tool disappears (holstered), board in hands |
+| Put the board down (LMB) | The same tool comes back into your hand (D-027) |
 | While carrying, press 1 / 2 | Nothing happens (hands full) |
 | Esc while holding a tool | Pause works; after Resume the tool is still in hand |
 | EditMode tests | 44 tests, all green (new: `ToolBeltTests`) |
