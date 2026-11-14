@@ -21,7 +21,9 @@ namespace WoodcraftSimulator.Tools
 
         public string Description => $"Cut list: target {Target}";
 
-        public string InteractionPrompt => $"Next target ({CurrentMillimeters(selectedIndex + 1)} mm)";
+        // The HUD shows only this line for interactables, so it states the CURRENT target (showing the next one
+        // was misread as the current one, D-028).
+        public string InteractionPrompt => $"Change target   (now: {Target})";
 
         /// <summary>Raised after the target changed.</summary>
         public event Action TargetChanged;

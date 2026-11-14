@@ -211,6 +211,8 @@ from the target reported).
 - **Visual:** a 1.5 mm dark line across the face turned towards the player (wider than a real 0.5 mm line so it is
   visible from working distance). New input action `Player/UseTool` (LMB, RT); the click that takes the pencil or
   resumes from the pause menu is ignored.
+- **Cut list prompt shows the current target** ("Change target (now: 900 mm)"): the first version showed the next
+  one, which the owner read as the current target (only the prompt line is shown for interactables).
 - **Text uses ASCII/Latin-1 only** ("OK", "±", "×"): symbols like ✓ or → may be missing from the runtime font.
 **Deferred:** eraser / removing marks, marking width or angles (square), several marks shown as a list, marks on
 side faces, saving marks.

@@ -194,8 +194,8 @@ Failure → diagnosis:
 Precondition: stop Play, rebuild the scene (MT-001). Press Play. Game view: 16:9 Aspect, Scale 1x.
 | Step | Expected |
 |---|---|
-| Look at the white sheet at the front-left of the bench | `Cut list: target 900 mm` + `[E] Next target (1200 mm)` |
-| Press E a few times | Target cycles 1200 → 300 → 450 → 600 → 900 mm |
+| Look at the white sheet at the front-left of the bench | `[E]  Change target   (now: 900 mm)` |
+| Press E a few times | "now" cycles 1200 → 300 → 450 → 600 → 900 mm; the pencil readout shows the same target |
 | Take only the pencil (no tape yet), aim at a board | Readout `Take a tape measure to measure where to mark`; LMB does nothing |
 | Take the tape measure, then press the pencil's slot key | Pencil in hand |
 | Aim at the pine board on the bench | Tape blade from the near end; readout `412 mm   target 900 mm` |
