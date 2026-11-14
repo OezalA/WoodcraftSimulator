@@ -3,10 +3,10 @@
 _Last updated: 2026-11-14_
 
 ## Current milestone
-Phase 3 (Measurement Prototype): **all three steps implemented on `develop`** (3a tool belt, 3b tape measure +
-precision look, 3c pencil marks + cut list target + tolerance check). 3a/3b were play-tested twice with fixes
-(D-026, D-027); the owner said "continue" after the Game view fix, but did not report the D-027 steps explicitly.
-**3c not yet tested in Unity.** `main` stays at Phase 2 until the owner confirms MT-008..MT-010 together.
+**Phase 3 (Measurement Prototype) done**: accepted by the owner on 2026-11-14 ("tamamdır şimdi oldu devam edelim")
+after the cut list fix; `main` fast-forwarded to `develop`. The owner confirmed it working as a whole; individual
+MT-008..MT-010 steps were not reported one by one.
+**Phase 4 (Cutting Prototype): plan proposed, awaiting the owner's approval.**
 Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 
 ## Completed
@@ -19,6 +19,8 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
   LMB place), `IDescribable`, `PlayerInteractor.IsBlocked`, carry hint in HUD, kinematic resting boards (MT-006 passed).
 - Phase 2c: timber rack (3 shelves at 30/90/150 cm) holding the long boards; aim assist for interactions;
   HUD explains refused placements (D-022); all casts from the eyes skip the player's own collider (D-023) (MT-007 passed).
+- Phase 3: tool belt with tape measure + pencil (D-024, D-027), tape measure with sticky hook and precision look
+  (D-025, D-026), pencil marks + cut list target + ±1 mm tolerance check (D-028); 89 EditMode tests.
 - Visual: MSAA 4x on PC quality (D-018), pause menu fonts fixed.
 
 ## Latest verification
@@ -35,7 +37,8 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 | MT-008/009 2nd try (owner) | Pencil visible in hand (no action yet: 3c). Belt bar visible once Game view Scale < 1x. Tape "vanished" when taken while holding the pencil (went onto the belt); tools gone after carrying a board → D-027 | 2026-11-14 |
 | D-027 (new tool into hand, tool back after carrying) | Static compile 0 errors (Claude); re-test pending | 2026-11-14 |
 | 3c 1st try (owner) | Cut list prompt showed the NEXT target and was read as the current one → now shows the current target; static compile 0 errors (Claude), re-test pending | 2026-11-14 |
-| 3c pencil + cut list + tolerance (D-028): static compile + `dotnet test` | 0 errors, 0 warnings; 89/89 tests passed (Claude). Unity play-test pending (MT-010) | 2026-11-14 |
+| 3c pencil + cut list + tolerance (D-028): static compile + `dotnet test` | 0 errors, 0 warnings; 89/89 tests passed (Claude) | 2026-11-14 |
+| Phase 3 as a whole (owner, after the cut list fix) | Accepted: "tamamdır şimdi oldu" | 2026-11-14 |
 
 ## Known issues / limitations
 - **Carry feel not liked yet** (owner, 2026-11-13). Ideas for later: smooth follow (lerp/slerp) instead of rigid
@@ -53,6 +56,7 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
   Recompile After Finished Playing* (an editor preference, not a project setting).
 
 ## Next recommended action
-1. Owner: stop Play, rebuild the scene, run MT-008 + MT-009 (regression, incl. D-027 steps) + MT-010
-   (+ Test Runner 89 tests). Then fast-forward `main` and mark Phase 3 done.
-2. Phase 4 (Cutting Prototype): plan to be agreed with the owner first (saw choice, kerf, cutting at a mark).
+1. Owner: approve the Phase 4 plan (proposed 2026-11-14): 4a domain cut model (crosscut at a mark, kerf on the waste
+   side, waste tracking, tests), 4b hand saw on the belt + sawing interaction, two new boards generated from the
+   resulting pieces (parametric meshes), 4c edge cases / repeated cuts.
+2. Then implement 4a (pure domain + tests first).
