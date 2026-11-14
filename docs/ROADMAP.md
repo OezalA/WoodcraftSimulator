@@ -56,4 +56,4 @@ Split into steps: **2a** timber data + board, **2b** handling, **2c** timber rac
 ## Phase 3: Measurement Prototype
 - [ ] 3a: Small-item inventory = tool belt (D-024): tape measure + pencil, keys 1–4 (code done, awaiting MT-008)
 - [ ] 3b: Tape measure: hooks on the nearest board end, live mm reading, precision look mode (code done, awaiting MT-009)
-- [ ] 3c: Pencil marks stored on the board (Length from the reference end), tolerance check (default ±1 mm), tests
+- [ ] 3c: Pencil marks stored on the board (Length from the reference end), cut list target, tolerance check (default ±1 mm), tests (code done, awaiting MT-010, D-028)

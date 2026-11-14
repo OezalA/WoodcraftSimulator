@@ -1,7 +1,10 @@
+using System.Collections.Generic;
 using System.Globalization;
 using UnityEngine;
+using UnityEngine.Rendering;
 using WoodcraftSimulator.Core;
 using WoodcraftSimulator.Interaction;
+using WoodcraftSimulator.Measurement;
 
 namespace WoodcraftSimulator.Materials
 {
@@ -26,6 +29,21 @@ namespace WoodcraftSimulator.Materials
 
         private Mesh generatedMesh;
         private MaterialPropertyBlock propertyBlock;
+
+        [Tooltip("Material of pencil lines drawn on this board.")]
+        [SerializeField] private Material markMaterial;
+
+        // Pencil line visual: drawn wider than a real 0.5 mm line so it stays visible from a normal working
+        // distance. Only the visual; the authoritative position is the domain PencilMark (0.1 mm).
+        private const float MarkLineWidth = 0.0015f;
+        private const float MarkLineHeight = 0.0003f;
+        private const float MarkSurfaceOffset = 0.0005f;
+
+        private static Mesh unitCube; // shared by all mark visuals, scaled per mark
+        private readonly List<GameObject> markVisuals = new List<GameObject>();
+
+        /// <summary>Pencil marks on this board (created together with <see cref="Piece"/>).</summary>
+        public BoardMarks Marks { get; private set; }
 
         /// <summary>Authoritative timber data. Null until <see cref="Rebuild"/> has run.</summary>
         public TimberPiece Piece { get; private set; }
@@ -59,6 +77,8 @@ namespace WoodcraftSimulator.Materials
 
             Piece = new TimberPiece(species.ToDomain(),
                 BoardDimensions.FromMillimeters(lengthMillimeters, widthMillimeters, thicknessMillimeters));
+            Marks = new BoardMarks(Piece.Dimensions.Length);
+            ClearMarkVisuals();
 
             BoardDimensions dimensions = Piece.Dimensions;
             var size = new Vector3(
@@ -83,6 +103,44 @@ namespace WoodcraftSimulator.Materials
             meshRenderer.GetPropertyBlock(propertyBlock);
             propertyBlock.SetColor(BaseColorId, species.GreyboxColor);
             meshRenderer.SetPropertyBlock(propertyBlock);
+        }
+
+        /// <summary>
+        /// Adds a pencil line across the board: stored in <see cref="Marks"/> (authoritative) and drawn on the face
+        /// given by <paramref name="faceSign"/> (+1 = local +Y face, −1 = −Y face).
+        /// </summary>
+        public void AddMark(PencilMark mark, float faceSign)
+        {
+            Marks.Add(mark); // validates that the mark lies on the board
+
+            var visual = new GameObject($"PencilMark {mark.PositionFromStart}");
+            visual.transform.SetParent(transform, false);
+
+            BoardDimensions dimensions = Piece.Dimensions;
+            float halfLength = (float)(dimensions.Length.Meters / 2.0);
+            float y = Mathf.Sign(faceSign) * ((float)(dimensions.Thickness.Meters / 2.0) + MarkSurfaceOffset);
+            visual.transform.localPosition = new Vector3(0f, y, (float)mark.PositionFromStart.Meters - halfLength);
+            visual.transform.localScale = new Vector3((float)dimensions.Width.Meters, MarkLineHeight, MarkLineWidth);
+
+            unitCube ??= BoxMeshBuilder.Create(Vector3.one, "Unit cube");
+            visual.AddComponent<MeshFilter>().sharedMesh = unitCube;
+            var meshRenderer = visual.AddComponent<MeshRenderer>();
+            meshRenderer.sharedMaterial = markMaterial;
+            meshRenderer.shadowCastingMode = ShadowCastingMode.Off;
+            markVisuals.Add(visual);
+        }
+
+        private void ClearMarkVisuals()
+        {
+            foreach (GameObject visual in markVisuals)
+            {
+                if (visual != null)
+                {
+                    Destroy(visual);
+                }
+            }
+
+            markVisuals.Clear();
         }
 
         private static void DestroyMesh(Mesh mesh)

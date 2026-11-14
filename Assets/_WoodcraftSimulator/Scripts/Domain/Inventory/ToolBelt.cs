@@ -52,6 +52,20 @@ namespace WoodcraftSimulator.Inventory
             return slots[slot];
         }
 
+        /// <summary>True if any slot holds an item of the given type (e.g. "tape-measure"), in hand or not.</summary>
+        public bool Contains(string definitionId)
+        {
+            foreach (InventoryItem item in slots)
+            {
+                if (item != null && item.DefinitionId == definitionId)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         /// <summary>Puts the item into the first free slot.</summary>
         public BeltAddResult TryAdd(InventoryItem item, out int slot)
         {

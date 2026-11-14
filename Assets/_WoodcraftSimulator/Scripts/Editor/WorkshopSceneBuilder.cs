@@ -11,6 +11,7 @@ using WoodcraftSimulator.Interaction;
 using WoodcraftSimulator.Inventory;
 using WoodcraftSimulator.Materials;
 using WoodcraftSimulator.Player;
+using WoodcraftSimulator.Tools;
 using WoodcraftSimulator.UI;
 using WoodcraftSimulator.Workshop;
 
@@ -155,13 +156,13 @@ namespace WoodcraftSimulator.Editor
             BuildWalls(workshop, materials.Wall);
             BuildWorkbench(workshop, materials.Workbench);
             BuildTimberRack(workshop, materials.Steel, materials.Workbench);
-            BuildTimber(workshop, materials.Lumber, species);
+            BuildTimber(workshop, materials, species);
             BuildBenchTools(workshop, materials);
             BuildWorkbenchLamp(workshop, materials.Wall);
         }
 
         /// <summary>
-        /// First small items, lying at the front-left of the workbench: a tape measure and a carpenter's pencil
+        /// First small items at the front-left of the workbench: a tape measure, a carpenter's pencil and a cut list
         /// (placeholder boxes with real-world sizes).
         /// </summary>
         private static void BuildBenchTools(Transform parent, GreyboxMaterials materials)
@@ -176,19 +177,32 @@ namespace WoodcraftSimulator.Editor
             GameObject tape = CreatePickupItem("TapeMeasure", tools, ItemAssets.TapeMeasure(), new Vector3(0.07f, 0.035f, 0.07f),
                 new Vector3(-0.6f, benchTop, frontZ), 0f, materials.ToolYellow,
                 handPosition: new Vector3(0.15f, -0.12f, 0.36f), handRotation: new Vector3(0f, -20f, 90f));
-            AddTapeMeasureTool(tape, materials.TapeBlade);
+            var tapeTool = tape.AddComponent<TapeMeasureTool>();
+            SetReference(tapeTool, "blade", CreateTapeBlade(tape, materials.TapeBlade));
+
+            // Cut list: an A5 sheet (148 × 210 mm) at the front-left of the bench with the target dimension.
+            GameObject note = CreateBox("CutList", tools, new Vector3(-0.85f, benchTop + 0.002f, frontZ + 0.02f),
+                new Vector3(0.148f, 0.002f, 0.21f), materials.Paper);
+            EnlargeGrabCollider(note, note.transform.localScale);
+            var cutList = note.AddComponent<CutList>();
 
             // Carpenter's pencil ≈ 175 × 12 × 7 mm (flat), lying across the bench; held pointing forward.
-            CreatePickupItem("CarpenterPencil", tools, ItemAssets.CarpenterPencil(), new Vector3(0.012f, 0.007f, 0.175f),
-                new Vector3(-0.35f, benchTop, frontZ), 90f, materials.PencilRed,
+            GameObject pencil = CreatePickupItem("CarpenterPencil", tools, ItemAssets.CarpenterPencil(),
+                new Vector3(0.012f, 0.007f, 0.175f), new Vector3(-0.35f, benchTop, frontZ), 90f, materials.PencilRed,
                 handPosition: new Vector3(0.12f, -0.1f, 0.3f), handRotation: new Vector3(10f, -15f, 0f));
+            var pencilTool = pencil.AddComponent<PencilTool>();
+            SetReference(pencilTool, "blade", CreateTapeBlade(pencil, materials.TapeBlade));
+            SetReference(pencilTool, "cutList", cutList);
         }
 
-        /// <summary>Tool behaviour + the extended blade (LineRenderer on a child: one Renderer per GameObject).</summary>
-        private static void AddTapeMeasureTool(GameObject tape, Material bladeMaterial)
+        /// <summary>
+        /// The extended tape blade drawn by a tool (LineRenderer on a child: one Renderer per GameObject). The pencil
+        /// has its own, standing for the tape laid along the board while marking.
+        /// </summary>
+        private static LineRenderer CreateTapeBlade(GameObject tool, Material bladeMaterial)
         {
             var bladeObject = new GameObject("TapeBlade");
-            bladeObject.transform.SetParent(tape.transform, false);
+            bladeObject.transform.SetParent(tool.transform, false);
 
             var blade = bladeObject.AddComponent<LineRenderer>();
             blade.useWorldSpace = true;
@@ -199,9 +213,19 @@ namespace WoodcraftSimulator.Editor
             blade.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             blade.receiveShadows = false;
             blade.enabled = false;
+            return blade;
+        }
 
-            var tool = tape.AddComponent<WoodcraftSimulator.Tools.TapeMeasureTool>();
-            SetReference(tool, "blade", blade);
+        /// <summary>
+        /// Grab area larger than the visual: at least MinGrabSize in every direction, so a 7 mm pencil or a sheet of
+        /// paper is easy to aim at. BoxCollider.size is in local units, i.e. relative to the scaled cube.
+        /// </summary>
+        private static void EnlargeGrabCollider(GameObject box, Vector3 size)
+        {
+            box.GetComponent<BoxCollider>().size = new Vector3(
+                Mathf.Max(1f, MinGrabSize / size.x),
+                Mathf.Max(1f, MinGrabSize / size.y),
+                Mathf.Max(1f, MinGrabSize / size.z));
         }
 
         private static GameObject CreatePickupItem(string name, Transform parent, ItemDefinition definition, Vector3 size,
@@ -211,13 +235,7 @@ namespace WoodcraftSimulator.Editor
             GameObject item = CreateBox(name, parent, surfacePosition + Vector3.up * (size.y / 2f + 0.001f), size, material);
             item.transform.localRotation = Quaternion.Euler(0f, yawDegrees, 0f);
 
-            // Grab area larger than the visual: at least MinGrabSize in every direction, so a 7 mm pencil is easy to
-            // aim at. BoxCollider.size is in local units, i.e. relative to the scaled cube.
-            var grabCollider = item.GetComponent<BoxCollider>();
-            grabCollider.size = new Vector3(
-                Mathf.Max(1f, MinGrabSize / size.x),
-                Mathf.Max(1f, MinGrabSize / size.y),
-                Mathf.Max(1f, MinGrabSize / size.z));
+            EnlargeGrabCollider(item, size);
 
             var pickup = item.AddComponent<PickupItem>();
             var serialized = new SerializedObject(pickup);
@@ -355,7 +373,7 @@ namespace WoodcraftSimulator.Editor
             }
         }
 
-        private static void BuildTimber(Transform parent, Material material,
+        private static void BuildTimber(Transform parent, GreyboxMaterials materials,
             IReadOnlyDictionary<string, WoodSpeciesDefinition> species)
         {
             var timber = new GameObject("Timber").transform;
@@ -366,26 +384,26 @@ namespace WoodcraftSimulator.Editor
             for (int i = 0; i < 3; i++)
             {
                 CreateBoard($"Spruce_2400x95x45_{i + 1}", timber, species["spruce"], 2400f, 95f, 45f,
-                    new Vector3(RackFrontOfUprightsX + 0.07f + i * 0.13f, lowerShelf, 0f), 0f, material);
+                    new Vector3(RackFrontOfUprightsX + 0.07f + i * 0.13f, lowerShelf, 0f), 0f, materials.Lumber, materials.PencilMark);
             }
 
             float middleShelf = FloorTop + RackShelfTops[1];
             CreateBoard("Larch_2000x145x28", timber, species["larch"], 2000f, 145f, 28f,
-                new Vector3(RackFrontOfUprightsX + 0.10f, middleShelf, 0f), 0f, material);
+                new Vector3(RackFrontOfUprightsX + 0.10f, middleShelf, 0f), 0f, materials.Lumber, materials.PencilMark);
             CreateBoard("DouglasFir_2400x145x45", timber, species["douglas-fir"], 2400f, 145f, 45f,
-                new Vector3(RackFrontOfUprightsX + 0.30f, middleShelf, 0f), 0f, material);
+                new Vector3(RackFrontOfUprightsX + 0.30f, middleShelf, 0f), 0f, materials.Lumber, materials.PencilMark);
 
             // Smaller boards on the workbench (length along X, yaw 90°). Bench surface: FloorTop + 0.9 m.
             float benchTop = FloorTop + 0.9f;
             float benchZ = InteriorDepth / 2f - 0.5f;
             CreateBoard("Pine_1000x200x18", timber, species["pine"], 1000f, 200f, 18f,
-                new Vector3(-0.45f, benchTop, benchZ - 0.05f), 90f, material);
+                new Vector3(-0.45f, benchTop, benchZ - 0.05f), 90f, materials.Lumber, materials.PencilMark);
             CreateBoard("Oak_600x120x22", timber, species["oak"], 600f, 120f, 22f,
-                new Vector3(0.5f, benchTop, benchZ - 0.2f), 90f, material);
+                new Vector3(0.5f, benchTop, benchZ - 0.2f), 90f, materials.Lumber, materials.PencilMark);
             CreateBoard("Walnut_400x100x25", timber, species["walnut"], 400f, 100f, 25f,
-                new Vector3(0.5f, benchTop, benchZ - 0.02f), 90f, material);
+                new Vector3(0.5f, benchTop, benchZ - 0.02f), 90f, materials.Lumber, materials.PencilMark);
             CreateBoard("Beech_500x45x45", timber, species["beech"], 500f, 45f, 45f,
-                new Vector3(0.5f, benchTop, benchZ + 0.12f), 90f, material);
+                new Vector3(0.5f, benchTop, benchZ + 0.12f), 90f, materials.Lumber, materials.PencilMark);
         }
 
         /// <summary>
@@ -393,7 +411,8 @@ namespace WoodcraftSimulator.Editor
         /// on the supporting surface below the board's center.
         /// </summary>
         private static void CreateBoard(string name, Transform parent, WoodSpeciesDefinition species,
-            float lengthMm, float widthMm, float thicknessMm, Vector3 surfacePosition, float yawDegrees, Material material)
+            float lengthMm, float widthMm, float thicknessMm, Vector3 surfacePosition, float yawDegrees, Material material,
+            Material markMaterial)
         {
             var board = new GameObject(name);
             board.transform.SetParent(parent, false);
@@ -418,6 +437,7 @@ namespace WoodcraftSimulator.Editor
             serialized.FindProperty("lengthMillimeters").floatValue = lengthMm;
             serialized.FindProperty("widthMillimeters").floatValue = widthMm;
             serialized.FindProperty("thicknessMillimeters").floatValue = thicknessMm;
+            serialized.FindProperty("markMaterial").objectReferenceValue = markMaterial;
             serialized.ApplyModifiedPropertiesWithoutUndo();
 
             // Generate mesh/collider now so the board is visible in the Editor; Awake regenerates at runtime.
@@ -580,6 +600,8 @@ namespace WoodcraftSimulator.Editor
             public Material ToolYellow { get; } = GetOrCreate("ToolYellow", new Color(0.95f, 0.78f, 0.10f));
             public Material PencilRed { get; } = GetOrCreate("PencilRed", new Color(0.75f, 0.15f, 0.12f));
             public Material TapeBlade { get; } = GetOrCreateUnlit("TapeBlade", new Color(1f, 0.85f, 0.15f));
+            public Material PencilMark { get; } = GetOrCreateUnlit("PencilMark", new Color(0.12f, 0.12f, 0.13f));
+            public Material Paper { get; } = GetOrCreate("Paper", new Color(0.93f, 0.93f, 0.90f));
 
             /// <summary>Opaque URP Unlit: flat color, unaffected by lighting (good for thin overlays like a tape blade).</summary>
             private static Material GetOrCreateUnlit(string name, Color color)

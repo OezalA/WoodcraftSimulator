@@ -145,5 +145,20 @@ namespace WoodcraftSimulator.Tests.Inventory
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => new ToolBelt(0));
         }
+
+        [Test]
+        public void Contains_FindsStoredTypeWhetherInHandOrNot()
+        {
+            var belt = new ToolBelt(4);
+            Assert.That(belt.Contains("tape-measure"), Is.False);
+
+            belt.TryAdd(Tape(), out _);
+            belt.TryAdd(Pencil(), out int pencilSlot);
+            Assert.That(belt.Contains("tape-measure"), Is.True);
+
+            belt.Select(pencilSlot);
+            Assert.That(belt.Contains("tape-measure"), Is.True);
+            Assert.That(belt.Contains("hand-saw"), Is.False);
+        }
     }
 }

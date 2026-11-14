@@ -3,9 +3,10 @@
 _Last updated: 2026-11-14_
 
 ## Current milestone
-Phase 3 (Measurement Prototype) in progress. Plan agreed with the owner (3a tool belt, 3b tape measure + precision look
-mode, 3c pencil marks + tolerance). **3a and 3b committed on `develop`, NOT yet tested in Unity** (scene not rebuilt;
-owner asked to continue). `main` stays at Phase 2 until 3a/3b are tested together (MT-008 + MT-009).
+Phase 3 (Measurement Prototype): **all three steps implemented on `develop`** (3a tool belt, 3b tape measure +
+precision look, 3c pencil marks + cut list target + tolerance check). 3a/3b were play-tested twice with fixes
+(D-026, D-027); the owner said "continue" after the Game view fix, but did not report the D-027 steps explicitly.
+**3c not yet tested in Unity.** `main` stays at Phase 2 until the owner confirms MT-008..MT-010 together.
 Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 
 ## Completed
@@ -33,6 +34,7 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 | Fixes: sticky hook, ≥ 5 cm grab colliders, hand poses nearer the centre (D-026); Game view tip corrected | Static compile 0 errors (Claude); re-tested in 2nd try | 2026-11-14 |
 | MT-008/009 2nd try (owner) | Pencil visible in hand (no action yet: 3c). Belt bar visible once Game view Scale < 1x. Tape "vanished" when taken while holding the pencil (went onto the belt); tools gone after carrying a board → D-027 | 2026-11-14 |
 | D-027 (new tool into hand, tool back after carrying) | Static compile 0 errors (Claude); re-test pending | 2026-11-14 |
+| 3c pencil + cut list + tolerance (D-028): static compile + `dotnet test` | 0 errors, 0 warnings; 89/89 tests passed (Claude). Unity play-test pending (MT-010) | 2026-11-14 |
 
 ## Known issues / limitations
 - **Carry feel not liked yet** (owner, 2026-11-13). Ideas for later: smooth follow (lerp/slerp) instead of rigid
@@ -44,7 +46,12 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 - Build Settings: `Workshop` enabled; deleted `SampleScene` still listed (disabled, harmless).
 - Mouse look tuned for mouse only; gamepad right stick would be far too slow.
 - In-game text is English only.
+- Pencil marks: no eraser, not saved, only on the board's flat faces, no squared lines / angles (D-028).
+- Recompiling scripts while in Play Mode resets non-serialized state (seen once: `NullReferenceException` in
+  `PlayerToolBelt.ItemInHand`). Avoid with Unity *Preferences > General > Script Changes While Playing >
+  Recompile After Finished Playing* (an editor preference, not a project setting).
 
 ## Next recommended action
-1. Owner: rebuild the scene, run MT-008 + MT-009 (+ Test Runner 68 tests). Then fast-forward `main`.
-2. Phase 3c: pencil marks stored on the board (Length from the reference end) + tolerance check (±1 mm).
+1. Owner: stop Play, rebuild the scene, run MT-008 + MT-009 (regression, incl. D-027 steps) + MT-010
+   (+ Test Runner 89 tests). Then fast-forward `main` and mark Phase 3 done.
+2. Phase 4 (Cutting Prototype): plan to be agreed with the owner first (saw choice, kerf, cutting at a mark).

@@ -190,6 +190,28 @@ Failure → diagnosis:
 - No readout, no blade → tape lacks `TapeMeasureTool`/`TapeBlade` (rebuild scene) or the board has no `TimberBoard`.
 - Blade pink → `TapeBlade` material missing; rebuild the scene.
 
+### MT-010: Pencil marks and tolerance (Phase 3c)
+Precondition: stop Play, rebuild the scene (MT-001). Press Play. Game view: 16:9 Aspect, Scale 1x.
+| Step | Expected |
+|---|---|
+| Look at the white sheet at the front-left of the bench | `Cut list: target 900 mm` + `[E] Next target (1200 mm)` |
+| Press E a few times | Target cycles 1200 → 300 → 450 → 600 → 900 mm |
+| Take only the pencil (no tape yet), aim at a board | Readout `Take a tape measure to measure where to mark`; LMB does nothing |
+| Take the tape measure, then press the pencil's slot key | Pencil in hand |
+| Aim at the pine board on the bench | Tape blade from the near end; readout `412 mm   target 900 mm` |
+| Hold RMB, bring the reading to 900, click LMB | Dark line across the board at the crosshair; second line e.g. `Marked at 899.7 mm  (-0.3 mm)  OK ±1 mm` |
+| Mark clearly off target (e.g. at 905) | `... (+5.x mm)  OUT OF TOLERANCE ±1 mm` |
+| Aim slightly past the board's end (sticky hook) and click | `Aim at the board to draw a line`, no mark |
+| Pick the marked board up, carry it, put it down | Lines move with the board |
+| Esc → Resume with the pencil in hand (click Resume) | No line is drawn by the Resume click |
+| Switch to the tape (its slot key) | Tape works as before (MT-009) |
+| EditMode tests | 89 tests, all green (new: `ToleranceTests`, `BoardMarksTests`, `ToolBelt.Contains`) |
+
+Failure → diagnosis:
+- `InvalidOperationException ... Player/UseTool` → Input Actions not reimported (focus Unity once, wait for import).
+- No line visible but the result text appears → board lacks the `PencilMark` material reference; rebuild the scene.
+- Nothing happens with the pencil → the pencil lacks `PencilTool` (rebuild the scene).
+
 ## Game view setup (corrects the earlier tip)
 A fixed resolution such as *Full HD (1920x1080)* at `Scale 1x` **crops** the image when the Game view window is
 smaller than 1920×1080: the bottom (tool belt bar) and the lower right (tool in hand) are cut off.

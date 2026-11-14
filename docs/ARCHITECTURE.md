@@ -20,13 +20,13 @@ Assets/
     Scripts/
       WoodcraftSimulator.asmdef   runtime assembly "WoodcraftSimulator"
       Domain/                     assembly "WoodcraftSimulator.Domain": plain C#, no UnityEngine
-        Measurement/Length.cs, TapeMeasure.cs
+        Measurement/Length.cs, TapeMeasure.cs, Tolerance.cs, PencilMark.cs, BoardMarks.cs
         Materials/BoardDimensions.cs, WoodSpecies.cs, TimberPiece.cs
         Inventory/InventoryItem.cs, ToolBelt.cs
       Core/PauseController.cs, UserPreferences.cs, BoxMeshBuilder.cs, PhysicsQueries.cs
       Materials/WoodSpeciesDefinition.cs, TimberBoard.cs
       Inventory/ItemDefinition.cs, PickupItem.cs, PlayerToolBelt.cs
-      Tools/IHeldTool.cs (+ HeldToolContext), TapeMeasureTool.cs
+      Tools/IHeldTool.cs (+ HeldToolContext), BoardAim.cs (+ TapeBladeView), TapeMeasureTool.cs, PencilTool.cs, CutList.cs
       Player/PlayerController.cs
       Interaction/IInteractable.cs, IDescribable.cs, PlayerInteractor.cs
       Handling/Carryable.cs, PlayerCarrier.cs
@@ -153,18 +153,24 @@ Unity side:
 - `PickupItem` (`IInteractable`, `IDescribable`): world object for a small item; "Take <name>" → `PlayerToolBelt.TryStore`.
   Holds its hand pose (relative to the camera). Colliders off while stored.
 - `PlayerToolBelt` (on Player, disabled while paused): wraps the domain `ToolBelt` (4 slots), keys `Player/ToolSlot1..4`,
-  shows only the selected item (in hand, follows the camera in LateUpdate). Taking an item with empty hands selects it.
-  Hands-full rule: picking up a `Carryable` holsters the tool; slot keys are ignored while carrying. Raises `Changed`.
+  shows only the selected item (in hand, follows the camera in LateUpdate). A newly taken item goes into the hand (D-027).
+  Hands-full rule: picking up a `Carryable` holsters the tool, putting it down takes it back; slot keys are ignored
+  while carrying. Raises `Changed`.
 - HUD: belt bar at the bottom (`belt` container, slots built in `GameplayHud.Start` from the slot count).
 - No way to put a small item back into the world yet.
 - Equips the `IHeldTool` of the item in hand (`HeldTool`), unequips on holster and while paused (OnDisable).
 
 ### Tools (`WoodcraftSimulator.Tools`)
-- `IHeldTool` + `HeldToolContext` (eyes, player root): shared contract for tools in hand (D-025).
-- `TapeMeasureTool`: raycast (player skipped) onto a `TimberBoard`, hook on the nearest end, `TapeMeasure.Read`,
-  blade LineRenderer (child `TapeBlade`, `TapeBlade` Unlit material), `Readout` "623 mm   (board 2400 mm)",
-  exposes `Reading`/`HasReading` for the pencil (3c). Strings rebuilt only when the reading changes.
-- HUD shows the held tool's readout above the crosshair (`tool-readout`).
+- `IHeldTool` + `HeldToolContext` (eyes, player root, belt): shared contract for tools in hand (D-025).
+- `BoardAim` (serializable plain class, used by both tools): raycast (player skipped) onto a `TimberBoard`, hook on the
+  nearest end, sticky hook (D-026), returns a `BoardAimPoint` (board, local Z, hooked end, face turned to the player).
+  `TapeBladeView` draws the blade LineRenderer on that face.
+- `TapeMeasureTool`: `TapeMeasure.Read` at the aimed point, `Readout` "623 mm   (board 2400 mm)".
+- `PencilTool` (D-028): needs a tape measure on the belt; live reading + target; `Player/UseTool` (LMB/RT) adds a
+  domain `PencilMark` (exact position, reference end) via `TimberBoard.AddMark` and reports `Tolerance.Check` against
+  the `CutList` target. `CutList`: note on the bench, E cycles preset targets (300/450/600/900/1200 mm).
+- `TimberBoard.Marks` (`BoardMarks`) + mark visuals (child quads, shared unit cube mesh, `PencilMark` material).
+- Readout strings are rebuilt only when their inputs change. HUD shows the readout above the crosshair (`tool-readout`).
 
 ### Workshop objects (`WoodcraftSimulator.Workshop`)
 `LightSwitch`: `IInteractable` toggling a list of `Light`s (first test interactable).

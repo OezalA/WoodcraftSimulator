@@ -1,16 +1,21 @@
 using System;
 using UnityEngine;
+using WoodcraftSimulator.Inventory;
 
 namespace WoodcraftSimulator.Tools
 {
     /// <summary>What a tool in hand needs to know about its user.</summary>
     public sealed class HeldToolContext
     {
-        public HeldToolContext(Transform eyes, Transform playerRoot)
+        public HeldToolContext(Transform eyes, Transform playerRoot, ToolBelt belt)
         {
             Eyes = eyes;
             PlayerRoot = playerRoot;
+            Belt = belt;
         }
+
+        /// <summary>The player's tool belt, e.g. for a tool that needs another one (pencil + tape measure).</summary>
+        public ToolBelt Belt { get; }
 
         /// <summary>The player camera: origin and direction of aiming.</summary>
         public Transform Eyes { get; }

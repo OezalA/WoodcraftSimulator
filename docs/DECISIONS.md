@@ -192,3 +192,25 @@ because the hand was busy), and after carrying a board both tools seemed gone.
 - Belt items stay invisible in the world; the belt bar is their only representation (a visible belt on the body is
   deferred until there is a player body).
 - Also found: the belt bar was cut off because the Game view Scale was above 1x; with Scale < 1x it is visible.
+
+## D-028: Pencil marks, cut list target and tolerance check (Accepted, 2026-11-14)
+Phase 3c as agreed with the owner (LMB at the measured point draws a line; mark stored on the board; deviation
+from the target reported).
+- **Pencil in hand marks, the tape on the belt measures.** Real marking is two-handed (tape in one hand, pencil in
+  the other). With one tool in hand, the tape is treated as laid along the board while the pencil is held: it
+  must be on the belt, uses the same hook and sticky rules (`BoardAim`, shared with `TapeMeasureTool`), and its
+  blade is drawn. Without a tape the pencil says so and cannot measure.
+- **Stored exactly:** `PencilMark` keeps the exact aimed position (0.1 mm, from the Start end) and the reference end
+  (the hooked end). The 1 mm tape reading is only what the player sees, so a mark made at reading "900" lies within
+  ±0.5 mm of 900 mm: realistic and inside the ±1 mm default tolerance.
+- **Marks live beside the piece**, in `BoardMarks` owned by `TimberBoard`, not in the immutable `TimberPiece`;
+  Phase 4 cuts will hand them over to the resulting pieces. No eraser yet; marks reset when the scene reloads.
+- **Target dimension:** a `CutList` note on the bench (E cycles 300/450/600/900/1200 mm), a stand-in for a job's
+  cut list (Phase 6). Result line: `Marked at 899.6 mm  (-0.4 mm)  OK ±1 mm` or `... OUT OF TOLERANCE ±1 mm`.
+  The exact deviation is shown as learning feedback (the game knows the truth; the tape shows 1 mm).
+- **Visual:** a 1.5 mm dark line across the face turned towards the player (wider than a real 0.5 mm line so it is
+  visible from working distance). New input action `Player/UseTool` (LMB, RT); the click that takes the pencil or
+  resumes from the pause menu is ignored.
+- **Text uses ASCII/Latin-1 only** ("OK", "±", "×"): symbols like ✓ or → may be missing from the runtime font.
+**Deferred:** eraser / removing marks, marking width or angles (square), several marks shown as a list, marks on
+side faces, saving marks.

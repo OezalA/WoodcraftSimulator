@@ -48,7 +48,7 @@ namespace WoodcraftSimulator.Inventory
 
             Belt = new ToolBelt(slotCount);
             storedObjects = new PickupItem[slotCount];
-            toolContext = new HeldToolContext(cameraTransform, transform);
+            toolContext = new HeldToolContext(cameraTransform, transform, Belt);
             Belt.Changed += OnBeltChanged;
 
             slotActions = new InputAction[slotCount];
