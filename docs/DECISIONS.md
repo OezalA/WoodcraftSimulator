@@ -328,3 +328,21 @@ Phase 5c, following D-032/D-033.
   code (`AssemblyReportText`) and tested.
 - The finished frame stays on the table as installed (kinematic, locked) parts; making it one carryable object is
   Phase 6 (delivering a job).
+
+## D-036: Save & load before Phase 6; versioned JSON, state only (Accepted, 2026-11-15)
+Owner (2026-11-15): "every time I start I begin from 0; I want to continue where I left off". The master prompt asks
+for a versioned save system (§6.16) without tying it to a phase. Plan approved by the owner ("tamam"):
+- **Inserted before Phase 6** (longer jobs need it; every later system is written save-aware from the start).
+  Steps: S1 save model + migration + validation (domain, tested); S2 boards (with marks) recreated from the save,
+  player pose, pause menu Save / New workshop, auto-save on quit, auto-continue on start; S3 tools/belt, assembly
+  progress, waste, cut list, light switch.
+- **One save slot**, readable **JSON** in `Application.persistentDataPath` (Windows:
+  `%USERPROFILE%\AppData\LocalLow\<company>\WoodcraftSimulator\`). Company name chosen by the owner: **OezalAstudio**
+  (Player Settings; changed by the owner in the Editor, so the open Editor doesn't overwrite a file edit).
+- **State only, definitions by id** (§6.16: no ScriptableObjects as save files; static definitions separate from
+  mutable state): species, blueprints, items are referenced by id; lengths stored exactly as tenths of a mm.
+- **Domain `WoodcraftSimulator.Persistence`:** `SaveGameData` (+ nested data classes: public fields, `[Serializable]`, so
+  the runtime writes them with `JsonUtility` while the domain stays free of UnityEngine), `SaveFormat.TryMigrate`
+  (version 1 = current; newer/unknown refused; migration steps per version), `SaveFormat.Validate` (all problems
+  listed: duplicate ids, unknown species, dimensions, marks, non-finite poses, belt and assembly references, waste),
+  `ToData` / `ToPiece` round trip. An invalid file is never applied; the game then starts fresh and keeps the file.

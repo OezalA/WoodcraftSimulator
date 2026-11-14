@@ -1,0 +1,258 @@
+using System;
+using System.Collections.Generic;
+using WoodcraftSimulator.Materials;
+using WoodcraftSimulator.Measurement;
+
+namespace WoodcraftSimulator.Persistence
+{
+    /// <summary>
+    /// Versioning, migration and validation of save data (master prompt §6.16). A loaded file is first migrated to
+    /// the current version, then validated; only a valid file is applied to the game.
+    /// </summary>
+    public static class SaveFormat
+    {
+        /// <summary>Current save format. Increase it and add a migration step when the format changes.</summary>
+        public const int CurrentVersion = 1;
+
+        /// <summary>Brings older data up to <see cref="CurrentVersion"/>. Newer or unknown versions are refused.</summary>
+        public static bool TryMigrate(SaveGameData data, out string error)
+        {
+            if (data == null)
+            {
+                error = "No save data.";
+                return false;
+            }
+
+            if (data.version < 1)
+            {
+                error = $"Unknown save version {data.version}.";
+                return false;
+            }
+
+            if (data.version > CurrentVersion)
+            {
+                error = $"The save was made by a newer version of the game (format {data.version}, supported {CurrentVersion}).";
+                return false;
+            }
+
+            // Migration steps go here, one per version, e.g.:
+            // if (data.version == 1) { ...convert to 2...; data.version = 2; }
+            error = null;
+            return true;
+        }
+
+        /// <summary>
+        /// Checks the data for consistency. Returns all problems found (empty = valid). Unknown definition ids are
+        /// checked against <paramref name="isKnownSpecies"/> when given.
+        /// </summary>
+        public static IReadOnlyList<string> Validate(SaveGameData data, Func<string, bool> isKnownSpecies = null)
+        {
+            var errors = new List<string>();
+            if (data == null)
+            {
+                errors.Add("No save data.");
+                return errors;
+            }
+
+            if (data.version != CurrentVersion)
+            {
+                errors.Add($"Version {data.version} is not the current format {CurrentVersion} (migrate first).");
+            }
+
+            Require(data.player != null && data.player.pose != null, "Player data is missing.", errors);
+            if (data.player?.pose != null)
+            {
+                RequireFinite(data.player.pose, "player", errors);
+            }
+
+            var boardIds = new HashSet<string>();
+            foreach (BoardData board in data.boards ?? Array.Empty<BoardData>())
+            {
+                if (board == null)
+                {
+                    errors.Add("A board entry is empty.");
+                    continue;
+                }
+
+                string label = $"board '{board.id}'";
+                if (string.IsNullOrWhiteSpace(board.id) || !boardIds.Add(board.id))
+                {
+                    errors.Add($"Board id '{board.id}' is empty or duplicated.");
+                }
+
+                if (string.IsNullOrWhiteSpace(board.speciesId))
+                {
+                    errors.Add($"{label}: species is missing.");
+                }
+                else if (isKnownSpecies != null && !isKnownSpecies(board.speciesId))
+                {
+                    errors.Add($"{label}: unknown species '{board.speciesId}'.");
+                }
+
+                if (board.lengthTenths <= 0 || board.widthTenths <= 0 || board.thicknessTenths <= 0)
+                {
+                    errors.Add($"{label}: dimensions must be positive.");
+                }
+
+                if (board.pose == null)
+                {
+                    errors.Add($"{label}: pose is missing.");
+                }
+                else
+                {
+                    RequireFinite(board.pose, label, errors);
+                }
+
+                foreach (MarkData mark in board.marks ?? Array.Empty<MarkData>())
+                {
+                    if (mark == null || mark.positionFromStartTenths < 0 || mark.positionFromStartTenths > board.lengthTenths ||
+                        !Enum.IsDefined(typeof(BoardEnd), mark.measuredFrom) || !Enum.IsDefined(typeof(BoardFace), mark.face))
+                    {
+                        errors.Add($"{label}: a pencil mark is invalid.");
+                    }
+                }
+            }
+
+            var itemIds = new HashSet<string>();
+            foreach (ItemData item in data.items ?? Array.Empty<ItemData>())
+            {
+                if (item == null || string.IsNullOrWhiteSpace(item.id) || !itemIds.Add(item.id))
+                {
+                    errors.Add($"Item id '{item?.id}' is empty or duplicated.");
+                    continue;
+                }
+
+                if (!item.onBelt)
+                {
+                    if (item.pose == null)
+                    {
+                        errors.Add($"item '{item.id}': pose is missing.");
+                    }
+                    else
+                    {
+                        RequireFinite(item.pose, $"item '{item.id}'", errors);
+                    }
+                }
+            }
+
+            BeltData belt = data.belt ?? new BeltData();
+            string[] slots = belt.slots ?? Array.Empty<string>();
+            foreach (string slotItem in slots)
+            {
+                if (!string.IsNullOrEmpty(slotItem) && !itemIds.Contains(slotItem))
+                {
+                    errors.Add($"Belt holds unknown item '{slotItem}'.");
+                }
+            }
+
+            if (belt.selected < -1 || belt.selected >= slots.Length ||
+                belt.selected >= 0 && string.IsNullOrEmpty(slots[belt.selected]))
+            {
+                errors.Add($"Belt selection {belt.selected} is invalid.");
+            }
+
+            var installedBoards = new HashSet<string>();
+            foreach (AssemblyData assembly in data.assemblies ?? Array.Empty<AssemblyData>())
+            {
+                if (assembly == null || string.IsNullOrWhiteSpace(assembly.stationId))
+                {
+                    errors.Add("An assembly entry has no station id.");
+                    continue;
+                }
+
+                foreach (InstalledPartData part in assembly.parts ?? Array.Empty<InstalledPartData>())
+                {
+                    if (part == null || string.IsNullOrWhiteSpace(part.slotId) || !boardIds.Contains(part.boardId ?? string.Empty))
+                    {
+                        errors.Add($"assembly '{assembly.stationId}': an installed part refers to an unknown board.");
+                    }
+                    else if (!installedBoards.Add(part.boardId))
+                    {
+                        errors.Add($"Board '{part.boardId}' is installed twice.");
+                    }
+                }
+            }
+
+            WasteData waste = data.waste ?? new WasteData();
+            if (waste.cutCount < 0 || waste.volumeCubicMeters < 0.0 || waste.massKg < 0.0 ||
+                double.IsNaN(waste.volumeCubicMeters) || double.IsNaN(waste.massKg))
+            {
+                errors.Add("Waste totals are invalid.");
+            }
+
+            return errors;
+        }
+
+        /// <summary>Save data of a piece and its marks (pose is filled in by the scene).</summary>
+        public static BoardData ToData(string id, TimberPiece piece, BoardMarks marks)
+        {
+            if (piece == null) throw new ArgumentNullException(nameof(piece));
+            if (marks == null) throw new ArgumentNullException(nameof(marks));
+
+            var markData = new MarkData[marks.Count];
+            for (int i = 0; i < marks.Count; i++)
+            {
+                PencilMark mark = marks.All[i];
+                markData[i] = new MarkData
+                {
+                    positionFromStartTenths = mark.PositionFromStart.TenthsOfMillimeter,
+                    measuredFrom = (int)mark.MeasuredFrom,
+                    face = (int)mark.Face
+                };
+            }
+
+            BoardDimensions dimensions = piece.Dimensions;
+            return new BoardData
+            {
+                id = id,
+                speciesId = piece.Species.Id,
+                lengthTenths = dimensions.Length.TenthsOfMillimeter,
+                widthTenths = dimensions.Width.TenthsOfMillimeter,
+                thicknessTenths = dimensions.Thickness.TenthsOfMillimeter,
+                marks = markData
+            };
+        }
+
+        /// <summary>Recreates the piece and its marks from (validated) save data.</summary>
+        public static TimberPiece ToPiece(BoardData data, WoodSpecies species, out BoardMarks marks)
+        {
+            if (data == null) throw new ArgumentNullException(nameof(data));
+            if (species == null) throw new ArgumentNullException(nameof(species));
+
+            var piece = new TimberPiece(species, new BoardDimensions(
+                Length.FromTenthsOfMillimeter(data.lengthTenths),
+                Length.FromTenthsOfMillimeter(data.widthTenths),
+                Length.FromTenthsOfMillimeter(data.thicknessTenths)));
+
+            marks = new BoardMarks(piece.Dimensions.Length);
+            foreach (MarkData mark in data.marks ?? Array.Empty<MarkData>())
+            {
+                marks.Add(new PencilMark(Length.FromTenthsOfMillimeter(mark.positionFromStartTenths),
+                    (BoardEnd)mark.measuredFrom, (BoardFace)mark.face));
+            }
+
+            return piece;
+        }
+
+        private static void Require(bool condition, string message, List<string> errors)
+        {
+            if (!condition)
+            {
+                errors.Add(message);
+            }
+        }
+
+        private static void RequireFinite(PoseData pose, string label, List<string> errors)
+        {
+            float[] values = { pose.px, pose.py, pose.pz, pose.rx, pose.ry, pose.rz, pose.rw };
+            foreach (float value in values)
+            {
+                if (float.IsNaN(value) || float.IsInfinity(value))
+                {
+                    errors.Add($"{label}: position or rotation is not a finite number.");
+                    return;
+                }
+            }
+        }
+    }
+}

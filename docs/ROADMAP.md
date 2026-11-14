@@ -75,3 +75,10 @@ spruce 95 × 45, butt joints, 2 screws 5 × 80 mm per corner).
 - [x] 5b: Assembly table with a blueprint ghost; carried pieces snap into fitting slots, fit feedback (MT-013 passed, D-033)
 - [x] 5c: Drill-driver on the belt, driving screws at fastening points, completion + quality report in the HUD (MT-015 passed, D-035)
 - Owner accepted Phase 5 on 2026-11-15 ("hepsi süper"); `main` fast-forwarded.
+
+## Save & Load (inserted before Phase 6, D-036)
+Owner request 2026-11-15; plan approved ("tamam"). Company name for the save path: OezalAstudio.
+- [x] S1: Versioned save model (`SaveGameData`), migration, validation, board round trip; 17 new tests (162 total)
+- [ ] S2: Boards with marks recreated from the save, player pose, pause menu Save / New workshop, auto-save on quit,
+  auto-continue on start
+- [ ] S3: Tools and belt, assembly progress, waste, cut list, light switch

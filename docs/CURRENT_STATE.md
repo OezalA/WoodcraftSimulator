@@ -5,8 +5,8 @@ _Last updated: 2026-11-15_
 ## Current milestone
 **Phase 5 (Basic Assembly) done**: accepted by the owner on 2026-11-15 ("hepsi süper") after MT-013 and MT-015;
 `main` fast-forwarded to `develop`.
-**Next: save & load** (owner, 2026-11-15: "every time I start I begin from 0"), plan proposed before Phase 6,
-awaiting the owner's approval.
+**Save & load in progress** (owner request 2026-11-15, plan approved, D-036): **S1 (domain save model) done**;
+next S2. Owner sets Company Name = OezalAstudio in Player Settings.
 Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 
 ## Completed
@@ -55,6 +55,7 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 | MT-014 fine marking (owner) | Passed: "gayet düzgün çalışıyor" | 2026-11-15 |
 | 5c drill-driver + completion: static compile + `dotnet test` | 0 errors, 0 warnings; 145/145 tests passed (Claude). Unity play-test pending (MT-015) | 2026-11-15 |
 | MT-013 + MT-015 (owner) | Passed: "hepsi süper" | 2026-11-15 |
+| S1 save model: static compile + `dotnet test` | 0 errors, 0 warnings; 162/162 tests passed (Claude). Domain only | 2026-11-15 |
 
 ## Known issues / limitations
 - **Carry feel not liked yet** (owner, 2026-11-13). Ideas for later: smooth follow (lerp/slerp) instead of rigid
@@ -74,7 +75,8 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
   Recompile After Finished Playing* (an editor preference, not a project setting).
 
 ## Next recommended action
-1. Owner: approve the save & load plan (proposed 2026-11-15): S1 versioned save model + validation/migration +
-   tests; S2 boards (with marks) recreated from the save via a runtime board factory, player pose, pause menu
-   Save / New workshop, auto-save on quit, auto-continue on start; S3 tools/belt, assembly progress, waste, cut list.
-2. Then Phase 6 (first complete job: shelf).
+1. Owner: Edit > Project Settings > Player > Company Name = `OezalAstudio` (D-036). Note: this also moves the saved
+   mouse sensitivity (PlayerPrefs) to a new location, so it resets once.
+2. S2: runtime board factory + save ids, `SaveGameService` (JsonUtility, persistentDataPath, migrate + validate),
+   pause menu Save / New workshop (with confirmation), auto-save on quit, auto-continue on start.
+3. S3, then Phase 6.
