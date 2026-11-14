@@ -3,11 +3,10 @@
 _Last updated: 2026-11-15_
 
 ## Current milestone
-**Phase 4 (Cutting Prototype) done**: accepted by the owner on 2026-11-14 ("tamamdır devam edebilirsin") after
-MT-011 and MT-012 ("parça gayet iyi düşüyor, kesme işlemi de ok"); `main` fast-forwarded to `develop`.
-**Phase 5 (Basic Assembly) in progress**: plan approved (D-032). 5a (domain model) done.
-5b (assembly table, snapping; D-033) implemented; owner tested the fine marking (D-034): "gayet düzgün çalışıyor".
-**5c (drill-driver, screws, completion report; D-035) implemented, NOT yet tested in Unity** (MT-013 + MT-015).
+**Phase 5 (Basic Assembly) done**: accepted by the owner on 2026-11-15 ("hepsi süper") after MT-013 and MT-015;
+`main` fast-forwarded to `develop`.
+**Next: save & load** (owner, 2026-11-15: "every time I start I begin from 0"), plan proposed before Phase 6,
+awaiting the owner's approval.
 Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 
 ## Completed
@@ -24,6 +23,8 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
   (D-025, D-026), pencil marks + cut list target + ±1 mm tolerance check (D-028); 89 EditMode tests.
 - Phase 4: domain crosscut at a pencil mark with kerf on the waste side and waste log (D-029), hand saw splitting
   boards in the scene (D-030), unsupported pieces fall and settle, cut checked against the target (D-031); 112 tests.
+- Phase 5: domain assembly model (D-032), assembly table with snapping slots (D-033), pencil on graduations with
+  wheel fine adjustment (D-034), drill-driver + screws + completion report (D-035); 145 tests.
 - Visual: MSAA 4x on PC quality (D-018), pause menu fonts fixed.
 
 ## Latest verification
@@ -53,6 +54,7 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 | D-034 pencil on graduations + wheel fine adjustment: static compile + `dotnet test` | 0 errors, 0 warnings; 143/143 tests passed (Claude). Unity play-test pending (MT-014) | 2026-11-14 |
 | MT-014 fine marking (owner) | Passed: "gayet düzgün çalışıyor" | 2026-11-15 |
 | 5c drill-driver + completion: static compile + `dotnet test` | 0 errors, 0 warnings; 145/145 tests passed (Claude). Unity play-test pending (MT-015) | 2026-11-15 |
+| MT-013 + MT-015 (owner) | Passed: "hepsi süper" | 2026-11-15 |
 
 ## Known issues / limitations
 - **Carry feel not liked yet** (owner, 2026-11-13). Ideas for later: smooth follow (lerp/slerp) instead of rigid
@@ -64,6 +66,7 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 - Build Settings: `Workshop` enabled; deleted `SampleScene` still listed (disabled, harmless).
 - Mouse look tuned for mouse only; gamepad right stick would be far too slow.
 - In-game text is English only.
+- **No save / load yet**: every start begins with the generated workshop (owner wants to continue where they left off).
 - Pencil marks: no eraser, not saved, only on the board's flat faces, no squared lines / angles (D-028).
 - Assist option "type the dimension, the line is drawn" (owner's option A, D-034) deferred to a settings menu.
 - Recompiling scripts while in Play Mode resets non-serialized state (seen once: `NullReferenceException` in
@@ -71,5 +74,7 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
   Recompile After Finished Playing* (an editor preference, not a project setting).
 
 ## Next recommended action
-1. Owner: stop Play, rebuild the scene, run MT-013 (assembly table) + MT-015 (screws, completion) (+ Test Runner 145).
-2. If both pass: Phase 5 accepted → fast-forward `main`. Then Phase 6 plan (first complete job: shelf).
+1. Owner: approve the save & load plan (proposed 2026-11-15): S1 versioned save model + validation/migration +
+   tests; S2 boards (with marks) recreated from the save via a runtime board factory, player pose, pause menu
+   Save / New workshop, auto-save on quit, auto-continue on start; S3 tools/belt, assembly progress, waste, cut list.
+2. Then Phase 6 (first complete job: shelf).
