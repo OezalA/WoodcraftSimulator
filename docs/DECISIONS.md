@@ -503,3 +503,17 @@ Risk accepted by the owner: errors found late may touch several phases. Scope ch
 - **Phase 10**: outdoor area and a small terrace 2.4 × 1.8 m: site preparation, concrete pier blocks, beams,
   joists with connectors, decking; construction-stage validation.
 - The owner's playability rule applies throughout: rules and decisions, no motor-skill hurdles.
+
+## D-044: Phase 8 workshop: tool wall, upgrades, sawhorses, placeholder sounds (Accepted, 2026-11-15, batch D-043)
+- **Tool wall** (8a): a 1.2 × 0.6 m board above the workbench with a painted outline per tool (`ToolHook`). With the
+  tool on the belt, E on its outline hangs it there upright (`PlayerToolBelt.TryRelease`); it is picked up like any
+  item and its pose is saved like any item. Tools still start on the bench.
+- **Equipment upgrades** (8b, `WorkshopUpgrades`, lower row of the order board): Japanese pull saw (cuts 70 % faster,
+  €45), brushless drill-driver (pilot holes and screws 60 % faster, €80), LED lamp (bench light 1.8 × brighter,
+  €30). Bought once with job income, saved (`SaveGameData.upgrades`, ids). Comfort, never required. The saw's kerf is
+  unchanged (material plans stay valid).
+- **Sawhorses** (8c): two at 0.65 m between the rack and the bench (beams 1.2 m apart). New rule: a board is sawn only
+  at work height (underside at least 0.25 m above the floor: bench, sawhorses, table), not lying on the floor.
+- **Sounds** (8d, `ProceduralSounds`): generated in code, no files to license: saw strokes and drill motor (loops while
+  working), clutch/screw click, knock on pick up / put down, rising / falling tones for money in / out, quiet room
+  tone. To be replaced by real sounds in the visual/audio pass (D-037).

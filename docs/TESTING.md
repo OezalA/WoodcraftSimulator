@@ -428,6 +428,20 @@ Console errors), **Build Test Workshop Scene**, Play, Esc → `Yeni atölye`. Re
 | Buy screws until money is short / drive with 0 screws (optional) | `Para yetmiyor` / `... kalmadı: sipariş panosundan bir kutu al` |
 | Save, quit Play, Play | Money, screws and bought boards are the same |
 
+### MT-024: Tool wall, upgrades, sawhorses, sounds (Phase 8, D-044)
+| Step | Expected |
+|---|---|
+| Look at the wall above the workbench | Board with four light outlines; aiming at one: `Metre yeri` etc. |
+| Take the tape measure, aim at its outline | `[E]  Metre duvara as`; E: it hangs upright on the wall, the belt slot is empty; E on it takes it again |
+| Order board, lower row | `Yükseltme: Japon çekme testere, %70 daha hızlı keser   €45.00 ...`; buying it: money down, sheet now `Sende var: ...` |
+| Saw a board with the pull saw | Noticeably quicker than before |
+| Buy the LED lamp | The bench light is brighter; the switch still turns it on/off |
+| Brushless drill | Pilot holes and screws go in quicker; the recommended clutch is unchanged |
+| A board lying on the floor, saw on a pencil line | `Yerde kesilmez: tahtayı tezgaha ya da sehpalara koy` |
+| Lay a long board across the two sawhorses (left of the bench), saw it | It cuts; the pieces rest on the horses or fall off the outer ends |
+| Sounds | Saw strokes while sawing, drill motor while drilling/driving, a click when a screw seats, a knock when picking up/putting down, tones on buying (falling) and on pay (rising), a faint room tone |
+| Save, quit Play, Play | Upgrades still owned (sheets say `Sende var`), hung tools still on the wall |
+
 ## Game view setup (corrects the earlier tip)
 A fixed resolution such as *Full HD (1920x1080)* at `Scale 1x` **crops** the image when the Game view window is
 smaller than 1920×1080: the bottom (tool belt bar) and the lower right (tool in hand) are cut off.

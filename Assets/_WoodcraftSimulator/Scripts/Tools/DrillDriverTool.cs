@@ -103,6 +103,13 @@ namespace WoodcraftSimulator.Tools
             adjustAction = InputSystem.actions.FindAction("Player/AdjustTool", throwIfNotFound: true);
             useKeyLabel = KeyLabel(useAction);
             modeKeyLabel = KeyLabel(modeAction);
+            audioSource = GetComponent<AudioSource>();
+            if (audioSource == null)
+            {
+                audioSource = gameObject.AddComponent<AudioSource>();
+            }
+
+            motorLoop = new LoopSound(audioSource, ProceduralSounds.Drill, 0.4f);
         }
 
         private static string KeyLabel(InputAction action) =>
@@ -119,6 +126,8 @@ namespace WoodcraftSimulator.Tools
         public void Unequip()
         {
             FinishDrive();
+            motorRunning = false;
+            motorLoop?.Set(false);
             context = null;
             ClearTarget();
             bitChangeLeft = 0f;
@@ -126,9 +135,26 @@ namespace WoodcraftSimulator.Tools
             SetLines(null, null);
         }
 
+        // Sound (D-044): the motor runs while drilling or driving; a click when the clutch slips or a screw is in.
+        private AudioSource audioSource;
+        private LoopSound motorLoop;
+        private bool motorRunning;
+        private bool wasSlipping;
+
+        private void LateUpdate() => motorLoop?.Set(motorRunning && context != null);
+
+        private void PlayClick()
+        {
+            if (audioSource != null)
+            {
+                audioSource.PlayOneShot(ProceduralSounds.Click, 0.8f);
+            }
+        }
+
         private void Update()
         {
             // Also runs while lying on the table (active GameObject); only work when held.
+            motorRunning = false;
             if (context == null)
             {
                 return;
@@ -243,6 +269,7 @@ namespace WoodcraftSimulator.Tools
         private void DrillPilot()
         {
             pilotProgress += Time.deltaTime * SpeedFactor / pilotSeconds;
+            motorRunning = true;
             pickup.HandOffset = Vector3.forward * (pushLength * Mathf.Clamp01(pilotProgress));
             if (pilotProgress < 1f)
             {
@@ -285,6 +312,7 @@ namespace WoodcraftSimulator.Tools
             Length startDepth = head.HasValue ? driveFastener.Length - head.Value : Length.Zero;
             drive = new ScrewDrive(driveFastener, targetStation.Build.SeatingTorque(connectionId, driveFastener), startDepth,
                 driveMillimetersPerSecond: 50.0 * SpeedFactor);
+            wasSlipping = false;
             resultLine = null;
             Drive();
         }
@@ -298,6 +326,13 @@ namespace WoodcraftSimulator.Tools
             }
 
             drive.Advance(Time.deltaTime, clutch);
+            if (drive.IsSlipping && !wasSlipping)
+            {
+                PlayClick();
+            }
+
+            wasSlipping = drive.IsSlipping;
+            motorRunning = !drive.IsSlipping;
             targetStation.ShowDrivingHead(targetConnection, targetPoint, drive.HeadHeight);
             pickup.HandOffset = Vector3.forward * (pushLength * (float)Math.Min(1.0, drive.Depth.Millimeters / driveFastener.Length.Millimeters));
 
@@ -336,6 +371,11 @@ namespace WoodcraftSimulator.Tools
                 ? station.Fasten(connection, point, driveFastener, finished.HeadHeight)
                 : station.DriveFurther(connection, point, finished.HeadHeight);
             station.HideDrivingHead();
+            if (result == FastenResult.Fastened)
+            {
+                PlayClick();
+            }
+
             if (result == FastenResult.Fastened && driveIsNewScrew && economy != null)
             {
                 economy.TryUseFastener(driveFastener.Id);

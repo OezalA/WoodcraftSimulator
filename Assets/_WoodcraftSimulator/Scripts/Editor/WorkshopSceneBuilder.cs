@@ -118,6 +118,7 @@ namespace WoodcraftSimulator.Editor
             BuildHud(player.GetComponent<PlayerInteractor>(), player.GetComponent<PlayerCarrier>(), hudLayout, panelSettings);
             SaveGameService saveService = BuildSaveSystem(player, materials, WoodSpeciesAssets.EnsureDefaults());
             BuildPauseSystem(player, pauseMenuLayout, panelSettings, saveService);
+            AddPlayerSounds(player);
             TurkishNames.Apply();
 
             // Intentionally does not touch Build Settings (ProjectSettings): add the scene there manually when needed.
@@ -435,6 +436,15 @@ namespace WoodcraftSimulator.Editor
                 serialized.FindProperty("floorY").floatValue = FloorTop;
                 serialized.ApplyModifiedPropertiesWithoutUndo();
             }
+        }
+
+        /// <summary>Placeholder feedback sounds around the player (Phase 8d, D-044); tool sounds live on the tools.</summary>
+        private static void AddPlayerSounds(GameObject player)
+        {
+            var sounds = player.AddComponent<PlayerSounds>();
+            SetReference(sounds, "carrier", player.GetComponent<PlayerCarrier>());
+            SetReference(sounds, "toolBelt", player.GetComponent<PlayerToolBelt>());
+            SetReference(sounds, "economy", Object.FindFirstObjectByType<WorkshopEconomy>());
         }
         private static Object[] Fasteners() => new Object[] { BlueprintAssets.WoodScrew5x80(), BlueprintAssets.WoodScrew4x40() };
 

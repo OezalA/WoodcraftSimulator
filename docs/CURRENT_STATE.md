@@ -13,7 +13,7 @@ first try: the saw works as before (D-030). In-game texts Turkish (D-041), red p
 **Phase 7 (material economy) started** (plan K1-K7 approved 2026-11-15, D-040): 7a domain rules done (money, ledger,
 catalog, consumable screws, priced bill of materials, job settlement, inventory summary, save format 2). 7b (scene)
 next. D-042 (recommended clutch on the drill, owner request) implemented, awaiting MT-022.
-**Batch to Phase 10 (D-043)**: owner tests 7b-10 at once. 7b done (order board, money, consumable screws, Tab inventory, paid jobs; MT-023). Next: Phase 8.
+**Batch to Phase 10 (D-043)**: owner tests 7b-10 at once. 7b done (MT-023). Phase 8 done (tool wall, upgrades, sawhorses, sounds; D-044, MT-024). Next: Phase 9.
 Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 
 ## Completed

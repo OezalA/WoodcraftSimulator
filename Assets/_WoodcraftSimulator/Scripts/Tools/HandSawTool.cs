@@ -3,6 +3,7 @@ using System.Globalization;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using WoodcraftSimulator.Localization;
+using WoodcraftSimulator.Core;
 using WoodcraftSimulator.Cutting;
 using WoodcraftSimulator.Handling;
 using WoodcraftSimulator.Inventory;
@@ -94,6 +95,13 @@ namespace WoodcraftSimulator.Tools
             useAction = InputSystem.actions.FindAction("Player/UseTool", throwIfNotFound: true);
             useKeyLabel = useAction.GetBindingDisplayString(InputBinding.MaskByGroup("Keyboard&Mouse"),
                 InputBinding.DisplayStringOptions.DontIncludeInteractions);
+            var source = GetComponent<AudioSource>();
+            if (source == null)
+            {
+                source = gameObject.AddComponent<AudioSource>();
+            }
+
+            sawLoop = new LoopSound(source, ProceduralSounds.Saw, 0.45f);
             SetGuideVisible(false);
         }
 
@@ -107,6 +115,8 @@ namespace WoodcraftSimulator.Tools
         public void Unequip()
         {
             context = null;
+            sawingNow = false;
+            sawLoop?.Set(false);
             aim.Release();
             ClearTarget();
             SetGuideVisible(false);
@@ -114,9 +124,16 @@ namespace WoodcraftSimulator.Tools
             SetLines(null, null);
         }
 
+        // Sound (D-044): the saw loop plays exactly while the blade moves.
+        private LoopSound sawLoop;
+        private bool sawingNow;
+
+        private void LateUpdate() => sawLoop?.Set(sawingNow && context != null);
+
         private void Update()
         {
             // Also runs while lying on the bench (active GameObject); only work when held.
+            sawingNow = false;
             if (context == null)
             {
                 return;
@@ -179,6 +196,7 @@ namespace WoodcraftSimulator.Tools
             float speed = upgrades != null && upgrades.Has(Economy.WorkshopUpgrades.PullSaw) ? upgradedSpeedFactor : 1f;
             progress += Time.deltaTime * speed / definition.SawingSeconds(crossSectionCm2);
             strokeTime += Time.deltaTime;
+            sawingNow = true;
             pickup.HandOffset = Vector3.forward * (Mathf.Sin(strokeTime * strokesPerSecond * 2f * Mathf.PI) * strokeLength);
 
             if (progress >= 1f)

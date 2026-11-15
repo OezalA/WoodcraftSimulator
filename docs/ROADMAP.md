@@ -109,11 +109,11 @@ calculated correctly.
   sheet buys the material instead of free delivery, drill uses screws from the stock, money in the HUD, inventory
   screen (Tab), result with pay / cost / profit, economy saved. Code done, awaiting batch test MT-023 (D-043)
 
-## Phase 8: Workshop Development (scope approved 2026-11-15, D-043)
-- [ ] 8a: Tool wall with a hook per tool (hang back with E)
-- [ ] 8b: Equipment upgrades bought with money (saw, drill, lamp)
-- [ ] 8c: Sawhorse cutting station
-- [ ] 8d: Placeholder sounds generated in code (saw, drill, screw, pick up / place, ambience)
+## Phase 8: Workshop Development (scope approved 2026-11-15, D-043) - code done, awaiting batch test MT-024 (D-044)
+- [x] 8a: Tool wall with a hook per tool (hang back with E)
+- [x] 8b: Equipment upgrades bought with money (saw, drill, lamp)
+- [x] 8c: Sawhorse cutting station
+- [x] 8d: Placeholder sounds generated in code (saw, drill, screw, pick up / place, ambience)
 
 ## Phase 9: Advanced Woodworking (scope approved 2026-11-15, D-043)
 - [ ] 9a: Rip cut (lengthwise)
