@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using WoodcraftSimulator.Construction;
+using WoodcraftSimulator.Economy;
 using WoodcraftSimulator.Measurement;
 
 namespace WoodcraftSimulator.Jobs
@@ -57,11 +58,21 @@ namespace WoodcraftSimulator.Jobs
             return text.ToString().TrimEnd('\n');
         }
 
-        /// <summary>The bill of materials before accepting: stock needed, cut plan per board, expected offcuts.</summary>
-        public static string Offer(Job job, MaterialPlan plan, Func<string, string> fastenerName)
+        /// <summary>
+        /// The bill of materials before accepting: pay, stock needed, cut plan per board, expected offcuts, and what
+        /// to buy when a <paramref name="shopping"/> list is given.
+        /// </summary>
+        public static string Offer(Job job, MaterialPlan plan, Func<string, string> fastenerName,
+            ShoppingList shopping = null)
         {
             var text = new StringBuilder();
-            text.Append(job.DisplayName).Append('\n');
+            text.Append(job.DisplayName);
+            if (job.Pay > Money.Zero)
+            {
+                text.Append("   Pay ").Append(job.Pay);
+            }
+
+            text.Append('\n');
             if (job.Description.Length > 0)
             {
                 text.Append(job.Description).Append('\n');
@@ -100,10 +111,47 @@ namespace WoodcraftSimulator.Jobs
             }
 
             text.Append("(kerf ").Append(plan.Kerf).Append(" per cut)");
+            if (shopping != null)
+            {
+                text.Append('\n').Append(Shopping(shopping));
+            }
+
             return text.ToString();
         }
 
-        public static string Result(JobResult result, string fastenerName)
+        /// <summary>What the workshop has and what must be bought, e.g. "2 x Spruce board ...: have 0, buy 2 = €17.00".</summary>
+        public static string Shopping(ShoppingList shopping)
+        {
+            if (shopping == null) throw new ArgumentNullException(nameof(shopping));
+
+            var text = new StringBuilder();
+            text.Append("In the workshop / to buy:\n");
+            foreach (ShoppingLine line in shopping.Lines)
+            {
+                text.Append("  ").Append(line.Needed).Append(" x ").Append(line.Description)
+                    .Append(": have ").Append(line.Available);
+                if (!line.IsSold)
+                {
+                    text.Append(line.Available >= line.Needed ? ", enough" : ", not sold by the merchant");
+                }
+                else if (line.UnitsToBuy == 0)
+                {
+                    text.Append(", enough");
+                }
+                else
+                {
+                    text.Append(", buy ").Append(line.UnitsToBuy).Append(" x ").Append(line.Item.DisplayName)
+                        .Append(" = ").Append(line.Cost);
+                }
+
+                text.Append('\n');
+            }
+
+            text.Append("Total to buy: ").Append(shopping.TotalCost);
+            return text.ToString();
+        }
+
+        public static string Result(JobResult result, string fastenerName, JobSettlement settlement = null)
         {
             if (result == null) throw new ArgumentNullException(nameof(result));
 
@@ -130,7 +178,32 @@ namespace WoodcraftSimulator.Jobs
                 text.Append(goal.Met ? "  [x] " : "  [ ] ").Append(goal.Name).Append(" (").Append(goal.Detail).Append(")\n");
             }
 
+            if (settlement != null)
+            {
+                text.Append(Settlement(settlement, result.GoalsMet, result.Goals.Count)).Append('\n');
+            }
+
             text.Append(AssemblyReportText.SafetyNote);
+            return text.ToString();
+        }
+
+        /// <summary>Pay, costs and profit of a delivered job.</summary>
+        public static string Settlement(JobSettlement settlement, int goalsMet, int goalCount)
+        {
+            if (settlement == null) throw new ArgumentNullException(nameof(settlement));
+
+            var text = new StringBuilder();
+            text.Append("Pay: ").Append(settlement.Earned).Append(" of ").Append(settlement.Pay)
+                .Append(" (delivery ").Append(settlement.BasePay).Append(" + goals ").Append(goalsMet).Append('/')
+                .Append(goalCount).Append(' ').Append(settlement.Bonus).Append(")\n");
+            text.Append("Material used: timber ").Append(settlement.TimberCost).Append(", fasteners ")
+                .Append(settlement.FastenerCost).Append('\n');
+            if (settlement.Unpriced.Count > 0)
+            {
+                text.Append("  (no price for: ").Append(string.Join(", ", settlement.Unpriced)).Append(")\n");
+            }
+
+            text.Append("Profit: ").Append(settlement.Profit).Append("   (offcuts stay in the workshop)");
             return text.ToString();
         }
 

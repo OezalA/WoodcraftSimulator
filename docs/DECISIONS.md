@@ -434,3 +434,29 @@ deferred to Phase 9). Principle: real carpentry rules in the domain, outcome fro
   E on the sheet delivers: the structure is removed and the job is done (completed job ids are saved).
 - **Save**: `JobData` (active job, time, boards delivered / extra, sawdust at start, completed jobs); pilot holes and
   head heights per point in the assembly data. Still format version 1 (new fields default to empty).
+
+## D-040: Phase 7 material economy: money, catalog, consumable screws, job settlement (Accepted, 2026-11-15)
+Owner approved the proposal (K1-K7). 7a = domain rules and tests (done); 7b = scene (planned).
+- **K1 Money** (`Economy.Money`): whole euro cents (long), shown as "€12.50". The symbol is written in one place
+  (`Money.Symbol`); € is outside Latin-1 (D-028 text rule), so MT checks it renders, else it becomes "EUR ".
+- **Ledger**: every booking is kept (starting funds, purchases, job income); totals for income and purchases. No
+  credit: a purchase the balance can't cover is refused.
+- **Catalog** (`MaterialCatalog`): boards (species + exact size) and fastener boxes, unit prices. Max 20 of one
+  item per order. Boards are physical and delivered by the scene; a box goes into the workshop's `FastenerStock`.
+- **K4 Screws are consumable** (`FastenerStock`): one used per driven screw; none left = can't drive (buy a box).
+  A planning rule, not a skill hurdle (see the owner's playability rule).
+- **Priced bill of materials** (`ShoppingList`): per job, boards and fasteners needed, what the workshop has,
+  catalog units to buy and the cost.
+- **K2 Pay**: 70 % of the job's pay for delivering it, the remaining 30 % split evenly over the quality goals met.
+- **K3 Material cost** (`JobSettlement`): the job is charged for the timber it used (in the structure + sawdust,
+  prorated from the board price by volume) and the screws driven (prorated from the box). Offcuts stay in the
+  workshop with their value. Profit = earned pay - material cost.
+- **K7 Inventory** (`WorkshopInventory`): timber stays physical (master prompt §6.9); the inventory is a summary of
+  loose pieces grouped by species and cross-section (uncut boards vs cut pieces) with their catalog value, plus
+  money and fasteners.
+- **K5/K6** (scene, 7b): orders arrive at once at the delivery area; start with €100, the scene's boards and one
+  box of 200 screws. The job sheet's free stock delivery becomes a purchase.
+- **Save format 2**: `EconomyData` (started, transactions, fastener counts). Migration 1 → 2 leaves the economy
+  "not started", so an old save gets the starting funds on load. Validation: known kinds, balance not negative,
+  fastener ids unique, counts not negative.
+- `StockSpec` moved from `Jobs` to `Materials` so that `Economy` depends only on `Materials` (Jobs → Economy).

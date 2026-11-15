@@ -1,21 +1,27 @@
 using System;
 using System.Collections.Generic;
 using WoodcraftSimulator.Construction;
+using WoodcraftSimulator.Economy;
 using WoodcraftSimulator.Materials;
 using WoodcraftSimulator.Measurement;
 
 namespace WoodcraftSimulator.Jobs
 {
     /// <summary>
-    /// A woodworking assignment (master prompt §6.14): what to build, from which stock, how many spare boards come
-    /// with the delivery, and tips. Objectives: cut the parts, assemble, fasten; quality goals are reported separately
-    /// (<see cref="JobResult"/>). Rewards and money come with the economy (Phase 7).
+    /// A woodworking assignment (master prompt §6.14): what to build, from which stock, the pay, how many spare boards
+    /// the plan recommends, and tips. Objectives: cut the parts, assemble, fasten; quality goals are reported
+    /// separately (<see cref="JobResult"/>), the money in <see cref="JobSettlement"/>.
     /// </summary>
     public sealed class Job
     {
         public Job(string id, string displayName, string description, Blueprint blueprint, StockSpec stock,
-            int spareBoards = 0, IEnumerable<string> tips = null)
+            int spareBoards = 0, IEnumerable<string> tips = null, Money pay = default)
         {
+            if (pay.IsNegative)
+            {
+                throw new ArgumentOutOfRangeException(nameof(pay), "Pay must not be negative.");
+            }
+
             if (string.IsNullOrWhiteSpace(id))
             {
                 throw new ArgumentException("Job id must not be empty.", nameof(id));
@@ -33,7 +39,11 @@ namespace WoodcraftSimulator.Jobs
             Stock = stock ?? throw new ArgumentNullException(nameof(stock));
             SpareBoards = spareBoards;
             Tips = new List<string>(tips ?? Array.Empty<string>()).AsReadOnly();
+            Pay = pay;
         }
+
+        /// <summary>Full pay when every quality goal is met (see <see cref="JobSettlement"/>).</summary>
+        public Money Pay { get; }
 
         public string Id { get; }
 

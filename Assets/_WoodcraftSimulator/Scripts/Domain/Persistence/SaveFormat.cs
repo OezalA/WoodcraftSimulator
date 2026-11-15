@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using WoodcraftSimulator.Economy;
 using WoodcraftSimulator.Materials;
 using WoodcraftSimulator.Measurement;
 
@@ -12,7 +13,7 @@ namespace WoodcraftSimulator.Persistence
     public static class SaveFormat
     {
         /// <summary>Current save format. Increase it and add a migration step when the format changes.</summary>
-        public const int CurrentVersion = 1;
+        public const int CurrentVersion = 2;
 
         /// <summary>Brings older data up to <see cref="CurrentVersion"/>. Newer or unknown versions are refused.</summary>
         public static bool TryMigrate(SaveGameData data, out string error)
@@ -35,8 +36,15 @@ namespace WoodcraftSimulator.Persistence
                 return false;
             }
 
-            // Migration steps go here, one per version, e.g.:
-            // if (data.version == 1) { ...convert to 2...; data.version = 2; }
+            // One step per version.
+            if (data.version == 1)
+            {
+                // Format 2 adds the economy (D-040). A format-1 save has none: it stays "not started", so the game
+                // gives the starting funds and screws when it is loaded.
+                data.economy = new EconomyData();
+                data.version = 2;
+            }
+
             error = null;
             return true;
         }
@@ -243,6 +251,8 @@ namespace WoodcraftSimulator.Persistence
                 errors.Add("Job data is invalid.");
             }
 
+            ValidateEconomy(data.economy ?? new EconomyData(), errors);
+
             // "!(x >= 0)" also catches NaN.
             if (waste.cutCount < 0 || !(waste.volumeCubicMeters >= 0.0) || !(waste.massKg >= 0.0) ||
                 double.IsInfinity(waste.volumeCubicMeters) || double.IsInfinity(waste.massKg))
@@ -283,6 +293,63 @@ namespace WoodcraftSimulator.Persistence
             };
         }
 
+        /// <summary>Save data of the ledger and the fastener stock.</summary>
+        public static EconomyData ToData(Ledger ledger, FastenerStock fasteners)
+        {
+            if (ledger == null) throw new ArgumentNullException(nameof(ledger));
+            if (fasteners == null) throw new ArgumentNullException(nameof(fasteners));
+
+            var transactions = new TransactionData[ledger.Entries.Count];
+            for (int i = 0; i < transactions.Length; i++)
+            {
+                Transaction entry = ledger.Entries[i];
+                transactions[i] = new TransactionData
+                {
+                    kind = (int)entry.Kind, amountCents = entry.Amount.Cents, description = entry.Description
+                };
+            }
+
+            var ids = new List<string>(fasteners.All.Keys);
+            ids.Sort(string.CompareOrdinal);
+            var counts = new FastenerCountData[ids.Count];
+            for (int i = 0; i < counts.Length; i++)
+            {
+                counts[i] = new FastenerCountData { fastenerId = ids[i], count = fasteners.Count(ids[i]) };
+            }
+
+            return new EconomyData { started = ledger.IsStarted, transactions = transactions, fasteners = counts };
+        }
+
+        /// <summary>
+        /// Restores (validated) economy data. Returns false, changing nothing, if the data was never started
+        /// (a format-1 save): the caller then gives the starting funds.
+        /// </summary>
+        public static bool TryRestore(EconomyData data, Ledger ledger, FastenerStock fasteners)
+        {
+            if (ledger == null) throw new ArgumentNullException(nameof(ledger));
+            if (fasteners == null) throw new ArgumentNullException(nameof(fasteners));
+            if (data == null || !data.started)
+            {
+                return false;
+            }
+
+            var history = new List<Transaction>();
+            foreach (TransactionData entry in data.transactions ?? Array.Empty<TransactionData>())
+            {
+                history.Add(new Transaction((TransactionKind)entry.kind, Money.FromCents(entry.amountCents), entry.description));
+            }
+
+            var counts = new List<KeyValuePair<string, int>>();
+            foreach (FastenerCountData entry in data.fasteners ?? Array.Empty<FastenerCountData>())
+            {
+                counts.Add(new KeyValuePair<string, int>(entry.fastenerId, entry.count));
+            }
+
+            ledger.Restore(history);
+            fasteners.Restore(counts);
+            return true;
+        }
+
         /// <summary>Recreates the piece and its marks from (validated) save data.</summary>
         public static TimberPiece ToPiece(BoardData data, WoodSpecies species, out BoardMarks marks)
         {
@@ -302,6 +369,43 @@ namespace WoodcraftSimulator.Persistence
             }
 
             return piece;
+        }
+
+        private static void ValidateEconomy(EconomyData economy, List<string> errors)
+        {
+            TransactionData[] transactions = economy.transactions ?? Array.Empty<TransactionData>();
+            FastenerCountData[] fasteners = economy.fasteners ?? Array.Empty<FastenerCountData>();
+            if (!economy.started)
+            {
+                Require(transactions.Length == 0 && fasteners.Length == 0,
+                    "Economy: not started, but has transactions or fasteners.", errors);
+                return;
+            }
+
+            long balance = 0;
+            foreach (TransactionData entry in transactions)
+            {
+                if (entry == null || !Enum.IsDefined(typeof(TransactionKind), entry.kind))
+                {
+                    errors.Add("Economy: a transaction is empty or of an unknown kind.");
+                    return;
+                }
+
+                balance += entry.amountCents;
+            }
+
+            Require(transactions.Length > 0, "Economy: started, but has no transactions.", errors);
+            Require(balance >= 0, $"Economy: the balance is negative ({Money.FromCents(balance)}).", errors);
+
+            var ids = new HashSet<string>();
+            foreach (FastenerCountData entry in fasteners)
+            {
+                if (entry == null || string.IsNullOrWhiteSpace(entry.fastenerId) || !ids.Add(entry.fastenerId) ||
+                    entry.count < 0)
+                {
+                    errors.Add($"Economy: fastener count '{entry?.fastenerId}' is empty, duplicated or negative.");
+                }
+            }
         }
 
         private static void Require(bool condition, string message, List<string> errors)

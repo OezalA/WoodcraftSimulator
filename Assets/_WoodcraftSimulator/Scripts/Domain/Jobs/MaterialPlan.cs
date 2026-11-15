@@ -6,30 +6,6 @@ using WoodcraftSimulator.Measurement;
 
 namespace WoodcraftSimulator.Jobs
 {
-    /// <summary>The stock board a job is made from (species and nominal size of one board as bought).</summary>
-    public sealed class StockSpec
-    {
-        public StockSpec(string speciesId, string speciesName, BoardDimensions dimensions)
-        {
-            if (string.IsNullOrWhiteSpace(speciesId))
-            {
-                throw new ArgumentException("Species id must not be empty.", nameof(speciesId));
-            }
-
-            SpeciesId = speciesId;
-            SpeciesName = string.IsNullOrWhiteSpace(speciesName) ? speciesId : speciesName;
-            Dimensions = dimensions;
-        }
-
-        public string SpeciesId { get; }
-
-        public string SpeciesName { get; }
-
-        public BoardDimensions Dimensions { get; }
-
-        public override string ToString() => $"{SpeciesName} board {Dimensions}";
-    }
-
     /// <summary>One line of the cut list: parts of the same size.</summary>
     public sealed class CutListLine
     {

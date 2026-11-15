@@ -1,5 +1,6 @@
 using System.Linq;
 using NUnit.Framework;
+using WoodcraftSimulator.Economy;
 using WoodcraftSimulator.Materials;
 using WoodcraftSimulator.Measurement;
 using WoodcraftSimulator.Persistence;
@@ -69,6 +70,69 @@ namespace WoodcraftSimulator.Tests.Persistence
         public void Migrate_Null_IsRefused()
         {
             Assert.That(SaveFormat.TryMigrate(null, out _), Is.False);
+        }
+
+        [Test]
+        public void Migrate_Version1_GetsAnUnstartedEconomy()
+        {
+            SaveGameData save = ValidSave();
+            save.version = 1;
+            save.economy = null;
+
+            Assert.That(SaveFormat.TryMigrate(save, out _), Is.True);
+            Assert.That(save.version, Is.EqualTo(2));
+            Assert.That(save.economy.started, Is.False);
+            Assert.That(SaveFormat.Validate(save, id => id == "spruce"), Is.Empty);
+            Assert.That(SaveFormat.TryRestore(save.economy, new Ledger(), new FastenerStock()), Is.False);
+        }
+
+        [Test]
+        public void Economy_RoundTrips()
+        {
+            var ledger = new Ledger();
+            ledger.Start(Money.FromEuros(100m));
+            ledger.TrySpend(Money.FromEuros(8.50m), "1 x board");
+            var fasteners = new FastenerStock();
+            fasteners.Add("wood-screw-4x40", 188);
+
+            SaveGameData save = ValidSave();
+            save.economy = SaveFormat.ToData(ledger, fasteners);
+            Assert.That(SaveFormat.Validate(save, id => id == "spruce"), Is.Empty);
+
+            var restoredLedger = new Ledger();
+            var restoredFasteners = new FastenerStock();
+            Assert.That(SaveFormat.TryRestore(save.economy, restoredLedger, restoredFasteners), Is.True);
+            Assert.That(restoredLedger.Balance, Is.EqualTo(Money.FromEuros(91.50m)));
+            Assert.That(restoredLedger.Entries[1].Kind, Is.EqualTo(TransactionKind.Purchase));
+            Assert.That(restoredLedger.Entries[1].Description, Is.EqualTo("1 x board"));
+            Assert.That(restoredFasteners.Count("wood-screw-4x40"), Is.EqualTo(188));
+        }
+
+        [Test]
+        public void Validate_InvalidEconomy()
+        {
+            SaveGameData save = ValidSave();
+            save.economy = new EconomyData
+            {
+                started = true,
+                transactions = new[]
+                {
+                    new TransactionData { kind = 0, amountCents = 500 },
+                    new TransactionData { kind = 1, amountCents = -600 }
+                },
+                fasteners = new[]
+                {
+                    new FastenerCountData { fastenerId = "s", count = 1 },
+                    new FastenerCountData { fastenerId = "s", count = 2 }
+                }
+            };
+            Assert.That(SaveFormat.Validate(save).Count, Is.EqualTo(2));
+
+            save.economy = new EconomyData { started = true, transactions = new[] { new TransactionData { kind = 7 } } };
+            Assert.That(SaveFormat.Validate(save).Count, Is.EqualTo(1));
+
+            save.economy = new EconomyData { started = false, fasteners = new[] { new FastenerCountData { fastenerId = "s" } } };
+            Assert.That(SaveFormat.Validate(save).Count, Is.EqualTo(1));
         }
 
         [Test]

@@ -25,6 +25,38 @@ namespace WoodcraftSimulator.Persistence
         public SwitchData[] switches = Array.Empty<SwitchData>();
         public CutListData[] cutLists = Array.Empty<CutListData>();
         public JobData job = new JobData();
+
+        /// <summary>Money and fastener stock (format 2). Not started = the starting funds are given on load.</summary>
+        public EconomyData economy = new EconomyData();
+    }
+
+    [Serializable]
+    public sealed class TransactionData
+    {
+        /// <summary><c>TransactionKind</c> as int (0 = starting funds, 1 = purchase, 2 = job income).</summary>
+        public int kind;
+
+        /// <summary>Signed amount in cents (negative = money out).</summary>
+        public long amountCents;
+
+        public string description = string.Empty;
+    }
+
+    [Serializable]
+    public sealed class FastenerCountData
+    {
+        public string fastenerId;
+        public int count;
+    }
+
+    [Serializable]
+    public sealed class EconomyData
+    {
+        /// <summary>False in saves made before the economy (format 1): the game then starts the ledger.</summary>
+        public bool started;
+
+        public TransactionData[] transactions = Array.Empty<TransactionData>();
+        public FastenerCountData[] fasteners = Array.Empty<FastenerCountData>();
     }
 
     [Serializable]

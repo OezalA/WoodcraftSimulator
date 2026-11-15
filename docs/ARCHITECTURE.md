@@ -22,11 +22,12 @@ Assets/
       WoodcraftSimulator.asmdef   runtime assembly "WoodcraftSimulator"
       Domain/                     assembly "WoodcraftSimulator.Domain": plain C#, no UnityEngine
         Measurement/Length.cs, TapeMeasure.cs, Tolerance.cs, PencilMark.cs, BoardMarks.cs
-        Materials/BoardDimensions.cs, WoodSpecies.cs, TimberPiece.cs
+        Materials/BoardDimensions.cs, WoodSpecies.cs, TimberPiece.cs, StockSpec.cs
         Inventory/InventoryItem.cs, ToolBelt.cs
         Cutting/Saw.cs, Crosscut.cs (+ CrosscutResult, CutWaste), MaterialWasteLog.cs
         Construction/Blueprint.cs (+ PartSlot, ConnectionSpec, FastenerSpec), AssemblyBuild.cs (+ SlotFit, quality report, pilot holes, head heights, splits), AssemblyReportText.cs, Fastening.cs (FasteningRules, ScrewSeat, ScrewDrive)
-        Jobs/MaterialPlan.cs (+ StockSpec, CutListLine, StockBoardPlan), Job.cs (+ CutListProgress, MaterialUsage, QualityGoal, JobResult), JobText.cs
+        Economy/Money.cs, Ledger.cs (+ Transaction), MaterialCatalog.cs (+ CatalogItem, PurchaseResult), FastenerStock.cs, WorkshopInventory.cs (+ InventoryGroup)
+        Jobs/MaterialPlan.cs (+ CutListLine, StockBoardPlan), Job.cs (+ CutListProgress, MaterialUsage, QualityGoal, JobResult), JobEconomy.cs (ShoppingList, JobSettlement), JobText.cs
         Persistence/SaveGameData.cs (save file data classes), SaveFormat.cs (version, migration, validation)
       Core/PauseController.cs, UserPreferences.cs, BoxMeshBuilder.cs, PhysicsQueries.cs
       Materials/WoodSpeciesDefinition.cs, TimberBoard.cs

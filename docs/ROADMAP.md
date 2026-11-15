@@ -95,3 +95,14 @@ Goal (master prompt): one woodworking project from start to finish without devel
   awaiting MT-019, MT-020
 - [ ] 6c: Job result in the HUD (parts, screw heads, splits, material delivered / in the structure / sawdust /
   offcuts, time, quality goals), deliver to finish, order extra stock, job state saved. Code done, awaiting MT-020
+
+## Phase 7: Inventory and Material Economy (plan approved 2026-11-15: K1-K7, D-040)
+Goal (master prompt): plan and purchase materials; material use updates the inventory; final costs and waste are
+calculated correctly.
+- [x] 7a: Domain: `Money` (cents, €), `Ledger` (bookings, no credit), `MaterialCatalog` (boards, fastener boxes,
+  prorated values, purchase), `FastenerStock` (consumable screws), `ShoppingList` (priced bill of materials),
+  `JobSettlement` (70 % pay + goal bonus, timber and screws used, profit), `WorkshopInventory` (loose timber by
+  species / section, cut pieces, value), save format 2 with migration; 225 tests. Domain only, nothing to play-test
+- [ ] 7b: Scene: catalog assets and order board at the delivery area, starting funds €100 + one box of screws, job
+  sheet buys the material instead of free delivery, drill uses screws from the stock, money in the HUD, inventory
+  screen (Tab), result with pay / cost / profit, economy saved. Then MT-021+

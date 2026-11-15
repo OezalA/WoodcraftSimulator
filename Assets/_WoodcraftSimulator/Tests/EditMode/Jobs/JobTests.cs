@@ -1,6 +1,7 @@
 using System.Linq;
 using NUnit.Framework;
 using WoodcraftSimulator.Construction;
+using WoodcraftSimulator.Economy;
 using WoodcraftSimulator.Jobs;
 using WoodcraftSimulator.Materials;
 using WoodcraftSimulator.Measurement;
@@ -181,6 +182,102 @@ namespace WoodcraftSimulator.Tests.Jobs
             string offer = JobText.Offer(job, plan, null);
             StringAssert.Contains("Material: 2 x Spruce board 2000 × 145 × 18 mm", offer);
             StringAssert.Contains("Board 1: 600 + 600 + 464 mm, offcut 330 mm", offer);
+        }
+
+        private static MaterialCatalog Catalog() => new MaterialCatalog(new[]
+        {
+            CatalogItem.Board("spruce-2000x145x18", new StockSpec("spruce", "Spruce", Size(2000)), Money.FromEuros(8.50m)),
+            CatalogItem.FastenerBox("screws-4x40-200", "Box of 200 screws", Screw.Id, 200, Money.FromEuros(6.00m))
+        });
+
+        private static Job PaidShelfJob() => new Job("shelf-job", "Wall shelf", "A small shelf.", Shelf(),
+            new StockSpec("spruce", "Spruce", Size(2000)), pay: Money.FromEuros(60m));
+
+        /// <summary>The shelf's parts (2 × 600 + 3 × 464 mm) and the sawdust of 5 cuts.</summary>
+        private static MaterialUsage ShelfUsage(int boards, int extra) => new MaterialUsage(boards, extra,
+            boards * Size(2000).VolumeCubicMeters, Size(2592).VolumeCubicMeters, 5 * Size(2).VolumeCubicMeters);
+
+        [Test]
+        public void ShoppingList_BuysOnlyWhatIsMissing()
+        {
+            Job job = PaidShelfJob();
+            var screws = new FastenerStock();
+            screws.Add(Screw.Id, 5);
+
+            ShoppingList list = ShoppingList.For(job.Plan(Kerf), Catalog(), 1, screws, id => "Wood screw 4 × 40 mm");
+
+            Assert.That(list.Lines[0].Needed, Is.EqualTo(2));
+            Assert.That(list.Lines[0].UnitsToBuy, Is.EqualTo(1));
+            Assert.That(list.Lines[1].Needed, Is.EqualTo(12));
+            Assert.That(list.Lines[1].UnitsToBuy, Is.EqualTo(1));
+            Assert.That(list.TotalCost, Is.EqualTo(Money.FromEuros(14.50m)));
+
+            screws.Add(Screw.Id, 200);
+            ShoppingList enough = ShoppingList.For(job.Plan(Kerf), Catalog(), 2, screws);
+            Assert.That(enough.TotalCost, Is.EqualTo(Money.Zero));
+
+            string text = JobText.Offer(job, job.Plan(Kerf), null, list);
+            StringAssert.Contains("Wall shelf   Pay €60.00", text);
+            StringAssert.Contains("2 x Spruce board 2000 × 145 × 18 mm: have 1, buy 1 x Spruce board 2000 × 145 × 18 mm = €8.50", text);
+            StringAssert.Contains("12 x Wood screw 4 × 40 mm: have 5, buy 1 x Box of 200 screws = €6.00", text);
+            StringAssert.Contains("Total to buy: €14.50", text);
+        }
+
+        [Test]
+        public void ShoppingList_UnsoldMaterial_CostsNothing()
+        {
+            var catalog = new MaterialCatalog(new CatalogItem[0]);
+            ShoppingList list = ShoppingList.For(PaidShelfJob().Plan(Kerf), catalog, 0, null);
+
+            Assert.That(list.Lines[0].IsSold, Is.False);
+            Assert.That(list.TotalCost, Is.EqualTo(Money.Zero));
+            StringAssert.Contains("not sold by the merchant", JobText.Shopping(list));
+        }
+
+        [Test]
+        public void Settlement_PaysForGoals_AndChargesTheMaterialUsed()
+        {
+            Job job = PaidShelfJob();
+            JobResult good = JobResult.Create(job, CompletedShelf(careful: true).CreateReport(), ShelfUsage(2, 0), 600);
+
+            JobSettlement settlement = JobSettlement.Calculate(good, Catalog());
+
+            Assert.That(settlement.BasePay, Is.EqualTo(Money.FromEuros(42m)));
+            Assert.That(settlement.Earned, Is.EqualTo(Money.FromEuros(60m)));
+
+            // Used 2592 + 10 mm of the 2000 mm board: 1.301 × €8.50 = €11.06 (offcuts are not charged).
+            Assert.That(settlement.TimberCost, Is.EqualTo(Money.FromEuros(11.06m)));
+            Assert.That(settlement.FastenerCost, Is.EqualTo(Money.FromEuros(0.36m)));
+            Assert.That(settlement.Profit, Is.EqualTo(Money.FromEuros(48.58m)));
+            Assert.That(settlement.Unpriced, Is.Empty);
+
+            string text = JobText.Result(good, Screw.DisplayName, settlement);
+            StringAssert.Contains("Pay: €60.00 of €60.00 (delivery €42.00 + goals 4/4 €18.00)", text);
+            StringAssert.Contains("Material used: timber €11.06, fasteners €0.36", text);
+            StringAssert.Contains("Profit: €48.58", text);
+        }
+
+        [Test]
+        public void Settlement_MissedGoals_LowerThePay()
+        {
+            Job job = PaidShelfJob();
+            JobResult rough = JobResult.Create(job, CompletedShelf(careful: false).CreateReport(), ShelfUsage(3, 1), 600);
+
+            JobSettlement settlement = JobSettlement.Calculate(rough, Catalog());
+
+            // 1 of 4 goals (no splits): €42 + €18 / 4.
+            Assert.That(settlement.Earned, Is.EqualTo(Money.FromEuros(46.50m)));
+        }
+
+        [Test]
+        public void Settlement_WithoutPrices_ListsTheUnpricedMaterial()
+        {
+            JobResult good = JobResult.Create(PaidShelfJob(), CompletedShelf(careful: true).CreateReport(), ShelfUsage(2, 0), 600);
+
+            JobSettlement settlement = JobSettlement.Calculate(good, new MaterialCatalog(new CatalogItem[0]));
+
+            Assert.That(settlement.MaterialCost, Is.EqualTo(Money.Zero));
+            Assert.That(settlement.Unpriced.Count, Is.EqualTo(2));
         }
     }
 }
