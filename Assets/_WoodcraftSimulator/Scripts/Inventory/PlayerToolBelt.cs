@@ -132,6 +132,42 @@ namespace WoodcraftSimulator.Inventory
         /// <summary>The scene object in a slot, or null.</summary>
         public PickupItem GetStored(int slot) => storedObjects[slot];
 
+        /// <summary>The stored object of this item type, or null.</summary>
+        public PickupItem Find(string definitionId)
+        {
+            foreach (PickupItem stored in storedObjects)
+            {
+                if (stored != null && stored.Item != null && stored.Item.DefinitionId == definitionId)
+                {
+                    return stored;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Takes an item off the belt and puts it back into the world at the given pose (e.g. on its hook on the tool
+        /// wall, D-044). The caller decides where; the item is visible and can be picked up again.
+        /// </summary>
+        public bool TryRelease(PickupItem pickup, Vector3 position, Quaternion rotation)
+        {
+            int slot = Array.IndexOf(storedObjects, pickup);
+            if (pickup == null || slot < 0)
+            {
+                return false;
+            }
+
+            // Cleared first, so the belt's change handler neither hides it nor keeps it in hand.
+            storedObjects[slot] = null;
+            Belt.TryRemove(slot, out _);
+            pickup.HandOffset = Vector3.zero;
+            pickup.transform.SetPositionAndRotation(position, rotation);
+            pickup.SetStored(false);
+            pickup.gameObject.SetActive(true);
+            return true;
+        }
+
         /// <summary>
         /// The slot that should be in hand when the game is saved: while carrying, the tool was only holstered and
         /// comes back afterwards, so that one counts.

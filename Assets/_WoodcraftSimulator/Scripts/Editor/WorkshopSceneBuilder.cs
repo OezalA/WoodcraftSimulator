@@ -173,6 +173,7 @@ namespace WoodcraftSimulator.Editor
             BuildWorkbenchLamp(workshop, materials.Wall);
             BuildAssemblyTable(workshop, materials);
             BuildJobBoard(workshop, materials, species);
+            BuildToolWall(workshop, materials);
         }
 
         /// <summary>
@@ -256,7 +257,7 @@ namespace WoodcraftSimulator.Editor
 
             float wallZ = InteriorDepth / 2f;
             float centerY = FloorTop + 1.5f;
-            const float centerX = 1.9f;
+            const float centerX = 2.25f; // right of the light switch (x 1.4)
             int count = catalog.Boards.Count + catalog.FastenerBoxes.Count;
             GameObject board = CreateBox("OrderBoard", parent, new Vector3(centerX, centerY, wallZ - 0.01f),
                 new Vector3(0.3f * count + 0.1f, 0.5f, 0.02f), materials.Workbench);
@@ -285,6 +286,47 @@ namespace WoodcraftSimulator.Editor
             return economy;
         }
 
+
+        /// <summary>
+        /// Tool wall (Phase 8a, D-044): a 1.2 × 0.6 m board on the back wall above the workbench with one place per
+        /// tool (a painted outline). With the tool on the belt, E on its outline hangs it there, upright.
+        /// </summary>
+        private static void BuildToolWall(Transform parent, GreyboxMaterials materials)
+        {
+            float wallZ = InteriorDepth / 2f;
+            float centerY = FloorTop + 1.5f;
+            GameObject board = CreateBox("ToolWall", parent, new Vector3(0f, centerY, wallZ - 0.01f),
+                new Vector3(1.2f, 0.6f, 0.02f), materials.Workbench);
+            Object.DestroyImmediate(board.GetComponent<BoxCollider>()); // the outlines are what you aim at
+
+            // Item, x on the board, size of the item box (x = width, y = thickness, z = length) as built on the bench.
+            AddToolPlace(parent, materials, ItemAssets.TapeMeasure(), -0.45f, new Vector3(0.07f, 0.035f, 0.07f), wallZ, centerY);
+            AddToolPlace(parent, materials, ItemAssets.CarpenterPencil(), -0.25f, new Vector3(0.012f, 0.007f, 0.175f), wallZ, centerY);
+            AddToolPlace(parent, materials, ItemAssets.HandSaw(), 0.05f, new Vector3(0.12f, 0.004f, 0.5f), wallZ, centerY);
+            AddToolPlace(parent, materials, ItemAssets.DrillDriver(), 0.4f, new Vector3(0.2f, 0.07f, 0.16f), wallZ, centerY);
+        }
+
+        private static ToolHook AddToolPlace(Transform parent, GreyboxMaterials materials, ItemDefinition item, float x,
+            Vector3 itemSize, float wallZ, float centerY)
+        {
+            // Outline: slightly larger than the tool's face, flat on the board.
+            var outlineSize = new Vector3(itemSize.x + 0.02f, itemSize.z + 0.02f, 0.002f);
+            GameObject outline = CreateBox($"ToolPlace_{item.Id}", parent, new Vector3(x, centerY, wallZ - 0.021f),
+                outlineSize, materials.Paper);
+            EnlargeGrabCollider(outline, outlineSize);
+            var hook = outline.AddComponent<ToolHook>();
+
+            // The tool hangs upright in front of its outline: length vertical, thickness out of the wall.
+            var hang = new GameObject("HangPoint").transform;
+            hang.SetParent(parent, false);
+            hang.localPosition = new Vector3(x, centerY, wallZ - 0.022f - itemSize.y / 2f - 0.003f);
+            hang.localRotation = Quaternion.Euler(-90f, 0f, 0f);
+            hang.name = $"HangPoint_{item.Id}";
+
+            SetReference(hook, "item", item);
+            SetReference(hook, "hangPoint", hang);
+            return hook;
+        }
         private static Object[] Fasteners() => new Object[] { BlueprintAssets.WoodScrew5x80(), BlueprintAssets.WoodScrew4x40() };
 
         private static void SetReferences(Object target, string propertyName, IReadOnlyList<Object> values)
