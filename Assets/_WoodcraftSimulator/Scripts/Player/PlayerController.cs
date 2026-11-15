@@ -102,10 +102,20 @@ namespace WoodcraftSimulator.Player
             }
         }
 
+        /// <summary>
+        /// While true, the mouse and movement keys don't turn or move the player: a tool uses the mouse instead
+        /// (e.g. sawing strokes, D-038). Gravity still applies.
+        /// </summary>
+        public bool ControlsLocked { get; set; }
+
         private void Update()
         {
             HandlePrecisionLook();
-            HandleLook();
+            if (!ControlsLocked)
+            {
+                HandleLook();
+            }
+
             HandleMovement();
         }
 
@@ -146,13 +156,13 @@ namespace WoodcraftSimulator.Player
                 verticalVelocity = GroundedStickVelocity;
             }
 
-            Vector2 input = moveAction.ReadValue<Vector2>();
+            Vector2 input = ControlsLocked ? Vector2.zero : moveAction.ReadValue<Vector2>();
             Vector3 direction = transform.right * input.x + transform.forward * input.y;
             direction = Vector3.ClampMagnitude(direction, 1f);
 
             float speed = sprintAction.IsPressed() ? sprintSpeed : walkSpeed;
 
-            if (isGrounded && jumpAction.WasPressedThisFrame())
+            if (isGrounded && !ControlsLocked && jumpAction.WasPressedThisFrame())
             {
                 // v = sqrt(2 * g * h)
                 verticalVelocity = Mathf.Sqrt(2f * -gravity * jumpHeight);

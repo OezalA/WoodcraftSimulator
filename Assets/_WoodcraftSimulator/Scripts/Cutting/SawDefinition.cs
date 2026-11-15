@@ -18,11 +18,18 @@ namespace WoodcraftSimulator.Cutting
         [Tooltip("Width of material turned into sawdust per cut, in millimeters.")]
         [SerializeField, Min(0.1f)] private float kerfMillimeters = 2f;
 
-        [Tooltip("Gameplay sawing time per square centimeter of cross-section (95 × 45 mm ≈ 43 cm² → 3 s at 0.07).")]
-        [SerializeField, Min(0.001f)] private float secondsPerSquareCentimeter = 0.07f;
+        [Header("Strokes (D-038)")]
+        [Tooltip("Saw travel (mm) per cm² of cross-section in spruce-like wood (18 × 145 mm ≈ 26 cm² → ~3100 mm ≈ 13 strokes of 250 mm).")]
+        [SerializeField, Min(1f)] private float strokeMillimetersPerSquareCentimeter = 120f;
 
-        [Tooltip("Shortest and longest sawing time in seconds, whatever the cross-section.")]
-        [SerializeField] private Vector2 secondsRange = new Vector2(1.5f, 8f);
+        [Tooltip("Usable blade length (mm): movement beyond it doesn't cut.")]
+        [SerializeField, Min(50f)] private float bladeLengthMillimeters = 500f;
+
+        [Tooltip("Share of the cut before the kerf guides the blade (sideways hand movement moves the blade).")]
+        [SerializeField, Range(0f, 0.5f)] private float startFraction = 0.1f;
+
+        [Tooltip("Strokes faster than this (mm/s) make the blade jump while starting.")]
+        [SerializeField, Min(50f)] private float fastStrokeMillimetersPerSecond = 900f;
 
         public string Id => id;
 
@@ -30,8 +37,9 @@ namespace WoodcraftSimulator.Cutting
 
         public Saw ToDomain() => new Saw(id, displayName, Length.FromMillimeters((double)kerfMillimeters));
 
-        /// <summary>Time to saw through a cross-section of the given area (gameplay value, not physics).</summary>
-        public float SawingSeconds(double crossSectionSquareCentimeters) =>
-            Mathf.Clamp((float)crossSectionSquareCentimeters * secondsPerSquareCentimeter, secondsRange.x, secondsRange.y);
+        public float BladeLengthMillimeters => bladeLengthMillimeters;
+
+        public SawingSettings SawingSettings() => new SawingSettings(strokeMillimetersPerSquareCentimeter,
+            bladeLengthMillimeters, startFraction, fastStrokeMillimetersPerSecond: fastStrokeMillimetersPerSecond);
     }
 }

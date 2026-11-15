@@ -6,7 +6,9 @@ _Last updated: 2026-11-15_
 **Phase 5 (Basic Assembly) done**: accepted by the owner on 2026-11-15 ("hepsi süper") after MT-013 and MT-015;
 `main` fast-forwarded to `develop`.
 **Save & load done** (D-036): S1–S3 accepted by the owner on 2026-11-15 ("save başarılı") after MT-016/MT-017;
-`main` fast-forwarded to `develop`. **Next: Phase 6 (first complete job), plan proposed, awaiting the owner.**
+`main` fast-forwarded to `develop`.
+**Phase 6 (first complete job) implemented, NOT yet tested in Unity** (plan approved 2026-11-15: small shelf, frame
+stays as practice job, realistic saw T1/T2 and drill M1/M2, D-038, D-039). Manual tests MT-018..MT-020 pending.
 Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 
 ## Completed
@@ -25,6 +27,7 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
   boards in the scene (D-030), unsupported pieces fall and settle, cut checked against the target (D-031); 112 tests.
 - Phase 5: domain assembly model (D-032), assembly table with snapping slots (D-033), pencil on graduations with
   wheel fine adjustment (D-034), drill-driver + screws + completion report (D-035); 145 tests.
+- Save & load (D-036): S1-S3, boards, player, tools/belt, assembly, waste, cut list, lamp; 174 tests.
 - Visual: MSAA 4x on PC quality (D-018), pause menu fonts fixed.
 
 ## Latest verification
@@ -60,6 +63,7 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 | S2 in Unity: compilation after Editor restart | `Tundra build success`, no errors (Editor.log, observed by Claude). Play-test pending | 2026-11-15 |
 | S3 save service: static compile + `dotnet test` | 0 errors, 0 warnings; 174/174 tests passed (Claude). Unity compile + play-test pending (MT-017) | 2026-11-15 |
 | MT-016 + MT-017 save & load (owner) | Passed: "save başarılı" | 2026-11-15 |
+| Phase 6 (6a-6c, D-038, D-039): static compile + `dotnet test` | 0 errors, 0 warnings; 220/220 tests passed (Claude). Unity compile + play-test pending (MT-018..MT-020) | 2026-11-15 |
 
 ## Known issues / limitations
 - **Carry feel not liked yet** (owner, 2026-11-13). Ideas for later: smooth follow (lerp/slerp) instead of rigid
@@ -72,6 +76,9 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 - Mouse look tuned for mouse only; gamepad right stick would be far too slow.
 - In-game text is English only.
 - Tool and board visuals are placeholders until the visual pass with purchased assets (D-037).
+- Sawing / screwing tuning values (strokes per cm², drift, clutch window) are first guesses (D-038): expect tuning after play-testing.
+- Deferred realism (D-038): squareness of hand cuts, clamping, screw angle, free screw positions (Phase 9).
+- Jobs: no money, rewards or material purchase yet (Phase 7); spare boards 0, extra boards can be ordered from the job sheet.
 - Save & load (D-036): one save slot; objects only move when the game moves them (no free drop of tools yet, so tools are on the belt or where the scene put them).
 - Pencil marks: no eraser, only on the board's flat faces, no squared lines / angles (D-028).
 - Assist option "type the dimension, the line is drawn" (owner's option A, D-034) deferred to a settings menu.
@@ -82,4 +89,5 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 ## Next recommended action
 1. Done: Company Name `OezalAstudio` (owner, 2026-11-15).
 2. Done: MT-016, MT-017 passed.
-3. Phase 6 plan (proposed 2026-11-15, see chat / ROADMAP): 6a job + material calculation (domain), 6b shelf blueprint + job board + stock, 6c job completion + results + save. Awaiting approval.
+3. Owner: stop Play, let Unity compile (no red Console errors), rebuild the scene, run MT-018, MT-019, MT-020.
+4. After acceptance: fast-forward `main`; then Phase 7 (inventory and material economy) planning with the owner.

@@ -204,6 +204,33 @@ namespace WoodcraftSimulator.Tests.Persistence
         }
 
         [Test]
+        public void Validate_JobData()
+        {
+            SaveGameData save = ValidSave();
+            save.job = new JobData { activeJobId = "shelf", boardsDelivered = 3, boardsOrderedExtra = 1, elapsedSeconds = 90 };
+            Assert.That(SaveFormat.Validate(save), Is.Empty);
+
+            save.job.boardsOrderedExtra = 4; // more extra boards than delivered
+            Assert.That(SaveFormat.Validate(save).Any(e => e.StartsWith("Job data")), Is.True);
+
+            save.job = new JobData { elapsedSeconds = double.NaN };
+            Assert.That(SaveFormat.Validate(save).Any(e => e.StartsWith("Job data")), Is.True);
+        }
+
+        [Test]
+        public void Validate_HeadHeightsMustMatchThePoints()
+        {
+            SaveGameData save = ValidSave();
+            save.assemblies[0].fastened[0].headHeightsTenths = new long[] { 0, 5 };
+
+            Assert.That(SaveFormat.Validate(save).Any(e => e.Contains("invalid fastening points")), Is.True);
+
+            save.assemblies[0].fastened[0].headHeightsTenths = new long[] { 12 };
+            save.assemblies[0].fastened[0].pilotHoles = new[] { 0, 1 };
+            Assert.That(SaveFormat.Validate(save), Is.Empty);
+        }
+
+        [Test]
         public void Board_RoundTrip_KeepsDimensionsAndMarksExactly()
         {
             var piece = new TimberPiece(Spruce, BoardDimensions.FromMillimeters(1498.3, 95, 45));

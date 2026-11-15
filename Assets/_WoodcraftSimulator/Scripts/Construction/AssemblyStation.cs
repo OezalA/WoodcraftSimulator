@@ -10,15 +10,33 @@ using WoodcraftSimulator.Persistence;
 
 namespace WoodcraftSimulator.Construction
 {
+    /// <summary>Which fastening points <see cref="AssemblyStation.TryFindPoint"/> looks for.</summary>
+    public enum PointQuery
+    {
+        /// <summary>Both parts installed, no screw and no pilot hole yet (for the drill bit).</summary>
+        ForPilotHole,
+
+        /// <summary>Both parts installed and no screw yet, or a screw whose head still stands out (for the driver bit).</summary>
+        ForScrew
+    }
+
     /// <summary>
     /// A place where one structure is built from a <see cref="BlueprintDefinition"/> (e.g. the assembly table).
     /// Shows translucent ghosts of the empty slots; a carried board aimed near a slot snaps into it when it fits
     /// (through <see cref="IPlacementTarget"/>, so the carrier knows nothing about assemblies). The rules are the
     /// domain <see cref="AssemblyBuild"/>. This transform is the assembly origin (slot poses are relative to it).
+    /// The blueprint can be changed while the station is empty (a job brings its own, Phase 6).
     /// </summary>
     public sealed class AssemblyStation : MonoBehaviour, IPlacementTarget
     {
+        [Tooltip("The blueprint built here until a job brings another one.")]
         [SerializeField] private BlueprintDefinition blueprint;
+
+        [Tooltip("Every blueprint that may be built here (a save names its blueprint by id).")]
+        [SerializeField] private BlueprintDefinition[] knownBlueprints = Array.Empty<BlueprintDefinition>();
+
+        [Tooltip("Fastener types used by the blueprints (sizes for the pilot-hole rule).")]
+        [SerializeField] private FastenerDefinition[] fasteners = Array.Empty<FastenerDefinition>();
 
         [Tooltip("Translucent material for the ghosts of empty slots.")]
         [SerializeField] private Material ghostMaterial;
@@ -33,37 +51,65 @@ namespace WoodcraftSimulator.Construction
         [Tooltip("Material of the visible screw heads.")]
         [SerializeField] private Material screwHeadMaterial;
 
+        [Tooltip("Dark material for pilot holes and splits.")]
+        [SerializeField] private Material holeMaterial;
+
         [Tooltip("Optional: the workshop's sawdust total, shown in the quality report.")]
         [SerializeField] private Cutting.WorkshopWaste waste;
 
-        // Visual sizes (meters): an 8 mm marker square and a 9 mm screw head standing 1 mm proud of the surface.
+        // Visual sizes (meters): an 8 mm marker square, a 4 mm pilot hole, a 9 mm screw head 1.5 mm high.
         private const float MarkerSize = 0.008f;
+        private const float HoleSize = 0.004f;
         private const float ScrewHeadSize = 0.009f;
         private const float ScrewHeadHeight = 0.0015f;
+        private const float SplitLength = 0.03f;
 
         private static Mesh unitCube;
 
         private readonly List<Mesh> ghostMeshes = new List<Mesh>();
+        private readonly List<GameObject> visuals = new List<GameObject>();
+        private Dictionary<string, FastenerSpec> fastenerSpecs;
+        private BlueprintDefinition active;
         private GameObject[] ghosts;
         private Carryable[] installed;
         private Transform[] parentsBeforeInstall;
         private bool restoring;
         private GameObject[][] pointMarkers;
+        private GameObject[][] holeMarkers;
+        private GameObject[][] screwHeads;
+        private GameObject drivingHead;
 
         public AssemblyBuild Build { get; private set; }
 
-        public BlueprintDefinition Definition => blueprint;
+        /// <summary>The blueprint being built now.</summary>
+        public BlueprintDefinition Definition => active;
 
         public string DisplayName => Build != null ? Build.Blueprint.DisplayName : name;
 
-        /// <summary>Raised after a part was installed or taken out, or a fastener was driven.</summary>
+        /// <summary>No part installed (the blueprint may be changed).</summary>
+        public bool IsEmpty => installed == null || Array.TrueForAll(installed, part => part == null);
+
+        /// <summary>Raised after a part was installed or taken out, a hole drilled or a fastener driven.</summary>
         public event Action Changed;
 
         /// <summary>Raised once when the last part / fastener completes the structure.</summary>
         public event Action Completed;
 
+        /// <summary>Raised after the blueprint changed.</summary>
+        public event Action BlueprintChanged;
+
         private void Awake()
         {
+            unitCube ??= BoxMeshBuilder.Create(Vector3.one, "Unit cube");
+            fastenerSpecs = new Dictionary<string, FastenerSpec>();
+            foreach (FastenerDefinition definition in fasteners)
+            {
+                if (definition != null)
+                {
+                    fastenerSpecs[definition.Id] = definition.ToDomain();
+                }
+            }
+
             if (blueprint == null)
             {
                 Debug.LogError($"{nameof(AssemblyStation)} '{name}': blueprint is not assigned.", this);
@@ -71,26 +117,112 @@ namespace WoodcraftSimulator.Construction
                 return;
             }
 
-            Build = new AssemblyBuild(blueprint.ToDomain());
-            int count = blueprint.Slots.Count;
+            Setup(blueprint);
+        }
+
+        /// <summary>The fastener type with this id, if the station knows it.</summary>
+        public FastenerSpec Fastener(string fastenerId) =>
+            fastenerSpecs != null && fastenerSpecs.TryGetValue(fastenerId ?? string.Empty, out FastenerSpec spec) ? spec : null;
+
+        /// <summary>Builds another blueprint here. Only while the station is empty.</summary>
+        public bool TrySetBlueprint(BlueprintDefinition definition)
+        {
+            if (definition == null || !IsEmpty)
+            {
+                return false;
+            }
+
+            if (definition != active)
+            {
+                Setup(definition);
+                BlueprintChanged?.Invoke();
+                Changed?.Invoke();
+            }
+
+            return true;
+        }
+
+        public BlueprintDefinition FindBlueprint(string blueprintId)
+        {
+            if (active != null && active.Id == blueprintId)
+            {
+                return active;
+            }
+
+            foreach (BlueprintDefinition candidate in knownBlueprints)
+            {
+                if (candidate != null && candidate.Id == blueprintId)
+                {
+                    return candidate;
+                }
+            }
+
+            return blueprint != null && blueprint.Id == blueprintId ? blueprint : null;
+        }
+
+        /// <summary>
+        /// Removes the finished (or started) structure: its boards are taken away (delivered to the customer) and the
+        /// station starts over with the same blueprint.
+        /// </summary>
+        public void ClearAll()
+        {
+            if (installed != null)
+            {
+                foreach (Carryable part in installed)
+                {
+                    if (part != null)
+                    {
+                        Destroy(part.gameObject);
+                    }
+                }
+            }
+
+            Setup(active);
+            Changed?.Invoke();
+        }
+
+        private void Setup(BlueprintDefinition definition)
+        {
+            foreach (GameObject visual in visuals)
+            {
+                Destroy(visual);
+            }
+
+            visuals.Clear();
+            foreach (Mesh mesh in ghostMeshes)
+            {
+                Destroy(mesh);
+            }
+
+            ghostMeshes.Clear();
+            drivingHead = null;
+
+            active = definition;
+            Build = new AssemblyBuild(definition.ToDomain());
+            int count = definition.Slots.Count;
             installed = new Carryable[count];
             parentsBeforeInstall = new Transform[count];
             ghosts = new GameObject[count];
             for (int i = 0; i < count; i++)
             {
-                ghosts[i] = CreateGhost(blueprint.Slots[i]);
+                ghosts[i] = CreateGhost(definition.Slots[i]);
+                visuals.Add(ghosts[i]);
             }
 
-            unitCube ??= BoxMeshBuilder.Create(Vector3.one, "Unit cube");
-            pointMarkers = new GameObject[blueprint.Connections.Count][];
-            for (int c = 0; c < pointMarkers.Length; c++)
+            int connections = definition.Connections.Count;
+            pointMarkers = new GameObject[connections][];
+            holeMarkers = new GameObject[connections][];
+            screwHeads = new GameObject[connections][];
+            for (int c = 0; c < connections; c++)
             {
-                BlueprintDefinition.FasteningPoint[] points = blueprint.Connections[c].points;
-                pointMarkers[c] = new GameObject[points.Length];
-                for (int p = 0; p < points.Length; p++)
+                int points = definition.Connections[c].points.Length;
+                pointMarkers[c] = new GameObject[points];
+                holeMarkers[c] = new GameObject[points];
+                screwHeads[c] = new GameObject[points];
+                for (int p = 0; p < points; p++)
                 {
-                    pointMarkers[c][p] = CreateFlatBox($"Point {blueprint.Connections[c].id}.{p}", c, p,
-                        MarkerSize, 0.0005f, pointMarkerMaterial);
+                    pointMarkers[c][p] = CreateFlatBox($"Point {definition.Connections[c].id}.{p}", c, p,
+                        MarkerSize, 0.0005f, 0f, pointMarkerMaterial);
                 }
             }
 
@@ -105,7 +237,7 @@ namespace WoodcraftSimulator.Construction
             UpdatePointMarkers();
         }
 
-        /// <summary>Save state: which board (by <see cref="PersistentId"/>) is in which slot, and which points are fastened.</summary>
+        /// <summary>Save state: which board (by <see cref="PersistentId"/>) is in which slot; holes and screws per point.</summary>
         public AssemblyData CaptureState(string stationId)
         {
             var parts = new List<InstalledPartData>();
@@ -113,25 +245,40 @@ namespace WoodcraftSimulator.Construction
             {
                 if (installed[i] != null && installed[i].TryGetComponent(out PersistentId boardId))
                 {
-                    parts.Add(new InstalledPartData { slotId = blueprint.Slots[i].id, boardId = boardId.Id });
+                    parts.Add(new InstalledPartData { slotId = active.Slots[i].id, boardId = boardId.Id });
                 }
             }
 
-            var fastenedConnections = new List<FastenedConnectionData>();
-            foreach (BlueprintDefinition.Connection connection in blueprint.Connections)
+            var connections = new List<FastenedConnectionData>();
+            foreach (BlueprintDefinition.Connection connection in active.Connections)
             {
                 var points = new List<int>();
+                var heights = new List<long>();
+                var pilots = new List<int>();
                 for (int p = 0; p < connection.points.Length; p++)
                 {
-                    if (Build.IsFastened(connection.id, p))
+                    Length? head = Build.HeadHeight(connection.id, p);
+                    if (head.HasValue)
                     {
                         points.Add(p);
+                        heights.Add(head.Value.TenthsOfMillimeter);
+                    }
+
+                    if (Build.HasPilotHole(connection.id, p))
+                    {
+                        pilots.Add(p);
                     }
                 }
 
-                if (points.Count > 0)
+                if (points.Count > 0 || pilots.Count > 0)
                 {
-                    fastenedConnections.Add(new FastenedConnectionData { connectionId = connection.id, points = points.ToArray() });
+                    connections.Add(new FastenedConnectionData
+                    {
+                        connectionId = connection.id,
+                        points = points.ToArray(),
+                        headHeightsTenths = heights.ToArray(),
+                        pilotHoles = pilots.ToArray()
+                    });
                 }
             }
 
@@ -140,20 +287,22 @@ namespace WoodcraftSimulator.Construction
                 stationId = stationId,
                 blueprintId = Build.Blueprint.Id,
                 parts = parts.ToArray(),
-                fastened = fastenedConnections.ToArray()
+                fastened = connections.ToArray()
             };
         }
 
         /// <summary>
-        /// Rebuilds a saved state on this (empty) station: installs the boards, then the fasteners, with the same rules as
-        /// in play. Whatever no longer fits (e.g. the blueprint changed) is skipped with a warning and stays loose.
+        /// Rebuilds a saved state on this (empty) station: switches to the saved blueprint, installs the boards, then
+        /// pilot holes and screws, with the same rules as in play. Whatever no longer fits (e.g. the blueprint changed)
+        /// is skipped with a warning and stays loose.
         /// </summary>
         public void RestoreState(AssemblyData data, Func<string, Carryable> findBoard)
         {
-            if (data.blueprintId != Build.Blueprint.Id)
+            BlueprintDefinition saved = FindBlueprint(data.blueprintId);
+            if (saved == null || !TrySetBlueprint(saved))
             {
-                Debug.LogWarning($"[{nameof(AssemblyStation)}] '{name}': saved blueprint '{data.blueprintId}' is not " +
-                                 $"'{Build.Blueprint.Id}'; the saved assembly is not restored.", this);
+                Debug.LogWarning($"[{nameof(AssemblyStation)}] '{name}': saved blueprint '{data.blueprintId}' is unknown " +
+                                 "here; the saved assembly is not restored.", this);
                 return;
             }
 
@@ -201,16 +350,34 @@ namespace WoodcraftSimulator.Construction
             foreach (FastenedConnectionData connection in connections)
             {
                 int c = ConnectionIndex(connection.connectionId);
-                foreach (int point in connection.points ?? Array.Empty<int>())
+                if (c < 0)
                 {
-                    FastenResult result = c >= 0 ? Build.RestoreFastened(connection.connectionId, point) : FastenResult.UnknownConnection;
+                    Debug.LogWarning($"[{nameof(AssemblyStation)}] '{name}': connection '{connection.connectionId}' unknown; skipped.", this);
+                    continue;
+                }
+
+                foreach (int point in connection.pilotHoles ?? Array.Empty<int>())
+                {
+                    if (Build.RestorePilot(connection.connectionId, point) == PilotResult.Drilled)
+                    {
+                        AddHole(c, point);
+                    }
+                }
+
+                FastenerSpec spec = Fastener(active.Connections[c].fastenerId);
+                int[] points = connection.points ?? Array.Empty<int>();
+                long[] heights = connection.headHeightsTenths ?? Array.Empty<long>();
+                for (int i = 0; i < points.Length; i++)
+                {
+                    Length head = i < heights.Length ? Length.FromTenthsOfMillimeter(heights[i]) : Length.Zero;
+                    FastenResult result = Build.RestoreFastened(connection.connectionId, points[i], head, spec);
                     if (result == FastenResult.Fastened)
                     {
-                        AddScrewHead(c, point);
+                        ShowScrew(c, points[i]);
                     }
                     else
                     {
-                        Debug.LogWarning($"[{nameof(AssemblyStation)}] '{name}': fastener {connection.connectionId}.{point} " +
+                        Debug.LogWarning($"[{nameof(AssemblyStation)}] '{name}': fastener {connection.connectionId}.{points[i]} " +
                                          $"not restored: {result}", this);
                     }
                 }
@@ -222,9 +389,9 @@ namespace WoodcraftSimulator.Construction
 
         private int SlotIndex(string slotId)
         {
-            for (int i = 0; i < blueprint.Slots.Count; i++)
+            for (int i = 0; i < active.Slots.Count; i++)
             {
-                if (blueprint.Slots[i].id == slotId)
+                if (active.Slots[i].id == slotId)
                 {
                     return i;
                 }
@@ -235,9 +402,9 @@ namespace WoodcraftSimulator.Construction
 
         private int ConnectionIndex(string connectionId)
         {
-            for (int c = 0; c < blueprint.Connections.Count; c++)
+            for (int c = 0; c < active.Connections.Count; c++)
             {
-                if (blueprint.Connections[c].id == connectionId)
+                if (active.Connections[c].id == connectionId)
                 {
                     return c;
                 }
@@ -246,26 +413,30 @@ namespace WoodcraftSimulator.Construction
             return -1;
         }
 
+        public string ConnectionId(int connection) => active.Connections[connection].id;
+
+        public string FastenerIdAt(int connection) => active.Connections[connection].fastenerId;
+
         public Vector3 PointPosition(int connection, int point) =>
-            transform.TransformPoint(blueprint.Connections[connection].points[point].localPosition);
+            transform.TransformPoint(active.Connections[connection].points[point].localPosition);
 
         public Vector3 PointDirection(int connection, int point) =>
-            transform.TransformDirection(blueprint.Connections[connection].points[point].localDirection).normalized;
+            transform.TransformDirection(active.Connections[connection].points[point].localDirection).normalized;
 
         /// <summary>
         /// The fastening point nearest to <paramref name="worldPoint"/> (within <paramref name="maxDistance"/> m) that
-        /// can be fastened now: both parts installed and no fastener in it yet.
+        /// matches the query.
         /// </summary>
-        public bool TryFindOpenPoint(Vector3 worldPoint, float maxDistance, out int connection, out int point)
+        public bool TryFindPoint(Vector3 worldPoint, float maxDistance, PointQuery query, out int connection, out int point)
         {
             connection = -1;
             point = -1;
             float best = maxDistance;
-            for (int c = 0; c < blueprint.Connections.Count; c++)
+            for (int c = 0; c < active.Connections.Count; c++)
             {
-                for (int p = 0; p < blueprint.Connections[c].points.Length; p++)
+                for (int p = 0; p < active.Connections[c].points.Length; p++)
                 {
-                    if (!IsOpen(c, p))
+                    if (!Matches(c, p, query))
                     {
                         continue;
                     }
@@ -283,13 +454,63 @@ namespace WoodcraftSimulator.Construction
             return connection >= 0;
         }
 
-        /// <summary>Drives a fastener into a point (domain rules) and shows its head.</summary>
-        public FastenResult Fasten(int connection, int point, FastenerSpec fastener)
+        /// <summary>Any point at all that matches the query (for hints).</summary>
+        public bool HasPoint(PointQuery query)
         {
-            FastenResult result = Build.TryFasten(blueprint.Connections[connection].id, point, fastener);
+            for (int c = 0; c < active.Connections.Count; c++)
+            {
+                for (int p = 0; p < active.Connections[c].points.Length; p++)
+                {
+                    if (Matches(c, p, query))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private bool Matches(int connection, int point, PointQuery query)
+        {
+            if (!PartsInstalled(connection))
+            {
+                return false;
+            }
+
+            string id = active.Connections[connection].id;
+            Length? head = Build.HeadHeight(id, point);
+            return query == PointQuery.ForPilotHole
+                ? !head.HasValue && !Build.HasPilotHole(id, point)
+                : !head.HasValue || FasteningRules.Seat(head.Value) == ScrewSeat.Proud;
+        }
+
+        private bool PartsInstalled(int connection)
+        {
+            BlueprintDefinition.Connection spec = active.Connections[connection];
+            return Build.GetPiece(spec.partA) != null && Build.GetPiece(spec.partB) != null;
+        }
+
+        public PilotResult DrillPilot(int connection, int point)
+        {
+            PilotResult result = Build.TryDrillPilot(active.Connections[connection].id, point);
+            if (result == PilotResult.Drilled)
+            {
+                AddHole(connection, point);
+                Changed?.Invoke();
+            }
+
+            return result;
+        }
+
+        /// <summary>Drives a new screw (head ending at <paramref name="headHeight"/>) and shows it.</summary>
+        public FastenResult Fasten(int connection, int point, FastenerSpec fastener, Length headHeight)
+        {
+            FastenResult result = Build.TryFasten(active.Connections[connection].id, point, fastener, headHeight);
             if (result == FastenResult.Fastened)
             {
-                AddScrewHead(connection, point);
+                HideDrivingHead();
+                ShowScrew(connection, point);
                 UpdatePointMarkers();
                 Changed?.Invoke();
             }
@@ -297,9 +518,58 @@ namespace WoodcraftSimulator.Construction
             return result;
         }
 
-        private void AddScrewHead(int connection, int point) =>
-            CreateFlatBox($"Screw {blueprint.Connections[connection].id}.{point}", connection, point,
-                ScrewHeadSize, ScrewHeadHeight, screwHeadMaterial);
+        /// <summary>Drives a proud screw further.</summary>
+        public FastenResult DriveFurther(int connection, int point, Length headHeight)
+        {
+            FastenResult result = Build.TryDriveFurther(active.Connections[connection].id, point, headHeight);
+            if (result == FastenResult.Fastened)
+            {
+                HideDrivingHead();
+                ShowScrew(connection, point);
+                UpdatePointMarkers();
+                Changed?.Invoke();
+            }
+
+            return result;
+        }
+
+        /// <summary>A screw being driven right now: its head at the given height above the surface.</summary>
+        public void ShowDrivingHead(int connection, int point, Length headHeight)
+        {
+            if (drivingHead == null)
+            {
+                drivingHead = CreateFlatBox("Driving screw", connection, point, ScrewHeadSize, ScrewHeadHeight, 0f,
+                    screwHeadMaterial);
+            }
+
+            PlaceOnSurface(drivingHead.transform, connection, point, ScrewHeadHeight, (float)headHeight.Meters);
+            drivingHead.SetActive(true);
+            if (screwHeads[connection][point] != null)
+            {
+                screwHeads[connection][point].SetActive(false);
+            }
+        }
+
+        public void HideDrivingHead()
+        {
+            if (drivingHead != null)
+            {
+                visuals.Remove(drivingHead);
+                Destroy(drivingHead);
+                drivingHead = null;
+            }
+
+            for (int c = 0; c < screwHeads.Length; c++)
+            {
+                for (int p = 0; p < screwHeads[c].Length; p++)
+                {
+                    if (screwHeads[c][p] != null)
+                    {
+                        screwHeads[c][p].SetActive(true);
+                    }
+                }
+            }
+        }
 
         /// <summary>The quality report as text (every component on its own line).</summary>
         public string ReportText(string fastenerName)
@@ -308,11 +578,58 @@ namespace WoodcraftSimulator.Construction
             return AssemblyReportText.Format(Build.Blueprint, Build.CreateReport(), fastenerName, sawdust);
         }
 
-        private bool IsOpen(int connection, int point)
+        private void ShowScrew(int connection, int point)
         {
-            BlueprintDefinition.Connection spec = blueprint.Connections[connection];
-            return Build.GetPiece(spec.partA) != null && Build.GetPiece(spec.partB) != null &&
-                   !Build.IsFastened(spec.id, point);
+            string id = active.Connections[connection].id;
+            Length head = Build.HeadHeight(id, point) ?? Length.Zero;
+            GameObject screw = screwHeads[connection][point];
+            if (screw == null)
+            {
+                screw = CreateFlatBox($"Screw {id}.{point}", connection, point, ScrewHeadSize, ScrewHeadHeight, 0f,
+                    screwHeadMaterial);
+                screwHeads[connection][point] = screw;
+            }
+
+            // The head stands out by its height (an overdriven one sits in a crushed hole, just below the surface).
+            PlaceOnSurface(screw.transform, connection, point, ScrewHeadHeight, (float)head.Meters);
+
+            if (Build.IsSplit(id, point))
+            {
+                AddSplit(connection, point);
+            }
+        }
+
+        private void AddHole(int connection, int point)
+        {
+            if (holeMarkers[connection][point] == null)
+            {
+                holeMarkers[connection][point] = CreateFlatBox($"Pilot hole {active.Connections[connection].id}.{point}",
+                    connection, point, HoleSize, 0.0006f, 0f, holeMaterial);
+            }
+        }
+
+        /// <summary>A dark crack along the board the screw went through (part A), starting at the screw.</summary>
+        private void AddSplit(int connection, int point)
+        {
+            BlueprintDefinition.Connection spec = active.Connections[connection];
+            int slot = SlotIndex(spec.partA);
+            if (slot < 0)
+            {
+                return;
+            }
+
+            Vector3 along = SlotRotation(slot) * Vector3.forward;
+            Vector3 position = PointPosition(connection, point);
+            Vector3 toEnd = Vector3.Dot(SlotPosition(slot) - position, along) > 0f ? -along : along;
+            Vector3 direction = PointDirection(connection, point);
+
+            var crack = new GameObject($"Split {spec.id}.{point}");
+            crack.transform.SetParent(transform, false);
+            crack.transform.SetPositionAndRotation(position + toEnd * (SplitLength / 2f) - direction * 0.0004f,
+                Quaternion.LookRotation(toEnd, -direction));
+            crack.transform.localScale = new Vector3(0.0012f, 0.0008f, SplitLength);
+            AddRenderer(crack, holeMaterial);
+            visuals.Add(crack);
         }
 
         private void UpdatePointMarkers()
@@ -321,26 +638,43 @@ namespace WoodcraftSimulator.Construction
             {
                 for (int p = 0; p < pointMarkers[c].Length; p++)
                 {
-                    pointMarkers[c][p].SetActive(IsOpen(c, p));
+                    bool open = PartsInstalled(c) && !Build.IsFastened(active.Connections[c].id, p);
+                    pointMarkers[c][p].SetActive(open);
                 }
             }
         }
 
-        /// <summary>A small square on the surface at a fastening point, facing outwards (against the driving direction).</summary>
+        /// <summary>A small box on the surface at a fastening point, facing outwards (against the driving direction).</summary>
         private GameObject CreateFlatBox(string objectName, int connection, int point, float size, float height,
-            Material material)
+            float heightAboveSurface, Material material)
         {
             var box = new GameObject(objectName);
             box.transform.SetParent(transform, false);
-            Vector3 direction = PointDirection(connection, point);
-            box.transform.SetPositionAndRotation(PointPosition(connection, point) - direction * (height / 2f),
-                Quaternion.LookRotation(direction));
+            PlaceOnSurface(box.transform, connection, point, height, heightAboveSurface);
             box.transform.localScale = new Vector3(size, size, height);
-            box.AddComponent<MeshFilter>().sharedMesh = unitCube;
-            var meshRenderer = box.AddComponent<MeshRenderer>();
+            AddRenderer(box, material);
+            visuals.Add(box);
+            return box;
+        }
+
+        /// <summary>
+        /// Puts a box of the given height on the surface at a fastening point, raised by <paramref name="aboveSurface"/> m
+        /// (a proud screw head). Sunk heads are drawn level with the surface, otherwise the board would hide them.
+        /// </summary>
+        private void PlaceOnSurface(Transform box, int connection, int point, float height, float aboveSurface)
+        {
+            Vector3 direction = PointDirection(connection, point);
+            float raise = Mathf.Max(0f, aboveSurface);
+            box.SetPositionAndRotation(PointPosition(connection, point) - direction * (raise + height / 2f),
+                Quaternion.LookRotation(direction));
+        }
+
+        private static void AddRenderer(GameObject target, Material material)
+        {
+            target.AddComponent<MeshFilter>().sharedMesh = unitCube;
+            var meshRenderer = target.AddComponent<MeshRenderer>();
             meshRenderer.sharedMaterial = material;
             meshRenderer.shadowCastingMode = ShadowCastingMode.Off;
-            return box;
         }
 
         private void OnDestroy()
@@ -351,9 +685,9 @@ namespace WoodcraftSimulator.Construction
             }
         }
 
-        public Vector3 SlotPosition(int index) => transform.TransformPoint(blueprint.Slots[index].localPosition);
+        public Vector3 SlotPosition(int index) => transform.TransformPoint(active.Slots[index].localPosition);
 
-        public Quaternion SlotRotation(int index) => transform.rotation * Quaternion.Euler(blueprint.Slots[index].localEulerAngles);
+        public Quaternion SlotRotation(int index) => transform.rotation * Quaternion.Euler(active.Slots[index].localEulerAngles);
 
         /// <summary>The board installed in a slot, or null.</summary>
         public Carryable InstalledAt(int index) => installed[index];
@@ -392,7 +726,7 @@ namespace WoodcraftSimulator.Construction
                 }
 
                 if (distance < nearestPlaceableDistance &&
-                    Build.CanPlace(blueprint.Slots[i].id, board.Piece) == PlaceResult.Placed)
+                    Build.CanPlace(active.Slots[i].id, board.Piece) == PlaceResult.Placed)
                 {
                     nearestPlaceable = i;
                     nearestPlaceableDistance = distance;
@@ -405,7 +739,7 @@ namespace WoodcraftSimulator.Construction
                 return false;
             }
 
-            PlaceResult result = Build.CanPlace(blueprint.Slots[chosen].id, board.Piece);
+            PlaceResult result = Build.CanPlace(active.Slots[chosen].id, board.Piece);
             snap = new SnapPlacement(SlotPosition(chosen), SlotRotation(chosen), result == PlaceResult.Placed,
                 Describe(chosen, board.Piece, result), chosen);
             return true;
@@ -423,7 +757,7 @@ namespace WoodcraftSimulator.Construction
         private bool TryInstallAt(int index, Carryable carryable)
         {
             if (installed[index] != null || !carryable.TryGetComponent(out TimberBoard board) || board.Piece == null ||
-                Build.TryPlace(blueprint.Slots[index].id, board.Piece) != PlaceResult.Placed)
+                Build.TryPlace(active.Slots[index].id, board.Piece) != PlaceResult.Placed)
             {
                 return false;
             }
@@ -442,7 +776,7 @@ namespace WoodcraftSimulator.Construction
         public bool CanRelease(Carryable carryable, out string reason)
         {
             int index = Array.IndexOf(installed, carryable);
-            RemoveResult result = index < 0 ? RemoveResult.SlotEmpty : Build.CanRemove(blueprint.Slots[index].id);
+            RemoveResult result = index < 0 ? RemoveResult.SlotEmpty : Build.CanRemove(active.Slots[index].id);
             reason = result == RemoveResult.Fastened ? $"Screwed into the {DisplayName}" : null;
             return result == RemoveResult.Removed;
         }
@@ -450,7 +784,7 @@ namespace WoodcraftSimulator.Construction
         public void Release(Carryable carryable)
         {
             int index = Array.IndexOf(installed, carryable);
-            if (index < 0 || Build.TryRemove(blueprint.Slots[index].id, out _) != RemoveResult.Removed)
+            if (index < 0 || Build.TryRemove(active.Slots[index].id, out _) != RemoveResult.Removed)
             {
                 return;
             }
@@ -465,7 +799,7 @@ namespace WoodcraftSimulator.Construction
 
         private string Describe(int index, TimberPiece piece, PlaceResult result)
         {
-            BlueprintDefinition.Slot slot = blueprint.Slots[index];
+            BlueprintDefinition.Slot slot = active.Slots[index];
             Build.Blueprint.TryGetSlot(slot.id, out PartSlot partSlot);
             switch (result)
             {
@@ -510,7 +844,7 @@ namespace WoodcraftSimulator.Construction
         /// <summary>Distance from a point to the slot's nominal box (0 inside).</summary>
         private float DistanceToSlot(int index, Vector3 point)
         {
-            BlueprintDefinition.Slot slot = blueprint.Slots[index];
+            BlueprintDefinition.Slot slot = active.Slots[index];
             Vector3 half = SlotSize(slot) * 0.5f;
             Vector3 local = Quaternion.Inverse(SlotRotation(index)) * (point - SlotPosition(index));
             Vector3 outside = new Vector3(

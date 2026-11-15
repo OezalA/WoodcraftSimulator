@@ -91,17 +91,133 @@ namespace WoodcraftSimulator.Editor
             return definition;
         }
 
+        public const string ShelfScrewId = "wood-screw-4x40";
+
+        /// <summary>Generic 4 × 40 mm wood screw for 18 mm boards (dimensions only, no product data).</summary>
+        public static FastenerDefinition WoodScrew4x40()
+        {
+            string path = $"{FastenerFolder}/WoodScrew4x40.asset";
+            var definition = AssetDatabase.LoadAssetAtPath<FastenerDefinition>(path);
+            if (definition != null)
+            {
+                return definition;
+            }
+
+            definition = ScriptableObject.CreateInstance<FastenerDefinition>();
+            AssetDatabase.CreateAsset(definition, path);
+            var serialized = new SerializedObject(definition);
+            serialized.FindProperty("id").stringValue = ShelfScrewId;
+            serialized.FindProperty("displayName").stringValue = "Wood screw 4 × 40 mm";
+            serialized.FindProperty("diameterMillimeters").floatValue = 4f;
+            serialized.FindProperty("lengthMillimeters").floatValue = 40f;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            AssetDatabase.SaveAssetIfDirty(definition);
+            return definition;
+        }
+
+        /// <summary>
+        /// Phase 6 shelf (D-039): 500 wide × 600 high × 145 deep, 18 × 145 mm spruce boards, lying on its back on the
+        /// table. Sides 600 mm along Z at the left/right; three shelves 464 mm (500 − 2 × 18) along X between them,
+        /// flush with the sides' ends at the bottom and top and one in the middle. Two 4 × 40 mm screws per joint
+        /// through the side into the end of the shelf. Shelves need the left side first (assembly order).
+        /// The top/bottom screws are 9 mm from the ends of the sides: they need pilot holes (D-038).
+        /// </summary>
+        public static BlueprintDefinition WallShelf()
+        {
+            string path = $"{Folder}/WallShelf500x600.asset";
+            var definition = AssetDatabase.LoadAssetAtPath<BlueprintDefinition>(path);
+            if (definition != null)
+            {
+                return definition;
+            }
+
+            definition = ScriptableObject.CreateInstance<BlueprintDefinition>();
+            AssetDatabase.CreateAsset(definition, path);
+
+            const float thickness = 0.018f;
+            const float width = 0.145f;
+            const float outerX = 0.5f;
+            const float outerZ = 0.6f;
+            const float gap = 0.001f;
+            float centerY = width / 2f + gap;
+            float sideX = outerX / 2f - thickness / 2f;      // 0.241
+            float shelfZ = outerZ / 2f - thickness / 2f;     // 0.291
+            float shelfLength = Mathf.Round((outerX - 2f * thickness) * 1000f); // 464
+
+            Vector3 shelfEuler = Quaternion.LookRotation(Vector3.right, Vector3.forward).eulerAngles;
+            Vector3 sideEuler = Quaternion.LookRotation(Vector3.forward, Vector3.right).eulerAngles;
+
+            var serialized = new SerializedObject(definition);
+            serialized.FindProperty("id").stringValue = "wall-shelf-500x600";
+            serialized.FindProperty("displayName").stringValue = "Shelf 500 × 600 mm";
+
+            SerializedProperty slots = serialized.FindProperty("slots");
+            slots.arraySize = 5;
+            SetSlot(slots.GetArrayElementAtIndex(0), "left", "Left side", 600f, 145f, 18f,
+                new Vector3(-sideX, centerY, 0f), sideEuler);
+            SetSlot(slots.GetArrayElementAtIndex(1), "right", "Right side", 600f, 145f, 18f,
+                new Vector3(sideX, centerY, 0f), sideEuler);
+            string[] shelves = { "bottom", "middle", "top" };
+            string[] shelfNames = { "Bottom shelf", "Middle shelf", "Top shelf" };
+            float[] shelfPositions = { -shelfZ, 0f, shelfZ };
+            for (int i = 0; i < shelves.Length; i++)
+            {
+                SetSlot(slots.GetArrayElementAtIndex(2 + i), shelves[i], shelfNames[i], shelfLength, 145f, 18f,
+                    new Vector3(0f, centerY, shelfPositions[i]), shelfEuler, "left");
+            }
+
+            SerializedProperty connections = serialized.FindProperty("connections");
+            connections.arraySize = 6;
+            int index = 0;
+            foreach (string side in new[] { "left", "right" })
+            {
+                float faceX = side == "left" ? -outerX / 2f : outerX / 2f;
+                for (int i = 0; i < shelves.Length; i++)
+                {
+                    SerializedProperty connection = connections.GetArrayElementAtIndex(index++);
+                    connection.FindPropertyRelative("id").stringValue = $"{side}-{shelves[i]}";
+                    connection.FindPropertyRelative("partA").stringValue = side;
+                    connection.FindPropertyRelative("partB").stringValue = shelves[i];
+                    connection.FindPropertyRelative("fastenerId").stringValue = ShelfScrewId;
+
+                    // Screws a quarter of the depth in from each edge (36 mm), through the side's outer face.
+                    SerializedProperty points = connection.FindPropertyRelative("points");
+                    points.arraySize = 2;
+                    for (int p = 0; p < 2; p++)
+                    {
+                        SerializedProperty point = points.GetArrayElementAtIndex(p);
+                        point.FindPropertyRelative("localPosition").vector3Value =
+                            new Vector3(faceX, centerY + (p == 0 ? 0.036f : -0.036f), shelfPositions[i]);
+                        point.FindPropertyRelative("localDirection").vector3Value = new Vector3(-Mathf.Sign(faceX), 0f, 0f);
+                    }
+                }
+            }
+
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            AssetDatabase.SaveAssetIfDirty(definition);
+            return definition;
+        }
+
         private static void SetSlot(SerializedProperty slot, string id, string displayName, float lengthMm,
-            Vector3 position, Vector3 euler)
+            Vector3 position, Vector3 euler) =>
+            SetSlot(slot, id, displayName, lengthMm, 95f, 45f, position, euler);
+
+        private static void SetSlot(SerializedProperty slot, string id, string displayName, float lengthMm,
+            float widthMm, float thicknessMm, Vector3 position, Vector3 euler, params string[] prerequisites)
         {
             slot.FindPropertyRelative("id").stringValue = id;
             slot.FindPropertyRelative("displayName").stringValue = displayName;
             slot.FindPropertyRelative("lengthMillimeters").floatValue = lengthMm;
-            slot.FindPropertyRelative("widthMillimeters").floatValue = 95f;
-            slot.FindPropertyRelative("thicknessMillimeters").floatValue = 45f;
+            slot.FindPropertyRelative("widthMillimeters").floatValue = widthMm;
+            slot.FindPropertyRelative("thicknessMillimeters").floatValue = thicknessMm;
             slot.FindPropertyRelative("localPosition").vector3Value = position;
             slot.FindPropertyRelative("localEulerAngles").vector3Value = euler;
-            slot.FindPropertyRelative("prerequisites").arraySize = 0;
+            SerializedProperty prerequisiteProperty = slot.FindPropertyRelative("prerequisites");
+            prerequisiteProperty.arraySize = prerequisites.Length;
+            for (int i = 0; i < prerequisites.Length; i++)
+            {
+                prerequisiteProperty.GetArrayElementAtIndex(i).stringValue = prerequisites[i];
+            }
         }
 
         private static void SetCorner(SerializedProperty connection, string id, string rail, string side,

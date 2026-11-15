@@ -114,6 +114,26 @@
     -unity-text-align: upper-left;
 }
 
+/* Job sheet: top left, small enough to stay out of the way while working. */
+.job-anchor {
+    position: absolute;
+    left: 24px;
+    top: 24px;
+    width: 480px;
+}
+
+.job-sheet {
+    font-size: 15px;
+    color: rgb(255, 255, 255);
+    background-color: rgba(0, 0, 0, 0.55);
+    padding: 10px 14px;
+    border-radius: 6px;
+    border-left-width: 4px;
+    border-left-color: rgb(230, 180, 90);
+    white-space: normal;
+    -unity-text-align: upper-left;
+}
+
 .hidden {
     display: none;
 }

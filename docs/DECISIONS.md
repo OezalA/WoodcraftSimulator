@@ -380,3 +380,51 @@ Owner (2026-11-15): continue with the current visuals and buy Unity Asset Store 
 - When choosing packs: URP-compatible (Built-in-only materials render pink), works with Unity 6, real scale, sensible
   polycount/LODs, no real brand logos, prefer packs that are models + materials only (no extra scripts/dependencies).
 - The visual pass also covers wood-grain materials for boards, first-person hands and lighting / post-processing.
+
+## D-038: More realistic saw and drill-driver: free saw placement, stroke sawing, pilot holes, clutch (Accepted, 2026-11-15)
+Owner approved the proposal (T1, T2, M1, M2; T3 squareness, T4 clamping, M3 screw angle, M4 free screw positions are
+deferred to Phase 9). Principle: real carpentry rules in the domain, outcome from the player's input, no randomness.
+- **T1 free saw placement** (replaces the snap to the pencil line of D-030): the blade is where you aim; the mouse
+  wheel moves it in 0.5 mm steps (Shift: 5 mm), the mouse takes over again after 3 mm. `Crosscut.TryCutAt` centers the
+  kerf on the blade. The nearest pencil line (within 30 mm) is the reference: the measured piece is the one it was
+  measured for. Assist (on by default, `showCutPreview`): the HUD shows the piece length the cut would give and whether
+  the blade is on the waste side or over the line.
+- **T2 stroke sawing** (`SawingProcess`): hold LMB and move the mouse forward/back; looking and walking are locked
+  meanwhile (`PlayerController.ControlsLocked`). Work = cross-section x 120 mm of saw travel per cm² x density/450
+  (18 × 145 spruce: about 3100 mm); only movement within the 500 mm blade counts. First 10 % = starting: half
+  efficiency, sideways mouse movement moves the blade along the board (0.02 mm/px), strokes faster than 900 mm/s make
+  it jump (4x drift). After that the kerf guides the blade. Releasing pauses; the cut continues in its kerf on the
+  same board. Gameplay values in the saw asset, not physics.
+- **M1 pilot holes**: the drill-driver has a driver bit and a 3 mm drill bit, switched with the new `Player/ToolMode`
+  action (Q / left stick press), 1 s to change. Rule (`FasteningRules.NeedsPilotHole`, simplified rule of thumb, not an
+  engineering calculation): pre-drill wood denser than 500 kg/m³, screws thicker than 6 mm, and screws closer than
+  10 x their diameter to the end of the board they go through. The end distance comes from the blueprint geometry
+  (`BlueprintDefinition.ToDomain`). A screw without a needed pilot hole **splits** the board: it still holds, the
+  split is drawn and reported. A drilled point locks the parts like a screw.
+- **M2 clutch and screw depth** (`ScrewDrive`): wheel = clutch 1-20, then drill mode (no clutch). Seating torque =
+  8 x density/450 x d/4 mm x sqrt(L/40 mm) (spruce 4 × 40: 8; 5 × 80: 14). Clutch below 60 % of it: the screw stops
+  part-way; 60-100 %: it stops flush by itself; above, or drill mode: the head keeps sinking while held (max 6 mm).
+  Head more than 0.5 mm out = proud, more than 1 mm deep = overdriven. A new screw driven less than 3 mm isn't set;
+  a proud screw can be driven further later. The screw type comes from the joint (the drill has a box of each type).
+- The quality report lists flush / standing out / too deep heads and splits separately.
+
+## D-039: Phase 6 job system: job board, calculated material, delivery, result (Accepted, 2026-11-15)
+- **Jobs as data** (`JobDefinition`: blueprint, stock species and size, spare boards, tips). Two jobs: the Phase 5
+  frame (practice, spruce 2400 × 95 × 45) and the new **small shelf** 500 × 600 × 145 (spruce 2000 × 145 × 18, sides
+  600, three shelves 464 between them, shelves need the left side first, 12 wood screws 4 × 40 mm; the top/bottom
+  screws are 9 mm from the side ends, so they need pilot holes).
+- **Material is calculated, not entered** (`MaterialPlan`, master prompt §6.11): cut list grouped by size;
+  first-fit-decreasing packing of the parts into stock boards, one kerf per cut; offcuts; fastener count. Crosscuts
+  only (a part must have the stock's cross-section, else the plan reports it). Shelf: 2 boards (offcuts 330 and
+  1068 mm). Spares: 0 for now; if the player ruins parts, the job sheet orders one more board (counted in the result).
+- **Job board** on the back wall, one A4 sheet per job; aiming at a sheet shows its offer (material, cut plan per
+  board). E accepts (only with an empty assembly table): the station switches to the job's blueprint
+  (`AssemblyStation.TrySetBlueprint`), the stock is delivered flat on the floor in front of the rack, the bench cut
+  list note shows the job's lines (E cycles them; pencil and saw check against the selected line). The HUD shows the
+  job sheet with progress (installed / ready pieces per line, timer).
+- **Completion**: when the structure is complete, the result appears on the right and stays until delivered: parts
+  with deviations, screw heads, splits, material delivered / in the structure / sawdust / offcuts, time, and four
+  separate quality goals (accuracy, flush heads, no splits, no extra stock). No single score, no money (Phase 7).
+  E on the sheet delivers: the structure is removed and the job is done (completed job ids are saved).
+- **Save**: `JobData` (active job, time, boards delivered / extra, sawdust at start, completed jobs); pilot holes and
+  head heights per point in the assembly data. Still format version 1 (new fields default to empty).

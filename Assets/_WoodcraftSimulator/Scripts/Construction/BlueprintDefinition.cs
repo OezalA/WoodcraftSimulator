@@ -87,12 +87,37 @@ namespace WoodcraftSimulator.Construction
             foreach (Connection connection in connections)
             {
                 domainConnections.Add(new ConnectionSpec(connection.id, connection.partA, connection.partB,
-                    connection.fastenerId, connection.points.Length));
+                    connection.fastenerId, connection.points.Length, EndDistances(connection)));
             }
 
             return new Blueprint(id, displayName, domainSlots, domainConnections,
                 new Tolerance(Length.FromMillimeters((double)accuracyMillimeters)),
                 new Tolerance(Length.FromMillimeters((double)fitMillimeters)));
+        }
+
+        /// <summary>
+        /// For each fastening point: distance along part A (the board the fastener goes through) from the point to that
+        /// board's nearer end, from the slot pose. Null if part A is not a slot of this blueprint.
+        /// </summary>
+        private Length[] EndDistances(Connection connection)
+        {
+            Slot partA = Array.Find(slots, slot => slot.id == connection.partA);
+            if (partA == null)
+            {
+                return null;
+            }
+
+            Quaternion rotation = Quaternion.Euler(partA.localEulerAngles);
+            float halfLength = partA.lengthMillimeters / 2000f;
+            var distances = new Length[connection.points.Length];
+            for (int i = 0; i < distances.Length; i++)
+            {
+                // The board's length is its local Z axis.
+                Vector3 local = Quaternion.Inverse(rotation) * (connection.points[i].localPosition - partA.localPosition);
+                distances[i] = Length.FromMeters(Mathf.Max(0f, halfLength - Mathf.Abs(local.z)));
+            }
+
+            return distances;
         }
     }
 }

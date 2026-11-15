@@ -32,6 +32,9 @@ namespace WoodcraftSimulator.UI
         [Tooltip("Assembly stations whose quality report is shown when their structure is completed.")]
         [SerializeField] private AssemblyStation[] stations = System.Array.Empty<AssemblyStation>();
 
+        [Tooltip("Optional: while it has a job in progress, its result is shown instead of the assembly report.")]
+        [SerializeField] private Jobs.JobBoard jobBoard;
+
         [Tooltip("How long the completion report stays on screen, in seconds.")]
         [SerializeField, Min(1f)] private float reportSeconds = 20f;
 
@@ -114,7 +117,8 @@ namespace WoodcraftSimulator.UI
         /// <summary>Shows the station's quality report for <see cref="reportSeconds"/> (on completion).</summary>
         private void ShowReport(AssemblyStation station)
         {
-            if (reportLabel == null)
+            // With a job in progress, the job result (JobPanel) replaces the plain assembly report.
+            if (reportLabel == null || jobBoard != null && jobBoard.HasActiveJob)
             {
                 return;
             }

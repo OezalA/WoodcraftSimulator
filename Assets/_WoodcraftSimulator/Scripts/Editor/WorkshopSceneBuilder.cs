@@ -11,6 +11,7 @@ using WoodcraftSimulator.Cutting;
 using WoodcraftSimulator.Handling;
 using WoodcraftSimulator.Interaction;
 using WoodcraftSimulator.Inventory;
+using WoodcraftSimulator.Jobs;
 using WoodcraftSimulator.Materials;
 using WoodcraftSimulator.Persistence;
 using WoodcraftSimulator.Player;
@@ -103,6 +104,7 @@ namespace WoodcraftSimulator.Editor
             EnsureFolder(SawAssets.Folder);
             EnsureFolder(BlueprintAssets.Folder);
             EnsureFolder(BlueprintAssets.FastenerFolder);
+            EnsureFolder(JobAssets.Folder);
 
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
             ConfigureDefaultObjects(scene);
@@ -167,6 +169,69 @@ namespace WoodcraftSimulator.Editor
             BuildBenchTools(workshop, materials);
             BuildWorkbenchLamp(workshop, materials.Wall);
             BuildAssemblyTable(workshop, materials);
+            BuildJobBoard(workshop, materials, species);
+        }
+
+        /// <summary>
+        /// Job board (Phase 6, D-039) on the back wall left of the workbench: a 70 × 50 cm board with one A4 sheet per
+        /// job. Accepted jobs deliver their stock flat on the floor in front of the timber rack.
+        /// The board factory is assigned later (it lives on the save system).
+        /// </summary>
+        private static void BuildJobBoard(Transform parent, GreyboxMaterials materials,
+            IReadOnlyDictionary<string, WoodSpeciesDefinition> species)
+        {
+            float wallZ = InteriorDepth / 2f;
+            float centerY = FloorTop + 1.5f;
+            const float centerX = -1.9f;
+            GameObject board = CreateBox("JobBoard", parent, new Vector3(centerX, centerY, wallZ - 0.01f),
+                new Vector3(0.7f, 0.5f, 0.02f), materials.Workbench);
+            Object.DestroyImmediate(board.GetComponent<BoxCollider>()); // the sheets are what you aim at
+
+            var jobBoard = board.AddComponent<JobBoard>();
+            JobDefinition[] jobs = { JobAssets.FrameJob(species), JobAssets.ShelfJob(species) };
+            for (int i = 0; i < jobs.Length; i++)
+            {
+                // A4 portrait (210 × 297 mm) pinned on the board; the sheet is a child of the workshop, not the board,
+                // so its scale is its real size.
+                float x = centerX + (i - (jobs.Length - 1) / 2f) * 0.3f;
+                var sheetSize = new Vector3(0.21f, 0.297f, 0.002f);
+                GameObject sheet = CreateBox($"JobSheet_{jobs[i].Id}", parent, new Vector3(x, centerY, wallZ - 0.021f),
+                    sheetSize, materials.Paper);
+                EnlargeGrabCollider(sheet, sheetSize);
+                var jobSheet = sheet.AddComponent<JobSheet>();
+                SetReference(jobSheet, "board", jobBoard);
+                var serializedSheet = new SerializedObject(jobSheet);
+                serializedSheet.FindProperty("jobIndex").intValue = i;
+                serializedSheet.ApplyModifiedPropertiesWithoutUndo();
+            }
+
+            // Stock delivery: on the floor in front of the timber rack, boards along Z, side by side towards +X.
+            var delivery = new GameObject("StockDelivery").transform;
+            delivery.SetParent(parent, false);
+            delivery.localPosition = new Vector3(RackFrontOfUprightsX + RackDepth + 0.25f, FloorTop, 0f);
+
+            SetReferences(jobBoard, "jobs", jobs);
+            SetReference(jobBoard, "station", Object.FindFirstObjectByType<AssemblyStation>());
+            SetReference(jobBoard, "cutList", Object.FindFirstObjectByType<CutList>());
+            SetReference(jobBoard, "waste", Object.FindFirstObjectByType<WorkshopWaste>());
+            SetReference(jobBoard, "saw", SawAssets.HandSaw());
+            SetReference(jobBoard, "deliveryPoint", delivery);
+            SetReferences(jobBoard, "fasteners", Fasteners());
+        }
+
+        private static Object[] Fasteners() => new Object[] { BlueprintAssets.WoodScrew5x80(), BlueprintAssets.WoodScrew4x40() };
+
+        private static void SetReferences(Object target, string propertyName, IReadOnlyList<Object> values)
+        {
+            var serializedObject = new SerializedObject(target);
+            SerializedProperty property = serializedObject.FindProperty(propertyName);
+            property.arraySize = values.Count;
+            for (int i = 0; i < values.Count; i++)
+            {
+                property.GetArrayElementAtIndex(i).objectReferenceValue = values[i];
+            }
+
+            serializedObject.ApplyModifiedPropertiesWithoutUndo();
         }
 
         /// <summary>
@@ -314,7 +379,11 @@ namespace WoodcraftSimulator.Editor
             SetReference(station, "ghostMaterial", materials.BlueprintGhost);
             SetReference(station, "pointMarkerMaterial", materials.CutGuide);
             SetReference(station, "screwHeadMaterial", materials.Steel);
+            SetReference(station, "holeMaterial", materials.PencilMark);
             SetReference(station, "waste", Object.FindFirstObjectByType<WorkshopWaste>());
+            SetReferences(station, "knownBlueprints",
+                new Object[] { BlueprintAssets.Frame600x300(), BlueprintAssets.WallShelf() });
+            SetReferences(station, "fasteners", Fasteners());
 
             // Cordless drill-driver lying on the table beside the frame (placeholder box: 200 mm tall body,
             // 70 mm wide, 160 mm long), held upright and pointing forward. Not a child of the station, so aiming at
@@ -323,7 +392,7 @@ namespace WoodcraftSimulator.Editor
                 new Vector3(0.2f, 0.07f, 0.16f), table.localPosition + new Vector3(0.45f, 0f, -0.27f), 0f,
                 materials.DrillTeal, handPosition: new Vector3(0.2f, -0.2f, 0.42f), handRotation: new Vector3(0f, -8f, 90f));
             var drillTool = drill.AddComponent<DrillDriverTool>();
-            SetReference(drillTool, "fastener", BlueprintAssets.WoodScrew5x80());
+            SetReferences(drillTool, "fasteners", Fasteners());
         }
 
         private static void BuildWorkbenchLamp(Transform parent, Material switchMaterial)
@@ -599,6 +668,16 @@ namespace WoodcraftSimulator.Editor
             }
 
             serializedHud.ApplyModifiedPropertiesWithoutUndo();
+
+            // Job sheet and results (same UI document).
+            var jobBoard = Object.FindFirstObjectByType<JobBoard>();
+            SetReference(hud, "jobBoard", jobBoard);
+            if (jobBoard != null)
+            {
+                var jobPanel = hudObject.AddComponent<JobPanel>();
+                SetReference(jobPanel, "jobBoard", jobBoard);
+                SetReference(jobPanel, "interactor", interactor);
+            }
         }
 
         /// <summary>
@@ -631,6 +710,14 @@ namespace WoodcraftSimulator.Editor
             SetReference(service, "player", player.GetComponent<PlayerController>());
             SetReference(service, "toolBelt", player.GetComponent<PlayerToolBelt>());
             SetReference(service, "waste", Object.FindFirstObjectByType<WorkshopWaste>());
+
+            var jobBoard = Object.FindFirstObjectByType<JobBoard>();
+            SetReference(service, "jobBoard", jobBoard);
+            if (jobBoard != null)
+            {
+                SetReference(jobBoard, "boardFactory", factory);
+            }
+
             return service;
         }
 

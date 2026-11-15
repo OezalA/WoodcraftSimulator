@@ -8,6 +8,7 @@ using WoodcraftSimulator.Construction;
 using WoodcraftSimulator.Cutting;
 using WoodcraftSimulator.Handling;
 using WoodcraftSimulator.Inventory;
+using WoodcraftSimulator.Jobs;
 using WoodcraftSimulator.Materials;
 using WoodcraftSimulator.Measurement;
 using WoodcraftSimulator.Player;
@@ -22,7 +23,7 @@ namespace WoodcraftSimulator.Persistence
     /// An invalid file is never applied: it is moved aside and the generated workshop is used.
     /// Systems with more state capture/restore it themselves (e.g. <see cref="AssemblyStation.CaptureState"/>); this
     /// service finds them by <see cref="PersistentId"/> and applies them in dependency order: boards, assemblies
-    /// (need the boards), items and belt, waste, switches, cut lists, player.
+    /// (need the boards; the job first sets their blueprint), items and belt, waste, switches, cut lists, player.
     /// </summary>
     public sealed class SaveGameService : MonoBehaviour
     {
@@ -34,6 +35,9 @@ namespace WoodcraftSimulator.Persistence
 
         [Tooltip("Optional: the workshop's sawdust total.")]
         [SerializeField] private WorkshopWaste waste;
+
+        [Tooltip("Optional: the job board (active job, delivered stock, completed jobs).")]
+        [SerializeField] private JobBoard jobBoard;
 
         private bool restarting;
 
@@ -210,6 +214,11 @@ namespace WoodcraftSimulator.Persistence
             }
 
             data.cutLists = cutLists.ToArray();
+            if (jobBoard != null)
+            {
+                data.job = jobBoard.Capture();
+            }
+
             return data;
         }
 
@@ -265,6 +274,12 @@ namespace WoodcraftSimulator.Persistence
                 var carryable = board.GetComponent<Carryable>();
                 carryable.RequestSupportCheck();
                 boards[boardData.id] = carryable;
+            }
+
+            // The job sets the station's blueprint and the cut list before the assembly is restored.
+            if (jobBoard != null && data.job != null)
+            {
+                jobBoard.Restore(data.job);
             }
 
             Dictionary<string, AssemblyStation> stations = ById<AssemblyStation>();

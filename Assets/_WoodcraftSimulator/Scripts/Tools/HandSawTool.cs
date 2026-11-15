@@ -8,14 +8,16 @@ using WoodcraftSimulator.Inventory;
 using WoodcraftSimulator.Materials;
 using WoodcraftSimulator.Measurement;
 using WoodcraftSimulator.Persistence;
+using WoodcraftSimulator.Player;
 
 namespace WoodcraftSimulator.Tools
 {
     /// <summary>
-    /// Hand saw in hand: aim at a pencil line on a resting board and hold Use (LMB) to saw through it.
-    /// The saw snaps to the line nearest to the crosshair; the cut itself is the domain <see cref="Crosscut"/>
-    /// (kerf on the waste side, D-029). When finished, the board is replaced by two boards generated from the result.
-    /// Carried boards can't be cut: their colliders are off, and the saw is holstered while carrying anyway.
+    /// Hand saw in hand (D-038). The blade goes where you aim (free placement; the wheel moves it in 0.5 mm steps),
+    /// not onto the pencil line: the cut is the domain <see cref="Crosscut.TryCutAt"/>, so its accuracy is yours.
+    /// Hold Use (LMB) and move the mouse forward/back to saw (<see cref="SawingProcess"/>); meanwhile looking and walking
+    /// are locked. While starting, moving the mouse sideways (or fast strokes) makes the blade wander. Releasing pauses
+    /// the cut; it continues in its kerf as long as you stay on the same board.
     /// </summary>
     public sealed class HandSawTool : MonoBehaviour, IHeldTool
     {
@@ -30,38 +32,69 @@ namespace WoodcraftSimulator.Tools
         [Tooltip("Allowed deviation of the measured piece from the target, in millimeters.")]
         [SerializeField, Min(0f)] private float toleranceMillimeters = 1f;
 
-        [Tooltip("Line across the board showing where the saw will cut (the kerf).")]
+        [Tooltip("Line across the board showing where the blade is (the kerf).")]
         [SerializeField] private LineRenderer cutGuide;
 
-        [Tooltip("The saw snaps to a pencil line within this distance (mm) of the aimed point along the board.")]
-        [SerializeField, Min(1f)] private float snapDistanceMillimeters = 30f;
+        [Tooltip("A pencil line within this distance (mm) of the blade is the line being cut (reference for the result).")]
+        [SerializeField, Min(1f)] private float lineSearchMillimeters = 30f;
+
+        [Tooltip("Assist: show the length the measured piece would get if cut at the blade's position.")]
+        [SerializeField] private bool showCutPreview = true;
+
+        [Header("Placing the blade (mouse wheel)")]
+        [SerializeField, Min(0.1f)] private float nudgeMillimeters = 0.5f;
+        [SerializeField, Min(1)] private int coarseSteps = 10;
+
+        [Tooltip("Moving the aim this far (mm) from where the wheel was used gives the blade back to the mouse.")]
+        [SerializeField, Min(0.5f)] private float takeoverMillimeters = 3f;
+
+        [Header("Strokes (mouse)")]
+        [Tooltip("Saw travel per pixel of forward/back mouse movement.")]
+        [SerializeField, Min(0.01f)] private float strokeMillimetersPerPixel = 1.5f;
+
+        [Tooltip("Blade movement along the board per pixel of sideways mouse movement while starting.")]
+        [SerializeField, Min(0f)] private float sidewaysMillimetersPerPixel = 0.02f;
 
         [Header("Stroke animation (camera space)")]
-        [SerializeField, Min(0f)] private float strokeLength = 0.05f;
-        [SerializeField, Min(0.1f)] private float strokesPerSecond = 1.6f;
+        [SerializeField, Min(0f)] private float strokeLength = 0.08f;
 
         [SerializeField] private BoardAim aim = new BoardAim();
 
         private const float GuideSurfaceOffset = 0.0015f;
 
         private InputAction useAction;
+        private InputAction lookAction;
+        private InputAction adjustAction;
+        private InputAction coarseAction;
         private string useKeyLabel;
         private Saw saw;
+        private SawingSettings sawingSettings;
         private PickupItem pickup;
         private HeldToolContext context;
+        private PlayerController playerController;
         private int ignoreInputFrame = -1;
 
-        // Current target and its evaluated cut (re-evaluated only when the target changes).
-        private TimberBoard targetBoard;
-        private PencilMark targetMark;
-        private CrosscutRefusal targetRefusal;
-        private CrosscutResult targetResult;
-        private float progress;   // 0..1
-        private float strokeTime;
+        // Free placement (wheel nudge relative to an anchor).
+        private bool nudging;
+        private Length nudgeAnchor;
+        private Length nudge;
+
+        // The cut in progress: its board, where the blade entered and the strokes so far.
+        private TimberBoard cutBoard;
+        private Length cutStart;
+        private SawingProcess process;
+        private bool sawing;
+        private float cutFaceSign = 1f;
+
+        // Preview of the cut at the current blade position (re-evaluated only when the position changes).
+        private TimberBoard previewBoard;
+        private Length previewBlade;
+        private PencilMark previewMark;
+        private CrosscutRefusal previewRefusal;
+        private CrosscutResult previewResult;
 
         private string statusLine;
         private string resultLine;
-        private int shownPercent = -1;
 
         public string Readout { get; private set; }
 
@@ -78,7 +111,11 @@ namespace WoodcraftSimulator.Tools
             }
 
             saw = definition.ToDomain();
+            sawingSettings = definition.SawingSettings();
             useAction = InputSystem.actions.FindAction("Player/UseTool", throwIfNotFound: true);
+            lookAction = InputSystem.actions.FindAction("Player/Look", throwIfNotFound: true);
+            adjustAction = InputSystem.actions.FindAction("Player/AdjustTool", throwIfNotFound: true);
+            coarseAction = InputSystem.actions.FindAction("Player/CoarseAdjust", throwIfNotFound: true);
             useKeyLabel = useAction.GetBindingDisplayString(InputBinding.MaskByGroup("Keyboard&Mouse"),
                 InputBinding.DisplayStringOptions.DontIncludeInteractions);
             SetGuideVisible(false);
@@ -87,19 +124,25 @@ namespace WoodcraftSimulator.Tools
         public void Equip(HeldToolContext toolContext)
         {
             context = toolContext;
+            playerController = toolContext.PlayerRoot.GetComponent<PlayerController>();
             // The click that resumes from the pause menu must not start sawing.
             ignoreInputFrame = Time.frameCount;
         }
 
         public void Unequip()
         {
+            StopSawing();
             context = null;
             aim.Release();
-            ClearTarget();
+            AbandonCut();
+            ClearPreview();
+            nudging = false;
             SetGuideVisible(false);
             resultLine = null;
             SetLines(null, null);
         }
+
+        private void OnDisable() => StopSawing();
 
         private void Update()
         {
@@ -109,76 +152,213 @@ namespace WoodcraftSimulator.Tools
                 return;
             }
 
-            if (!aim.TryAim(context, out BoardAimPoint point) || !TryFindMark(point, out PencilMark mark))
+            if (sawing)
+            {
+                ContinueSawing();
+                return;
+            }
+
+            if (!aim.TryAim(context, out BoardAimPoint point) || !point.IsOnBoard)
             {
                 bool onBoard = point.Board != null;
-                ClearTarget();
+                AbandonCut();
+                ClearPreview();
                 SetGuideVisible(false);
-                SetLines(onBoard ? "No pencil line here: mark the cut first" : null, resultLine);
+                SetLines(onBoard ? "Aim at the board where you want to cut" : null, resultLine);
                 return;
             }
 
-            if (point.Board != targetBoard || mark != targetMark)
+            TimberBoard board = point.Board;
+            if (cutBoard != null && board != cutBoard)
             {
-                SetTarget(point.Board, mark);
-            }
-
-            ShowGuide(point);
-
-            if (targetRefusal != CrosscutRefusal.None)
-            {
-                SetLines(RefusalText(targetRefusal), resultLine);
-                return;
+                AbandonCut();
             }
 
             // A part installed in an assembly would leave its slot holding a piece that no longer exists.
-            if (point.Board.TryGetComponent(out Carryable carryable) && carryable.InstalledIn != null)
+            if (board.TryGetComponent(out Carryable carryable) && carryable.InstalledIn != null)
             {
+                ClearPreview();
+                SetGuideVisible(false);
                 SetLines($"Take it out of the {carryable.InstalledIn.DisplayName} to cut it", resultLine);
                 return;
             }
 
-            Length atDistance = mark.DistanceFromReference(point.BoardLength);
-            bool sawing = useAction.IsPressed() && Time.frameCount != ignoreInputFrame;
-            if (!sawing)
+            // A started cut keeps its kerf; otherwise the blade follows the aim (and the wheel).
+            Length blade = process != null ? BladePosition() : FreeBladePosition(point.PointFromStart);
+            UpdatePreview(board, blade);
+            ShowGuide(board, blade, point.FaceSign);
+
+            if (previewRefusal != CrosscutRefusal.None)
             {
-                pickup.HandOffset = Vector3.zero;
-                shownPercent = -1;
-                SetLines(progress > 0f
-                    ? $"Hold {useKeyLabel} to continue sawing  ({Mathf.FloorToInt(progress * 100f)}%)"
-                    : $"Hold {useKeyLabel} to saw at {atDistance}", resultLine);
+                SetLines(RefusalText(previewRefusal), resultLine);
                 return;
             }
 
-            BoardDimensions dimensions = point.Board.Piece.Dimensions;
-            double crossSectionCm2 = dimensions.Width.Centimeters * dimensions.Thickness.Centimeters;
-            progress += Time.deltaTime / definition.SawingSeconds(crossSectionCm2);
-            strokeTime += Time.deltaTime;
-            pickup.HandOffset = Vector3.forward * (Mathf.Sin(strokeTime * strokesPerSecond * 2f * Mathf.PI) * strokeLength);
-
-            if (progress >= 1f)
+            if (useAction.IsPressed() && Time.frameCount != ignoreInputFrame)
             {
+                StartSawing(board, blade, point.FaceSign);
+                return;
+            }
+
+            string hint = process != null
+                ? $"Cut {Percent(process.Progress)}: hold {useKeyLabel} and move the mouse forward/back to continue"
+                : $"Hold {useKeyLabel} and move the mouse forward/back to saw      Wheel: ±{nudgeMillimeters.ToString("0.#", CultureInfo.InvariantCulture)} mm";
+            SetLines(PreviewText() + "\n" + hint, resultLine);
+        }
+
+        private Length FreeBladePosition(Length aimed)
+        {
+            if (adjustAction.WasPerformedThisFrame())
+            {
+                float value = adjustAction.ReadValue<float>();
+                if (value != 0f)
+                {
+                    if (!nudging)
+                    {
+                        nudging = true;
+                        nudgeAnchor = aimed.RoundTo(Length.FromMillimeters(0.5));
+                        nudge = Length.Zero;
+                    }
+
+                    int steps = Math.Sign(value) * (coarseAction.IsPressed() ? coarseSteps : 1);
+                    nudge += Length.FromMillimeters((double)nudgeMillimeters) * steps;
+                }
+            }
+
+            if (nudging && (aimed - nudgeAnchor).Abs() > Length.FromMillimeters((double)takeoverMillimeters))
+            {
+                nudging = false;
+            }
+
+            return nudging ? nudgeAnchor + nudge : aimed;
+        }
+
+        /// <summary>Where the blade is in the cut in progress: where it entered plus how far it wandered.</summary>
+        private Length BladePosition() => cutStart + Length.FromMillimeters(process.DriftMillimeters);
+
+        private void StartSawing(TimberBoard board, Length blade, float faceSign)
+        {
+            if (process == null)
+            {
+                BoardDimensions dimensions = board.Piece.Dimensions;
+                double crossSection = dimensions.Width.Centimeters * dimensions.Thickness.Centimeters;
+                process = new SawingProcess(crossSection, board.Piece.Species.DensityKgPerCubicMeter, sawingSettings);
+                cutBoard = board;
+                cutStart = blade;
+                cutFaceSign = faceSign;
+            }
+
+            sawing = true;
+            resultLine = null;
+            if (playerController != null)
+            {
+                playerController.ControlsLocked = true;
+            }
+        }
+
+        private void ContinueSawing()
+        {
+            if (!useAction.IsPressed() || cutBoard == null)
+            {
+                StopSawing();
+                return;
+            }
+
+            float seconds = Time.deltaTime;
+            if (seconds > 0f)
+            {
+                Vector2 mouse = lookAction.ReadValue<Vector2>();
+                process.Feed(mouse.y * strokeMillimetersPerPixel, mouse.x * sidewaysMillimetersPerPixel, seconds);
+            }
+
+            float half = definition.BladeLengthMillimeters / 2f;
+            pickup.HandOffset = Vector3.forward * ((float)process.StrokePosition / half * strokeLength);
+
+            Length blade = BladePosition();
+            UpdatePreview(cutBoard, blade);
+            ShowGuide(cutBoard, blade, cutFaceSign);
+
+            if (previewRefusal != CrosscutRefusal.None)
+            {
+                // The blade wandered too close to an end.
+                StopSawing();
+                AbandonCut();
+                SetLines(RefusalText(previewRefusal), resultLine);
+                return;
+            }
+
+            if (process.IsDone)
+            {
+                StopSawing();
                 FinishCut();
                 return;
             }
 
-            int percent = Mathf.FloorToInt(progress * 100f);
-            if (percent != shownPercent)
+            string state = process.Jumped
+                ? "The saw jumped! Start with slower strokes"
+                : process.IsStarting
+                    ? "Starting: slow strokes, keep the mouse straight"
+                    : "In the kerf: long, even strokes";
+            double drift = process.DriftMillimeters;
+            string wander = Math.Abs(drift) >= 0.1
+                ? $"   (blade wandered {Math.Abs(drift).ToString("0.0", CultureInfo.InvariantCulture)} mm)"
+                : string.Empty;
+            SetLines($"Sawing {Percent(process.Progress)}   {state}{wander}", resultLine);
+        }
+
+        private void StopSawing()
+        {
+            if (sawing && playerController != null)
             {
-                shownPercent = percent;
-                SetLines($"Sawing  {percent}%", resultLine);
+                playerController.ControlsLocked = false;
+            }
+
+            sawing = false;
+            if (pickup != null)
+            {
+                pickup.HandOffset = Vector3.zero;
             }
         }
 
-        /// <summary>The pencil line on the aimed board nearest to the aimed point, within the snap distance.</summary>
-        private bool TryFindMark(BoardAimPoint point, out PencilMark nearest)
+        private void AbandonCut()
         {
-            nearest = null;
-            Length aimed = point.PointFromStart;
-            Length best = Length.FromMillimeters((double)snapDistanceMillimeters);
-            foreach (PencilMark candidate in point.Board.Marks.All)
+            cutBoard = null;
+            process = null;
+        }
+
+        private void UpdatePreview(TimberBoard board, Length blade)
+        {
+            if (board == previewBoard && blade == previewBlade && (previewResult != null || previewRefusal != CrosscutRefusal.None))
             {
-                Length distance = (candidate.PositionFromStart - aimed).Abs();
+                return;
+            }
+
+            previewBoard = board;
+            previewBlade = blade;
+            previewMark = NearestMark(board, blade);
+
+            // The measured piece is the one the line was measured for; without a line, the shorter one.
+            BoardEnd measuredSide = previewMark != null
+                ? previewMark.MeasuredFrom
+                : blade.Millimeters < board.Piece.Dimensions.Length.Millimeters / 2.0 ? BoardEnd.Start : BoardEnd.End;
+            previewRefusal = Crosscut.TryCutAt(board.Piece, board.Marks, blade, measuredSide, saw, out previewResult);
+        }
+
+        private void ClearPreview()
+        {
+            previewBoard = null;
+            previewMark = null;
+            previewResult = null;
+            previewRefusal = CrosscutRefusal.None;
+        }
+
+        private PencilMark NearestMark(TimberBoard board, Length blade)
+        {
+            PencilMark nearest = null;
+            Length best = Length.FromMillimeters((double)lineSearchMillimeters);
+            foreach (PencilMark candidate in board.Marks.All)
+            {
+                Length distance = (candidate.PositionFromStart - blade).Abs();
                 if (distance <= best)
                 {
                     best = distance;
@@ -186,38 +366,53 @@ namespace WoodcraftSimulator.Tools
                 }
             }
 
-            return nearest != null;
+            return nearest;
         }
 
-        private void SetTarget(TimberBoard board, PencilMark mark)
+        /// <summary>
+        /// What cutting here gives, against the pencil line: a carpenter puts the kerf just beside the line on the
+        /// waste side, so the piece keeps the marked length.
+        /// </summary>
+        private string PreviewText()
         {
-            ClearTarget();
-            targetBoard = board;
-            targetMark = mark;
-            targetRefusal = Crosscut.TryCut(board.Piece, board.Marks, mark, saw, out targetResult);
-        }
-
-        private void ClearTarget()
-        {
-            targetBoard = null;
-            targetMark = null;
-            targetResult = null;
-            targetRefusal = CrosscutRefusal.None;
-            progress = 0f;
-            strokeTime = 0f;
-            shownPercent = -1;
-            if (pickup != null)
+            if (previewMark == null)
             {
-                pickup.HandOffset = Vector3.zero;
+                return "No pencil line near the blade: cutting by eye";
             }
+
+            if (!showCutPreview || previewResult == null)
+            {
+                return "Blade at the pencil line";
+            }
+
+            Length line = previewMark.DistanceFromReference(previewBoard.Piece.Dimensions.Length);
+            Length piece = previewResult.MeasuredPiece.Dimensions.Length;
+            Length difference = piece - line;
+            string relation = difference == Length.Zero
+                ? "kerf right beside the line"
+                : difference > Length.Zero
+                    ? $"{difference} long: blade on the waste side"
+                    : $"{difference.Abs()} short: blade over the line";
+            return $"Piece {piece} (line {line}, {relation})";
         }
 
         private void FinishCut()
         {
-            TimberBoard original = targetBoard;
-            CrosscutResult result = targetResult;
+            TimberBoard original = cutBoard;
+            Length blade = BladePosition();
+            AbandonCut();
+            UpdatePreview(original, blade);
+            CrosscutResult result = previewResult;
+            PencilMark line = previewMark;
+            ClearPreview();
+            if (result == null)
+            {
+                return;
+            }
+
             Transform originalTransform = original.transform;
             double originalLength = original.Piece.Dimensions.Length.Meters;
+            Length lineDistance = line != null ? line.DistanceFromReference(original.Piece.Dimensions.Length) : Length.Zero;
 
             // Centers of the two pieces along the original's length axis (local Z from its center).
             float startCenter = (float)(result.KerfStartFromStart.Meters / 2.0 - originalLength / 2.0);
@@ -239,9 +434,9 @@ namespace WoodcraftSimulator.Tools
 
             Destroy(original.gameObject);
             aim.Release();
-            ClearTarget();
+            nudging = false;
             SetGuideVisible(false);
-            resultLine = FormatResult(result);
+            resultLine = FormatResult(result, line != null ? lineDistance : (Length?)null);
             SetLines(null, resultLine);
 
             void CreatePiece(TimberBoard source, TimberPiece piece, BoardMarks marks, float centerZ)
@@ -267,7 +462,7 @@ namespace WoodcraftSimulator.Tools
             }
         }
 
-        private string FormatResult(CrosscutResult result)
+        private string FormatResult(CrosscutResult result, Length? line)
         {
             Length measured = result.MeasuredPiece.Dimensions.Length;
             string measuredText = measured.ToString();
@@ -277,6 +472,10 @@ namespace WoodcraftSimulator.Tools
                 var tolerance = new Tolerance(Length.FromMillimeters((double)toleranceMillimeters));
                 ToleranceCheck check = tolerance.Check(cutList.Target, measured);
                 measuredText += $" (target {cutList.Target}, {(check.IsWithin ? "OK" : "OUT OF TOLERANCE")} {tolerance})";
+            }
+            else if (line.HasValue)
+            {
+                measuredText += $" (line {line.Value})";
             }
 
             string text = $"Cut: {measuredText} + {result.OtherPiece.Dimensions.Length}" +
@@ -288,6 +487,8 @@ namespace WoodcraftSimulator.Tools
 
             return text;
         }
+
+        private static string Percent(double share) => $"{Math.Floor(share * 100.0).ToString(CultureInfo.InvariantCulture)}%";
 
         private static string CubicCentimeters(double cubicMeters) =>
             (cubicMeters * 1e6).ToString("0.0", CultureInfo.InvariantCulture);
@@ -305,24 +506,20 @@ namespace WoodcraftSimulator.Tools
             }
         }
 
-        private void ShowGuide(BoardAimPoint point)
+        /// <summary>The kerf across the board at the blade's position, on the face turned towards the player.</summary>
+        private void ShowGuide(TimberBoard board, Length blade, float faceSign)
         {
-            if (cutGuide == null || targetResult == null && targetRefusal == CrosscutRefusal.None)
+            if (cutGuide == null)
             {
                 return;
             }
 
-            // Kerf center if the cut is possible, otherwise the pencil line itself.
-            BoardDimensions dimensions = point.Board.Piece.Dimensions;
-            double fromStart = targetResult != null
-                ? (targetResult.KerfStartFromStart.Meters + targetResult.KerfEndFromStart.Meters) / 2.0
-                : targetMark.PositionFromStart.Meters;
-            float z = (float)(fromStart - dimensions.Length.Meters / 2.0);
+            BoardDimensions dimensions = board.Piece.Dimensions;
+            float z = (float)(blade.Meters - dimensions.Length.Meters / 2.0);
             float halfWidth = (float)(dimensions.Width.Meters / 2.0);
-            float y = (targetMark.Face == BoardFace.Top ? 1f : -1f) *
-                      ((float)(dimensions.Thickness.Meters / 2.0) + GuideSurfaceOffset);
+            float y = faceSign * ((float)(dimensions.Thickness.Meters / 2.0) + GuideSurfaceOffset);
 
-            Transform boardTransform = point.Board.transform;
+            Transform boardTransform = board.transform;
             cutGuide.SetPosition(0, boardTransform.TransformPoint(new Vector3(-halfWidth, y, z)));
             cutGuide.SetPosition(1, boardTransform.TransformPoint(new Vector3(halfWidth, y, z)));
             SetGuideVisible(true);

@@ -342,6 +342,49 @@ Esc → New workshop for a clean start.
 | Console | No warnings from `SaveGameService` / `AssemblyStation` |
 | EditMode tests | 174 tests, all green |
 
+### MT-018: Free saw placement and stroke sawing (D-038 T1, T2)
+Precondition: stop Play, rebuild the scene (new job board, drill bits, saw settings). Esc → New workshop.
+| Step | Expected |
+|---|---|
+| Mark a line on a spruce board, take the saw, aim near the line | Kerf line follows the aim, not snapped; HUD `Piece ... (line ..., ...)` says long/short and which side |
+| Mouse wheel up/down | Blade moves 0.5 mm per notch (Shift: 5 mm); moving the mouse more than 3 mm gives control back |
+| Hold LMB without moving the mouse | Nothing cuts; the view is locked (no turning, no walking) |
+| Hold LMB, move the mouse slowly forward/back | `Sawing NN%`, first `Starting: ...`, later `In the kerf ...`; the saw moves with the mouse |
+| While starting, move the mouse sideways / make very fast strokes | `blade wandered X mm` / `The saw jumped!`; the kerf line moves |
+| Release LMB mid-cut, look around, aim back at the board | `Cut NN%: hold ... to continue`; continues in the same kerf |
+| Finish the cut | Two pieces; result line with the measured length vs target / line |
+| EditMode tests | 220 tests, all green |
+
+### MT-019: Pilot holes, clutch and screw depth (D-038 M1, M2)
+Precondition: MT-018. Parts installed on the assembly table (free play: the frame).
+| Step | Expected |
+|---|---|
+| Drill in hand | `Driver bit, clutch 12   [Wheel] clutch   [Q] Drill bit 3 mm` |
+| Wheel | Clutch changes 1..20, then `drill (no clutch)` |
+| Q | `Changing to the drill bit...` for about 1 s |
+| Drill bit: hold LMB on an orange point | `Drilling NN%`, then `Pilot hole drilled`; a small dark hole appears |
+| Driver bit, clutch 1-3: hold LMB long on a point | Stops part-way: `Clutch slipping: head NN mm out`; release: `Screw in, but head ... out` |
+| Hold LMB on that screw again with a higher clutch | It is driven further |
+| Frame (5 × 80): clutch about 9-14; shelf (4 × 40): about 5-7; hold until it stops | `Screw in: head flush` |
+| Clutch 20 or drill mode, keep holding | The head sinks: `Screw driven too deep` |
+| Screw near a board end **without** a pilot hole | `The board split!`; a dark crack line on the board |
+| Release very early (less than 3 mm in) | `Screw not set` |
+
+### MT-020: First complete job: the small shelf (Phase 6)
+Precondition: MT-018, MT-019. Esc → New workshop (empty assembly table).
+| Step | Expected |
+|---|---|
+| Look at the right sheet on the job board (back wall, left of the bench) | Top left: offer `Small shelf`, `Material: 2 x Spruce board 2000 × 145 × 18 mm`, cut plan per board, 12 screws |
+| E | 2 boards appear on the floor in front of the rack; the table shows the shelf ghosts; top left: job sheet with timer and cut list `2 x 600 mm ...`, `3 x 464 mm ...` |
+| E on the bench cut list note | Cycles `600 mm, 2 x Left side, Right side` / `464 mm, 3 x ... shelf` |
+| Measure, mark, cut 2 × 600 and 3 × 464 | The job sheet lines count `ready` pieces |
+| Install the left side, then the shelves (a shelf first: `place left first`), then the right side | Lines count `in` |
+| Pre-drill the top/bottom joints, drive all 12 screws | After the last screw: result on the right (parts, heads, splits, material, time, 4 goals) |
+| Save, stop, Play | Job, time and result are still there |
+| E on the shelf sheet | `Deliver the Small shelf`: the shelf disappears, the job sheet is gone, the cut list note is back to practice targets |
+| Accept the practice frame | Works the same with 95 × 45 stock; its corner screws need pilot holes |
+| Ruin a part, E on the active sheet | One more board is delivered; the result shows `1 ordered extra` |
+
 ## Game view setup (corrects the earlier tip)
 A fixed resolution such as *Full HD (1920x1080)* at `Scale 1x` **crops** the image when the Game view window is
 smaller than 1920×1080: the bottom (tool belt bar) and the lower right (tool in hand) are cut off.

@@ -14,6 +14,12 @@
         <!-- Quality report of a completed assembly, shown for a while on the right. -->
         <ui:VisualElement name="report-anchor" class="report-anchor" picking-mode="Ignore">
             <ui:Label name="assembly-report" class="assembly-report hidden" picking-mode="Ignore" text="" />
+            <!-- Result of the active job once its structure is complete (stays until delivered). -->
+            <ui:Label name="job-result" class="assembly-report hidden" picking-mode="Ignore" text="" />
+        </ui:VisualElement>
+        <!-- Job sheet of the active job (cut list with progress), or the offer of the sheet being looked at. -->
+        <ui:VisualElement name="job-anchor" class="job-anchor" picking-mode="Ignore">
+            <ui:Label name="job-sheet" class="job-sheet hidden" picking-mode="Ignore" text="" />
         </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

@@ -83,11 +83,15 @@ Owner request 2026-11-15; plan approved ("tamam"). Company name for the save pat
   auto-continue on start (MT-016 passed, 2026-11-15)
 - [x] S3: Tools and belt, assembly progress, waste, cut list, light switch (MT-017 passed, 2026-11-15; 174 tests)
 
-## Phase 6: First Complete Crafting Job (plan proposed 2026-11-15, awaiting owner approval)
+## Phase 6: First Complete Crafting Job (plan approved 2026-11-15: shelf, T1/T2/M1/M2, frame stays as first job)
 Goal (master prompt): one woodworking project from start to finish without developer intervention.
-- [ ] 6a: Domain job model: job definition (objectives, stock, quality goals), material calculation from the blueprint
-  (cut list grouped by size, stock boards needed incl. kerf, expected offcuts), job progress and result; tests
-- [ ] 6b: Shelf blueprint (18 mm boards, screwed butt joints) + job board in the workshop (accept the job, read the
-  cut list, see what is done); the job's stock in the rack; the pencil/saw target follows the job's cut list
-- [ ] 6c: Job completion: results screen (accuracy per part, fasteners, material bought vs used, sawdust, offcuts,
-  time), finish the job; job state saved
+- [ ] 6a: Domain job model: `Job`, `MaterialPlan` (cut list grouped by size, stock boards incl. kerf, offcuts,
+  fasteners), `CutListProgress`, `JobResult` with separate quality goals, `JobText`; sawing and fastening rules
+  (`SawingProcess`, `Crosscut.TryCutAt`, `FasteningRules`, `ScrewDrive`, pilot holes / head heights / splits in
+  `AssemblyBuild`); 46 new tests (220 total) (D-038, D-039). Code done
+- [ ] 6b: Shelf blueprint 500 × 600 × 145 (18 mm spruce, 12 × 4 × 40 mm screws), job board with two jobs (practice
+  frame, small shelf), stock delivered in front of the rack, cut list note follows the job, job sheet in the HUD;
+  free saw placement + stroke sawing (T1, T2), drill bit / pilot holes, clutch and screw depth (M1, M2). Code done,
+  awaiting MT-018..MT-020
+- [ ] 6c: Job result in the HUD (parts, screw heads, splits, material delivered / in the structure / sawdust /
+  offcuts, time, quality goals), deliver to finish, order extra stock, job state saved. Code done, awaiting MT-020
