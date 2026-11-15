@@ -80,5 +80,5 @@ spruce 95 × 45, butt joints, 2 screws 5 × 80 mm per corner).
 Owner request 2026-11-15; plan approved ("tamam"). Company name for the save path: OezalAstudio.
 - [x] S1: Versioned save model (`SaveGameData`), migration, validation, board round trip; 17 new tests (162 total)
 - [ ] S2: Boards with marks recreated from the save, player pose, pause menu Save / New workshop, auto-save on quit,
-  auto-continue on start
+  auto-continue on start (code done, awaiting MT-016)
 - [ ] S3: Tools and belt, assembly progress, waste, cut list, light switch

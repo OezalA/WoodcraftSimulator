@@ -80,6 +80,28 @@ namespace WoodcraftSimulator.Player
             normalFieldOfView = viewCamera != null ? viewCamera.fieldOfView : 70f;
         }
 
+        /// <summary>Camera pitch in degrees (positive = looking down).</summary>
+        public float Pitch => pitch;
+
+        /// <summary>
+        /// Moves the player (e.g. when a save is loaded). The CharacterController is switched off for the move,
+        /// because it would otherwise overwrite a directly set position.
+        /// </summary>
+        public void Teleport(Vector3 position, float yawDegrees, float pitchDegrees)
+        {
+            bool wasEnabled = characterController.enabled;
+            characterController.enabled = false;
+            transform.SetPositionAndRotation(position, Quaternion.Euler(0f, yawDegrees, 0f));
+            characterController.enabled = wasEnabled;
+
+            pitch = Mathf.Clamp(pitchDegrees, -maxPitch, maxPitch);
+            verticalVelocity = 0f;
+            if (cameraTransform != null)
+            {
+                cameraTransform.localRotation = Quaternion.Euler(pitch, 0f, 0f);
+            }
+        }
+
         private void Update()
         {
             HandlePrecisionLook();

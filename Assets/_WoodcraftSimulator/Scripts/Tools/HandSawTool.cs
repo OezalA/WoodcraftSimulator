@@ -7,6 +7,7 @@ using WoodcraftSimulator.Handling;
 using WoodcraftSimulator.Inventory;
 using WoodcraftSimulator.Materials;
 using WoodcraftSimulator.Measurement;
+using WoodcraftSimulator.Persistence;
 
 namespace WoodcraftSimulator.Tools
 {
@@ -251,6 +252,12 @@ namespace WoodcraftSimulator.Tools
                     originalTransform.parent);
                 copy.name = $"{piece.Species.DisplayName}_{piece.Dimensions.Length.FormatMillimeters()}";
                 copy.GetComponent<TimberBoard>().SetPiece(piece, marks);
+
+                // A new physical piece: it must not keep the original's save id (D-036).
+                if (copy.TryGetComponent(out PersistentId persistentId))
+                {
+                    persistentId.AssignNew();
+                }
 
                 // An offcut sticking out over an edge has nothing under it any more: it falls (D-031).
                 if (copy.TryGetComponent(out Carryable carryable))

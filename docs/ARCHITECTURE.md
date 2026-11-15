@@ -34,6 +34,8 @@ Assets/
       Cutting/SawDefinition.cs, WorkshopWaste.cs
       Construction/BlueprintDefinition.cs, FastenerDefinition.cs, AssemblyStation.cs
       Handling/IPlacementTarget.cs (+ SnapPlacement)
+      Persistence/PersistentId.cs, SaveGameService.cs
+      Materials/TimberBoardFactory.cs
       Player/PlayerController.cs
       Interaction/IInteractable.cs, IDescribable.cs, PlayerInteractor.cs
       Handling/Carryable.cs, PlayerCarrier.cs

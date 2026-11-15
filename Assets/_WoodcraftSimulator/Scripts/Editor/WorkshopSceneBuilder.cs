@@ -12,6 +12,7 @@ using WoodcraftSimulator.Handling;
 using WoodcraftSimulator.Interaction;
 using WoodcraftSimulator.Inventory;
 using WoodcraftSimulator.Materials;
+using WoodcraftSimulator.Persistence;
 using WoodcraftSimulator.Player;
 using WoodcraftSimulator.Tools;
 using WoodcraftSimulator.UI;
@@ -111,7 +112,8 @@ namespace WoodcraftSimulator.Editor
             GameObject player = BuildPlayer(materials.PlacementPreview);
             PanelSettings panelSettings = GetOrCreatePanelSettings(theme);
             BuildHud(player.GetComponent<PlayerInteractor>(), player.GetComponent<PlayerCarrier>(), hudLayout, panelSettings);
-            BuildPauseSystem(player, pauseMenuLayout, panelSettings);
+            SaveGameService saveService = BuildSaveSystem(player, materials, WoodSpeciesAssets.EnsureDefaults());
+            BuildPauseSystem(player, pauseMenuLayout, panelSettings, saveService);
 
             // Intentionally does not touch Build Settings (ProjectSettings): add the scene there manually when needed.
             EditorSceneManager.SaveScene(scene, ScenePath);
@@ -506,6 +508,8 @@ namespace WoodcraftSimulator.Editor
             body.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
 
             board.AddComponent<Carryable>();
+            // Stable save id = the builder's board name (D-036).
+            board.AddComponent<PersistentId>().Set(name);
             var timberBoard = board.AddComponent<TimberBoard>();
             var serialized = new SerializedObject(timberBoard);
             serialized.FindProperty("species").objectReferenceValue = species;
@@ -593,7 +597,39 @@ namespace WoodcraftSimulator.Editor
             serializedHud.ApplyModifiedPropertiesWithoutUndo();
         }
 
-        private static void BuildPauseSystem(GameObject player, VisualTreeAsset layout, PanelSettings panelSettings)
+        /// <summary>
+        /// Save system (D-036): a board factory (knows every species and the board materials, used to recreate
+        /// saved boards) and the save service that loads on start and saves on quit.
+        /// </summary>
+        private static SaveGameService BuildSaveSystem(GameObject player, GreyboxMaterials materials,
+            IReadOnlyDictionary<string, WoodSpeciesDefinition> species)
+        {
+            var saveObject = new GameObject("SaveSystem");
+
+            var factory = saveObject.AddComponent<TimberBoardFactory>();
+            var serializedFactory = new SerializedObject(factory);
+            SerializedProperty speciesProperty = serializedFactory.FindProperty("species");
+            speciesProperty.arraySize = species.Count;
+            int index = 0;
+            foreach (WoodSpeciesDefinition definition in species.Values)
+            {
+                speciesProperty.GetArrayElementAtIndex(index++).objectReferenceValue = definition;
+            }
+
+            serializedFactory.FindProperty("lumberMaterial").objectReferenceValue = materials.Lumber;
+            serializedFactory.FindProperty("markMaterial").objectReferenceValue = materials.PencilMark;
+            GameObject timber = GameObject.Find("Environment/Workshop/Timber");
+            serializedFactory.FindProperty("container").objectReferenceValue = timber != null ? timber.transform : null;
+            serializedFactory.ApplyModifiedPropertiesWithoutUndo();
+
+            var service = saveObject.AddComponent<SaveGameService>();
+            SetReference(service, "boardFactory", factory);
+            SetReference(service, "player", player.GetComponent<PlayerController>());
+            return service;
+        }
+
+        private static void BuildPauseSystem(GameObject player, VisualTreeAsset layout, PanelSettings panelSettings,
+            SaveGameService saveService)
         {
             var playerController = player.GetComponent<PlayerController>();
             var interactor = player.GetComponent<PlayerInteractor>();
@@ -622,6 +658,7 @@ namespace WoodcraftSimulator.Editor
             var pauseMenu = menuObject.AddComponent<PauseMenu>();
             SetReference(pauseMenu, "pauseController", pauseController);
             SetReference(pauseMenu, "playerController", playerController);
+            SetReference(pauseMenu, "saveService", saveService);
         }
 
         private static PanelSettings GetOrCreatePanelSettings(ThemeStyleSheet theme)

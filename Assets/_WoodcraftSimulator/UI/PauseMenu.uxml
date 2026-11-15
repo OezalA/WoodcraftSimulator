@@ -4,7 +4,10 @@
         <ui:VisualElement name="pause-panel" class="pause-panel">
             <ui:Label text="Paused" class="pause-title" />
             <ui:Button name="resume-button" text="Resume" class="pause-button" />
+            <ui:Button name="save-button" text="Save" class="pause-button" />
+            <ui:Label name="save-status" text="" class="pause-status" />
             <ui:Slider name="sensitivity-slider" label="Mouse sensitivity" class="pause-slider" />
+            <ui:Button name="new-button" text="New workshop" class="pause-button" />
             <ui:Button name="quit-button" text="Quit" class="pause-button" />
         </ui:VisualElement>
     </ui:VisualElement>

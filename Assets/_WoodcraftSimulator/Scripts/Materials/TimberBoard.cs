@@ -81,6 +81,16 @@ namespace WoodcraftSimulator.Materials
         }
 
         /// <summary>
+        /// Sets the static references of a board created at runtime (before its GameObject is activated, so that
+        /// <c>Awake</c> already finds the species).
+        /// </summary>
+        public void Initialize(WoodSpeciesDefinition speciesDefinition, Material pencilMarkMaterial)
+        {
+            species = speciesDefinition;
+            markMaterial = pencilMarkMaterial;
+        }
+
+        /// <summary>
         /// Makes this board represent another piece (e.g. one half of a cut) with its marks. The species asset stays;
         /// the serialized dimensions are updated so the Inspector shows the truth.
         /// </summary>

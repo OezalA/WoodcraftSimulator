@@ -36,6 +36,14 @@
     margin-bottom: 6px;
 }
 
+.pause-panel .pause-status {
+    font-size: 15px;
+    color: rgb(90, 75, 60);
+    -unity-text-align: middle-center;
+    white-space: normal;
+    margin-bottom: 6px;
+}
+
 .pause-panel .pause-slider {
     margin-top: 18px;
     margin-bottom: 18px;

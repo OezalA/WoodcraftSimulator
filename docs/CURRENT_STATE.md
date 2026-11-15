@@ -5,8 +5,8 @@ _Last updated: 2026-11-15_
 ## Current milestone
 **Phase 5 (Basic Assembly) done**: accepted by the owner on 2026-11-15 ("hepsi süper") after MT-013 and MT-015;
 `main` fast-forwarded to `develop`.
-**Save & load in progress** (owner request 2026-11-15, plan approved, D-036): **S1 (domain save model) done**;
-next S2. Owner sets Company Name = OezalAstudio in Player Settings.
+**Save & load in progress** (owner request 2026-11-15, plan approved, D-036): S1 (domain save model) done;
+**S2 (boards + player, pause menu Save / New workshop, auto-save) implemented, NOT yet tested in Unity** (MT-016).
 Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 
 ## Completed
@@ -56,6 +56,7 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 | 5c drill-driver + completion: static compile + `dotnet test` | 0 errors, 0 warnings; 145/145 tests passed (Claude). Unity play-test pending (MT-015) | 2026-11-15 |
 | MT-013 + MT-015 (owner) | Passed: "hepsi süper" | 2026-11-15 |
 | S1 save model: static compile + `dotnet test` | 0 errors, 0 warnings; 162/162 tests passed (Claude). Domain only | 2026-11-15 |
+| S2 save service: static compile + `dotnet test` | 0 errors, 0 warnings; 162/162 tests passed (Claude). Unity play-test pending (MT-016) | 2026-11-15 |
 
 ## Known issues / limitations
 - **Carry feel not liked yet** (owner, 2026-11-13). Ideas for later: smooth follow (lerp/slerp) instead of rigid
@@ -67,7 +68,9 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 - Build Settings: `Workshop` enabled; deleted `SampleScene` still listed (disabled, harmless).
 - Mouse look tuned for mouse only; gamepad right stick would be far too slow.
 - In-game text is English only.
-- **No save / load yet**: every start begins with the generated workshop (owner wants to continue where they left off).
+- Save & load (D-036): boards and player only so far; tools/belt, assembly progress, waste, cut list and lamp in S3.
+- Company Name still `DefaultCompany` in ProjectSettings (owner to set `OezalAstudio` in Player Settings and save the
+  project); the save path follows it.
 - Pencil marks: no eraser, not saved, only on the board's flat faces, no squared lines / angles (D-028).
 - Assist option "type the dimension, the line is drawn" (owner's option A, D-034) deferred to a settings menu.
 - Recompiling scripts while in Play Mode resets non-serialized state (seen once: `NullReferenceException` in
@@ -75,8 +78,6 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
   Recompile After Finished Playing* (an editor preference, not a project setting).
 
 ## Next recommended action
-1. Owner: Edit > Project Settings > Player > Company Name = `OezalAstudio` (D-036). Note: this also moves the saved
-   mouse sensitivity (PlayerPrefs) to a new location, so it resets once.
-2. S2: runtime board factory + save ids, `SaveGameService` (JsonUtility, persistentDataPath, migrate + validate),
-   pause menu Save / New workshop (with confirmation), auto-save on quit, auto-continue on start.
-3. S3, then Phase 6.
+1. Owner: Player Settings → Company Name = `OezalAstudio`, then File → Save Project (writes ProjectSettings).
+2. Owner: stop Play, rebuild the scene, run MT-016.
+3. S3: tools/belt, assembly progress, waste, cut list, lamp. Then Phase 6.

@@ -310,6 +310,24 @@ Failure → diagnosis:
 - No orange squares → both parts of that corner must be installed; else the station lacks the marker material (rebuild).
 - Driving does nothing → the drill lacks `DrillDriverTool` / fastener asset (rebuild); Console error names it.
 
+### MT-016: Save and continue (S2: boards and player)
+Precondition: stop Play, rebuild the scene (MT-001). Press Play. Save file: `%USERPROFILE%\AppData\LocalLow\<Company Name>\WoodcraftSimulator\workshop.json`.
+| Step | Expected |
+|---|---|
+| Esc | Pause menu shows `Save`, a status line `New workshop (no save yet)`, `New workshop`, `Quit` |
+| Cut a board into two pieces, draw a few pencil lines, carry one piece somewhere else, walk to another spot | - |
+| Esc → Save | Status `Saved HH:MM`; the JSON file exists (readable text) |
+| Stop Play, press Play again | Status `Loaded save from ...`; you stand where you saved, looking the same way; the cut pieces with their lines are where you left them; the original uncut board is gone |
+| Quit via Esc → Quit (or stop Play) after changing something, then Play | The change is there (auto-save on quit) |
+| Save while carrying a board, stop, Play | The board is where it was in front of you and drops to the floor |
+| Esc → New workshop | Button asks `Really start over? Click again`; closing the menu cancels |
+| Click it again | The scene restarts as freshly built; status `New workshop (no save yet)` |
+| Corrupt the JSON file (e.g. delete half of it) while Play is stopped, then Play | Fresh workshop, status `Save could not be loaded (kept aside, see Console)`; Console warning lists the problems; the file was renamed to `workshop.invalid-<time>.json` |
+| EditMode tests | 162 tests, all green |
+
+Not yet saved (S3): tools / belt contents, frame on the assembly table (its boards come back as loose boards), sawdust
+total, cut list target, lamp.
+
 ## Game view setup (corrects the earlier tip)
 A fixed resolution such as *Full HD (1920x1080)* at `Scale 1x` **crops** the image when the Game view window is
 smaller than 1920×1080: the bottom (tool belt bar) and the lower right (tool in hand) are cut off.

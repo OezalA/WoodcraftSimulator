@@ -15,7 +15,7 @@ First-person, realistic woodworking and construction simulator built with Unity.
 2. Wait for the first import (it builds `Library/`, which can take a few minutes).
 3. Menu **WoodcraftSimulator > Build Test Workshop Scene** generates the greybox workshop at
    `Assets/_WoodcraftSimulator/Scenes/Workshop/Workshop.unity`.
-4. Press **Play**.
+4. Press **Play**. The game continues from the last save (auto-saved on quit); Esc → New workshop starts over.
 
 ## Controls (prototype)
 | Action | Input |
@@ -36,7 +36,7 @@ First-person, realistic woodworking and construction simulator built with Unity.
 | Take a piece out of the frame (before screwing) | E |
 | Drive a screw (drill-driver in hand, at an orange point) | Hold left mouse button |
 | Change the target dimension | E on the cut list (white sheet on the bench) |
-| Pause menu | Esc |
+| Pause menu (resume, save, sensitivity, new workshop, quit) | Esc |
 
 ## Documentation
 | Document | Contents |

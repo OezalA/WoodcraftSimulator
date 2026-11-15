@@ -345,4 +345,11 @@ for a versioned save system (§6.16) without tying it to a phase. Plan approved 
   the runtime writes them with `JsonUtility` while the domain stays free of UnityEngine), `SaveFormat.TryMigrate`
   (version 1 = current; newer/unknown refused; migration steps per version), `SaveFormat.Validate` (all problems
   listed: duplicate ids, unknown species, dimensions, marks, non-finite poses, belt and assembly references, waste),
-  `ToData` / `ToPiece` round trip. An invalid file is never applied; the game then starts fresh and keeps the file.
+  `ToData` / `ToPiece` round trip. An invalid file is never applied: it is renamed to `workshop.invalid-<time>.json`
+  (kept for inspection, not overwritten by the next auto-save) and the game starts fresh.
+- **S2 (2026-11-15):** `SaveGameService` (scene object `SaveSystem`) loads in `Start`, saves on `OnApplicationQuit`
+  (also when Play Mode stops) and from the pause menu; writes to a temp file and replaces the save (previous one kept
+  as `.bak`). Boards are captured with world pose, species id, exact dimensions and marks, and recreated by
+  `TimberBoardFactory` (same setup as the builder's boards); all builder boards are replaced. Every board has a
+  `PersistentId` (builder: its name; cut halves: a new GUID). Boards saved in the air settle (D-031). Player:
+  position, yaw, pitch (`PlayerController.Teleport`). "New workshop" (two clicks) deletes the save and reloads the scene.
