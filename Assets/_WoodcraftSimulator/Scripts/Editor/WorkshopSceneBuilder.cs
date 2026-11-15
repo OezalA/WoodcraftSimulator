@@ -259,8 +259,9 @@ namespace WoodcraftSimulator.Editor
             float centerY = FloorTop + 1.5f;
             const float centerX = 2.25f; // right of the light switch (x 1.4)
             int count = catalog.Boards.Count + catalog.FastenerBoxes.Count;
-            GameObject board = CreateBox("OrderBoard", parent, new Vector3(centerX, centerY, wallZ - 0.01f),
-                new Vector3(0.3f * count + 0.1f, 0.5f, 0.02f), materials.Workbench);
+            // Two rows: material on top, equipment upgrades below (D-044).
+            GameObject board = CreateBox("OrderBoard", parent, new Vector3(centerX, centerY - 0.17f, wallZ - 0.01f),
+                new Vector3(0.3f * count + 0.1f, 0.85f, 0.02f), materials.Workbench);
             Object.DestroyImmediate(board.GetComponent<BoxCollider>());
             var sheetSize = new Vector3(0.21f, 0.297f, 0.002f);
             for (int i = 0; i < count; i++)
@@ -275,6 +276,8 @@ namespace WoodcraftSimulator.Editor
                 serializedSheet.FindProperty("itemIndex").intValue = i;
                 serializedSheet.ApplyModifiedPropertiesWithoutUndo();
             }
+
+            BuildUpgrades(parent, materials, economy, centerX, centerY - 0.34f, wallZ);
 
             // The drill takes its screws from the stock.
             DrillDriverTool drill = Object.FindFirstObjectByType<DrillDriverTool>();
@@ -326,6 +329,72 @@ namespace WoodcraftSimulator.Editor
             SetReference(hook, "item", item);
             SetReference(hook, "hangPoint", hang);
             return hook;
+        }
+
+        /// <summary>
+        /// Equipment upgrades (Phase 8b, D-044), one sheet each in the order board's lower row: pull saw (faster
+        /// cuts), brushless drill (faster pilot holes and screws), LED lamp (brighter bench light).
+        /// </summary>
+        private static void BuildUpgrades(Transform parent, GreyboxMaterials materials, WorkshopEconomy economy,
+            float centerX, float rowY, float wallZ)
+        {
+            var upgrades = economy.gameObject.AddComponent<WorkshopUpgrades>();
+            var serialized = new SerializedObject(upgrades);
+            serialized.FindProperty("economy").objectReferenceValue = economy;
+            SerializedProperty list = serialized.FindProperty("upgrades");
+            list.arraySize = 3;
+            SetUpgrade(list.GetArrayElementAtIndex(0), WorkshopUpgrades.PullSaw, "Japanese pull saw", "Japon çekme testere",
+                "cuts 70 % faster", "%70 daha hızlı keser", 45f);
+            SetUpgrade(list.GetArrayElementAtIndex(1), WorkshopUpgrades.BrushlessDrill, "Brushless drill-driver",
+                "Fırçasız şarjlı matkap", "drills and drives 60 % faster", "%60 daha hızlı deler ve vidalar", 80f);
+            SetUpgrade(list.GetArrayElementAtIndex(2), WorkshopUpgrades.LedLamp, "LED workshop lamp", "LED atölye lambası",
+                "brighter bench light", "tezgahta daha parlak ışık", 30f);
+            Light lamp = GameObject.Find("Environment/Workshop/WorkbenchLamp")?.GetComponent<Light>();
+            SerializedProperty lamps = serialized.FindProperty("lamps");
+            lamps.arraySize = lamp != null ? 1 : 0;
+            if (lamp != null)
+            {
+                lamps.GetArrayElementAtIndex(0).objectReferenceValue = lamp;
+            }
+
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+
+            var sheetSize = new Vector3(0.21f, 0.297f, 0.002f);
+            for (int i = 0; i < 3; i++)
+            {
+                float x = centerX + (i - 1.5f) * 0.3f;
+                GameObject sheet = CreateBox($"UpgradeSheet_{i}", parent, new Vector3(x, rowY, wallZ - 0.021f),
+                    sheetSize, materials.Paper);
+                EnlargeGrabCollider(sheet, sheetSize);
+                var upgradeSheet = sheet.AddComponent<UpgradeSheet>();
+                SetReference(upgradeSheet, "upgrades", upgrades);
+                var serializedSheet = new SerializedObject(upgradeSheet);
+                serializedSheet.FindProperty("upgradeIndex").intValue = i;
+                serializedSheet.ApplyModifiedPropertiesWithoutUndo();
+            }
+
+            HandSawTool saw = Object.FindFirstObjectByType<HandSawTool>();
+            if (saw != null)
+            {
+                SetReference(saw, "upgrades", upgrades);
+            }
+
+            DrillDriverTool drill = Object.FindFirstObjectByType<DrillDriverTool>();
+            if (drill != null)
+            {
+                SetReference(drill, "upgrades", upgrades);
+            }
+        }
+
+        private static void SetUpgrade(SerializedProperty entry, string id, string name, string nameTurkish,
+            string effect, string effectTurkish, float price)
+        {
+            entry.FindPropertyRelative("id").stringValue = id;
+            entry.FindPropertyRelative("displayName").stringValue = name;
+            entry.FindPropertyRelative("displayNameTurkish").stringValue = nameTurkish;
+            entry.FindPropertyRelative("effect").stringValue = effect;
+            entry.FindPropertyRelative("effectTurkish").stringValue = effectTurkish;
+            entry.FindPropertyRelative("priceEuros").floatValue = price;
         }
         private static Object[] Fasteners() => new Object[] { BlueprintAssets.WoodScrew5x80(), BlueprintAssets.WoodScrew4x40() };
 
@@ -837,6 +906,7 @@ namespace WoodcraftSimulator.Editor
             }
 
             SetReference(service, "economy", Object.FindFirstObjectByType<WorkshopEconomy>());
+            SetReference(service, "upgrades", Object.FindFirstObjectByType<WorkshopUpgrades>());
 
             return service;
         }

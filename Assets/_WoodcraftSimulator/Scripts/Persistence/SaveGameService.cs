@@ -43,6 +43,9 @@ namespace WoodcraftSimulator.Persistence
         [Tooltip("Optional: money and fastener stock (D-040).")]
         [SerializeField] private Economy.WorkshopEconomy economy;
 
+        [Tooltip("Optional: equipment upgrades owned (D-044).")]
+        [SerializeField] private Economy.WorkshopUpgrades upgrades;
+
         private bool restarting;
 
         public string SavePath => Path.Combine(Application.persistentDataPath, FileName);
@@ -248,6 +251,11 @@ namespace WoodcraftSimulator.Persistence
                 data.economy = economy.Capture();
             }
 
+            if (upgrades != null)
+            {
+                data.upgrades = upgrades.Capture();
+            }
+
             return data;
         }
 
@@ -309,6 +317,11 @@ namespace WoodcraftSimulator.Persistence
             if (economy != null)
             {
                 economy.Restore(data.economy);
+            }
+
+            if (upgrades != null)
+            {
+                upgrades.Restore(data.upgrades);
             }
 
             // The job sets the station's blueprint and the cut list before the assembly is restored.

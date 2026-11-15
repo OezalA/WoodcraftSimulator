@@ -252,6 +252,15 @@ namespace WoodcraftSimulator.Persistence
             }
 
             ValidateEconomy(data.economy ?? new EconomyData(), errors);
+            var upgradeIds = new HashSet<string>();
+            foreach (string upgrade in data.upgrades ?? Array.Empty<string>())
+            {
+                if (string.IsNullOrWhiteSpace(upgrade) || !upgradeIds.Add(upgrade))
+                {
+                    errors.Add($"Upgrade id '{upgrade}' is empty or duplicated.");
+                }
+            }
+
 
             // "!(x >= 0)" also catches NaN.
             if (waste.cutCount < 0 || !(waste.volumeCubicMeters >= 0.0) || !(waste.massKg >= 0.0) ||

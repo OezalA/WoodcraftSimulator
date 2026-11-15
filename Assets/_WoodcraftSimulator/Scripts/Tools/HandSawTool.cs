@@ -22,6 +22,11 @@ namespace WoodcraftSimulator.Tools
     {
         [SerializeField] private SawDefinition definition;
 
+        [Tooltip("Optional: equipment upgrades (the pull saw cuts faster, D-044).")]
+        [SerializeField] private Economy.WorkshopUpgrades upgrades;
+
+        [SerializeField, Min(1f)] private float upgradedSpeedFactor = 1.7f;
+
         [Tooltip("Where the sawdust of every cut is recorded.")]
         [SerializeField] private WorkshopWaste waste;
 
@@ -155,7 +160,9 @@ namespace WoodcraftSimulator.Tools
 
             BoardDimensions dimensions = point.Board.Piece.Dimensions;
             double crossSectionCm2 = dimensions.Width.Centimeters * dimensions.Thickness.Centimeters;
-            progress += Time.deltaTime / definition.SawingSeconds(crossSectionCm2);
+            // The pull-saw upgrade (D-044) cuts faster.
+            float speed = upgrades != null && upgrades.Has(Economy.WorkshopUpgrades.PullSaw) ? upgradedSpeedFactor : 1f;
+            progress += Time.deltaTime * speed / definition.SawingSeconds(crossSectionCm2);
             strokeTime += Time.deltaTime;
             pickup.HandOffset = Vector3.forward * (Mathf.Sin(strokeTime * strokesPerSecond * 2f * Mathf.PI) * strokeLength);
 

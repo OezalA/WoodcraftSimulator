@@ -31,6 +31,14 @@ namespace WoodcraftSimulator.Tools
         [Tooltip("Optional: the workshop's fastener stock (screws are used up, D-040). Without it screws are unlimited.")]
         [SerializeField] private Economy.WorkshopEconomy economy;
 
+        [Tooltip("Optional: equipment upgrades (the brushless drill drills and drives faster, D-044).")]
+        [SerializeField] private Economy.WorkshopUpgrades upgrades;
+
+        [SerializeField, Min(1f)] private float upgradedSpeedFactor = 1.6f;
+
+        private float SpeedFactor =>
+            upgrades != null && upgrades.Has(Economy.WorkshopUpgrades.BrushlessDrill) ? upgradedSpeedFactor : 1f;
+
         [SerializeField, Min(0.1f)] private float range = 2f;
 
         [Tooltip("The tool snaps to a fastening point within this distance (m) of the aimed point.")]
@@ -234,7 +242,7 @@ namespace WoodcraftSimulator.Tools
 
         private void DrillPilot()
         {
-            pilotProgress += Time.deltaTime / pilotSeconds;
+            pilotProgress += Time.deltaTime * SpeedFactor / pilotSeconds;
             pickup.HandOffset = Vector3.forward * (pushLength * Mathf.Clamp01(pilotProgress));
             if (pilotProgress < 1f)
             {
@@ -275,7 +283,8 @@ namespace WoodcraftSimulator.Tools
             }
 
             Length startDepth = head.HasValue ? driveFastener.Length - head.Value : Length.Zero;
-            drive = new ScrewDrive(driveFastener, targetStation.Build.SeatingTorque(connectionId, driveFastener), startDepth);
+            drive = new ScrewDrive(driveFastener, targetStation.Build.SeatingTorque(connectionId, driveFastener), startDepth,
+                driveMillimetersPerSecond: 50.0 * SpeedFactor);
             resultLine = null;
             Drive();
         }

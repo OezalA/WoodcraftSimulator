@@ -28,6 +28,9 @@ namespace WoodcraftSimulator.Persistence
 
         /// <summary>Money and fastener stock (format 2). Not started = the starting funds are given on load.</summary>
         public EconomyData economy = new EconomyData();
+
+        /// <summary>Equipment upgrades owned (ids, D-044). Older saves have none.</summary>
+        public string[] upgrades = Array.Empty<string>();
     }
 
     [Serializable]
