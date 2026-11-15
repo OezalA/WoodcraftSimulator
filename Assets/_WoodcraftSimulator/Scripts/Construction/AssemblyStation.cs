@@ -506,6 +506,23 @@ namespace WoodcraftSimulator.Construction
                    Build.NeedsPilotHole(id, point, spec);
         }
 
+        /// <summary>
+        /// Name of the wood that sets the screwing torque at a joint: the denser of its two installed parts (the
+        /// same rule as <see cref="AssemblyBuild.SeatingTorque"/>). Null if no part is installed.
+        /// </summary>
+        public string TorqueWoodName(int connection)
+        {
+            BlueprintDefinition.Connection spec = active.Connections[connection];
+            TimberPiece a = Build.GetPiece(spec.partA);
+            TimberPiece b = Build.GetPiece(spec.partB);
+            if (a == null || b == null)
+            {
+                return a?.Species.DisplayName ?? b?.Species.DisplayName;
+            }
+
+            return (b.Species.DensityKgPerCubicMeter > a.Species.DensityKgPerCubicMeter ? b : a).Species.DisplayName;
+        }
+
         public PilotResult DrillPilot(int connection, int point)
         {
             PilotResult result = Build.TryDrillPilot(active.Connections[connection].id, point);

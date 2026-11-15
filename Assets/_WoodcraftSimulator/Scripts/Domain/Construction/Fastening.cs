@@ -99,6 +99,20 @@ namespace WoodcraftSimulator.Construction
 
         private const double BodyTorqueShare = 0.6;
 
+        /// <summary>
+        /// The clutch settings that stop this screw flush by itself (D-042): from 60 % of the seating torque up to the
+        /// last whole setting below it. False if no setting on the 1–20 scale does (then none is recommended).
+        /// </summary>
+        public static bool TryFlushClutchRange(double seatingTorque, out int lowest, out int highest)
+        {
+            if (seatingTorque <= 0.0) throw new ArgumentOutOfRangeException(nameof(seatingTorque), "Torque must be positive.");
+
+            // A setting slips at the head when it is at least the body share and below the seating torque.
+            lowest = Math.Max(MinClutch, (int)Math.Ceiling(BodyTorqueShare * seatingTorque - 1e-9));
+            highest = Math.Min(MaxClutch, (int)Math.Ceiling(seatingTorque - 1e-9) - 1);
+            return lowest <= highest;
+        }
+
         private readonly double seatingTorque;
         private readonly double driveMillimetersPerSecond;
         private readonly double sinkMillimetersPerSecond;

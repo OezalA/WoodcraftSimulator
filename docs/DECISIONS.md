@@ -480,3 +480,13 @@ instructions should be Turkish. Owner chose: in-game texts (not the docs) Turkis
   drawn red instead of orange; aiming at it with the driver bit adds the line "Red point: ... drill a pilot hole
   first ([Q] drill bit), or the board splits". The rule is shown before it can be broken; it stays a choice (no
   block), in line with the owner's playability rule.
+
+## D-042: The drill shows the recommended clutch for the wood and screw (Accepted, 2026-11-15)
+Owner, after MT-021: "tahta türüne göre tork ayarı ... vidalarken yazsın, böylece fazla tork ile sıkmamış olurum".
+- `ScrewDrive.TryFlushClutchRange(seatingTorque)`: the settings that stop the screw flush by themselves, from 60 %
+  of the seating torque up to the last whole setting below it (spruce 4 × 40: 5-7; spruce 5 × 80: 9-14). A test
+  drives every setting 1-20 and checks the advice matches the real result.
+- With the driver bit on an orange point the drill adds: "Önerilen tork 5-7 (Ladin, Ahşap vidası 4 × 40 mm): şu an
+  12, fazla, baş gömülür" (az / uygun / fazla). The wood is the denser part of the joint (same rule as the torque).
+  On a red point the pilot-hole warning is shown instead (drill first, then the advice appears).
+- Information, not a hurdle: the clutch is still the player's setting.

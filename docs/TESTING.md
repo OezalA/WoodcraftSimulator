@@ -398,6 +398,16 @@ Esc → New workshop.
 | Esc → `Language: English` | The workshop is saved and reloaded in English (job, boards and screws unchanged); the button now reads `Dil: Türkçe` |
 | `Dil: Türkçe` | Back to Turkish |
 
+### MT-022: Recommended clutch (D-042)
+Precondition: let Unity compile (no scene rebuild needed). Shelf job accepted, a side and a shelf installed.
+| Step | Expected |
+|---|---|
+| Driver bit on an orange point | Extra line `Önerilen tork 5-7 (Ladin, Ahşap vidası 4 × 40 mm): şu an 12, fazla, baş gömülür` |
+| Wheel down to 6 | The line changes to `şu an 6, uygun`; holding LMB stops the screw flush |
+| Wheel down to 3 | `şu an 3, az, vida yarıda kalır` |
+| Red point | Only the pilot-hole warning; after drilling, the clutch advice appears |
+| Practice frame (5 × 80 mm) | Recommended `9-14` |
+
 ## Game view setup (corrects the earlier tip)
 A fixed resolution such as *Full HD (1920x1080)* at `Scale 1x` **crops** the image when the Game view window is
 smaller than 1920×1080: the bottom (tool belt bar) and the lower right (tool in hand) are cut off.

@@ -62,6 +62,35 @@ namespace WoodcraftSimulator.Tests.Construction
             return drive;
         }
 
+        [TestCase(8.0, 5, 7)]         // spruce, 4 × 40 mm
+        [TestCase(10.0, 6, 9)]        // exact 60 % still stops flush; 10 itself sinks
+        [TestCase(14.142, 9, 14)]     // spruce, 5 × 80 mm
+        public void FlushClutchRange_MatchesTheDrive(double torque, int lowest, int highest)
+        {
+            Assert.That(ScrewDrive.TryFlushClutchRange(torque, out int low, out int high), Is.True);
+            Assert.That(low, Is.EqualTo(lowest));
+            Assert.That(high, Is.EqualTo(highest));
+
+            // The advice must agree with what the drive really does when the trigger is held long.
+            for (int clutch = ScrewDrive.MinClutch; clutch <= ScrewDrive.MaxClutch; clutch++)
+            {
+                var drive = new ScrewDrive(Screw4x40, torque);
+                for (int i = 0; i < 300; i++)
+                {
+                    drive.Advance(0.02, clutch);
+                }
+
+                ScrewSeat expected = clutch < low ? ScrewSeat.Proud : clutch <= high ? ScrewSeat.Flush : ScrewSeat.Overdriven;
+                Assert.That(drive.Seat, Is.EqualTo(expected), $"clutch {clutch}");
+            }
+        }
+
+        [Test]
+        public void FlushClutchRange_TooStiffForTheScale_IsNone()
+        {
+            Assert.That(ScrewDrive.TryFlushClutchRange(60.0, out _, out _), Is.False);
+        }
+
         [Test]
         public void RightClutch_StopsFlush_EvenWhenHeldLong()
         {

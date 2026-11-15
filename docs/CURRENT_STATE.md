@@ -7,12 +7,12 @@ _Last updated: 2026-11-15_
 `main` fast-forwarded to `develop`.
 **Save & load done** (D-036): S1–S3 accepted by the owner on 2026-11-15 ("save başarılı") after MT-016/MT-017;
 `main` fast-forwarded to `develop`.
-**Phase 6 (first complete job): MT-020 played through by the owner** (plan approved 2026-11-15: small shelf, frame
+**Phase 6 (first complete job) done**: accepted by the owner on 2026-11-15 ("her şey iyi çalışıyor") after MT-020 and MT-021; `main` fast-forwarded to `develop` (86821c5). (Plan approved 2026-11-15: small shelf, frame
 stays as practice job, realistic drill M1/M2, D-038, D-039). Stroke sawing (T1/T2) was reverted by the owner after the
-first try: the saw works as before (D-030). Acceptance pending: MT-020 delivery step, MT-019, MT-021.
+first try: the saw works as before (D-030). In-game texts Turkish (D-041), red pilot-hole points accepted too.
 **Phase 7 (material economy) started** (plan K1-K7 approved 2026-11-15, D-040): 7a domain rules done (money, ledger,
 catalog, consumable screws, priced bill of materials, job settlement, inventory summary, save format 2). 7b (scene)
-next. In-game texts are Turkish now, with red pilot-hole points (D-041, after MT-020).
+next. D-042 (recommended clutch on the drill, owner request) implemented, awaiting MT-022.
 Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 
 ## Completed
@@ -74,6 +74,8 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 | 7a economy domain: static compile + `dotnet test` | 0 errors, 0 warnings; 225/225 tests passed (Claude). Domain only, nothing to play-test | 2026-11-15 |
 | MT-020 shelf job (owner) | Completed end to end without help: 5/5 parts within ±1 mm, 12 screws (10 flush, 2 too deep), **8 splits** (pilot-hole rule not noticed), 1 extra board; save, quit and reload kept everything. Delivery step not reported yet | 2026-11-15 |
 | D-041 Turkish texts + red pilot points: static compile + `dotnet test` | 0 errors, 0 warnings; 229/229 tests passed (Claude). Unity compile + play-test pending (MT-021) | 2026-11-15 |
+| Phase 6 + D-041 (owner) | Accepted: "her şey iyi çalışıyor devam edebiliriz"; `main` fast-forwarded to 86821c5 | 2026-11-15 |
+| D-042 recommended clutch: static compile + `dotnet test` | 0 errors, 0 warnings; 233/233 tests passed (Claude). Unity compile + play-test pending (MT-022) | 2026-11-15 |
 
 ## Known issues / limitations
 - **Carry feel not liked yet** (owner, 2026-11-13). Ideas for later: smooth follow (lerp/slerp) instead of rigid
@@ -102,5 +104,5 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 ## Next recommended action
 1. Done: Company Name `OezalAstudio` (owner, 2026-11-15).
 2. Done: MT-016, MT-017 passed.
-3. Owner: rebuild the scene, run MT-021 (Turkish texts, red pilot points); confirm the MT-020 delivery step and MT-019. Then Phase 6 is accepted and `main` is fast-forwarded.
+3. Done: Phase 6 + D-041 accepted, `main` fast-forwarded. Owner: MT-022 (recommended clutch) when convenient.
 4. Claude: Phase 7b (scene side of the economy, D-040), then MT-022+.

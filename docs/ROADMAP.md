@@ -83,17 +83,17 @@ Owner request 2026-11-15; plan approved ("tamam"). Company name for the save pat
   auto-continue on start (MT-016 passed, 2026-11-15)
 - [x] S3: Tools and belt, assembly progress, waste, cut list, light switch (MT-017 passed, 2026-11-15; 174 tests)
 
-## Phase 6: First Complete Crafting Job (plan approved 2026-11-15: shelf, T1/T2/M1/M2, frame stays as first job)
+## Phase 6: First Complete Crafting Job (plan approved 2026-11-15: shelf, T1/T2/M1/M2, frame stays as first job) - DONE, accepted 2026-11-15
 Goal (master prompt): one woodworking project from start to finish without developer intervention.
-- [ ] 6a: Domain job model: `Job`, `MaterialPlan` (cut list grouped by size, stock boards incl. kerf, offcuts,
+- [x] 6a: Domain job model: `Job`, `MaterialPlan` (cut list grouped by size, stock boards incl. kerf, offcuts,
   fasteners), `CutListProgress`, `JobResult` with separate quality goals, `JobText`; sawing and fastening rules
   (`FasteningRules`, `ScrewDrive`, pilot holes / head heights / splits in
   `AssemblyBuild`); 209 tests (D-038, D-039). Code done (stroke sawing was built and reverted, D-038)
-- [ ] 6b: Shelf blueprint 500 × 600 × 145 (18 mm spruce, 12 × 4 × 40 mm screws), job board with two jobs (practice
+- [x] 6b: Shelf blueprint 500 × 600 × 145 (18 mm spruce, 12 × 4 × 40 mm screws), job board with two jobs (practice
   frame, small shelf), stock delivered in front of the rack, cut list note follows the job, job sheet in the HUD;
   drill bit / pilot holes, clutch and screw depth (M1, M2). Code done,
   awaiting MT-019, MT-020
-- [ ] 6c: Job result in the HUD (parts, screw heads, splits, material delivered / in the structure / sawdust /
+- [x] 6c: Job result in the HUD (parts, screw heads, splits, material delivered / in the structure / sawdust /
   offcuts, time, quality goals), deliver to finish, order extra stock, job state saved. Code done, awaiting MT-020
 
 ## Phase 7: Inventory and Material Economy (plan approved 2026-11-15: K1-K7, D-040)
@@ -103,7 +103,8 @@ calculated correctly.
   prorated values, purchase), `FastenerStock` (consumable screws), `ShoppingList` (priced bill of materials),
   `JobSettlement` (70 % pay + goal bonus, timber and screws used, profit), `WorkshopInventory` (loose timber by
   species / section, cut pieces, value), save format 2 with migration; 225 tests. Domain only, nothing to play-test
-- [x] D-041 (inserted): in-game texts Turkish by default (English in the pause menu), red pilot-hole points; 229 tests, awaiting MT-021
+- [x] D-041 (inserted): in-game texts Turkish by default (English in the pause menu), red pilot-hole points; accepted (MT-021)
+- [x] D-042 (inserted): drill shows the recommended clutch for the wood and screw; 233 tests, awaiting MT-022
 - [ ] 7b: Scene: catalog assets and order board at the delivery area, starting funds €100 + one box of screws, job
   sheet buys the material instead of free delivery, drill uses screws from the stock, money in the HUD, inventory
   screen (Tab), result with pay / cost / profit, economy saved. Then MT-022+

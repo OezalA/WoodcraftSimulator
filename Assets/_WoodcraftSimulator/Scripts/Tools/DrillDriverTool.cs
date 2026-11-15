@@ -187,6 +187,14 @@ namespace WoodcraftSimulator.Tools
                     action += "\n" + Loc.T($"Red point: near the board end, drill a pilot hole first ([{modeKeyLabel}] drill bit), or the board splits",
                         $"Kırmızı nokta: tahta ucuna yakın, önce pilot delik aç ([{modeKeyLabel}] matkap ucu), yoksa tahta çatlar");
                 }
+                else if (bit == Bit.Driver)
+                {
+                    string advice = ClutchAdvice(station, connection);
+                    if (advice != null)
+                    {
+                        action += "\n" + advice;
+                    }
+                }
 
                 SetLines($"{ToolLine()}\n{action}", resultLine);
                 return;
@@ -360,6 +368,32 @@ namespace WoodcraftSimulator.Tools
             FastenerSpec spec = FastenerFor(station.FastenerIdAt(connection));
             string screw = spec != null ? spec.DisplayName : Loc.T("a screw", "vida");
             return Loc.T($"Hold {useKeyLabel} to drive {screw}", $"{screw} vidalamak için {useKeyLabel} basılı tut");
+        }
+
+        /// <summary>
+        /// The clutch range that stops this joint's screw flush in this wood (D-042), and whether the current setting
+        /// is in it, e.g. "Recommended clutch 5-7 (Spruce, Wood screw 4 × 40 mm): now 12, too high, the head sinks".
+        /// </summary>
+        private string ClutchAdvice(AssemblyStation station, int connection)
+        {
+            FastenerSpec spec = FastenerFor(station.FastenerIdAt(connection));
+            if (spec == null ||
+                !ScrewDrive.TryFlushClutchRange(station.Build.SeatingTorque(station.ConnectionId(connection), spec),
+                    out int lowest, out int highest))
+            {
+                return null;
+            }
+
+            string wood = station.TorqueWoodName(connection) ?? "?";
+            string range = $"{lowest}-{highest}";
+            string now = clutch == ScrewDrive.DrillMode ? Loc.T("drill mode", "delme modu") : clutch.ToString(CultureInfo.InvariantCulture);
+            string verdict = clutch < lowest
+                ? Loc.T("too low, the screw stops part-way", "az, vida yarıda kalır")
+                : clutch <= highest
+                    ? Loc.T("right", "uygun")
+                    : Loc.T("too high, the head sinks", "fazla, baş gömülür");
+            return Loc.T($"Recommended clutch {range} ({wood}, {spec.DisplayName}): now {now}, {verdict}",
+                $"Önerilen tork {range} ({wood}, {spec.DisplayName}): şu an {now}, {verdict}");
         }
 
         private string AimHint(AssemblyStation station, PointQuery query)
