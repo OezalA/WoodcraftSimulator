@@ -111,6 +111,8 @@ namespace WoodcraftSimulator.Persistence
                     RequireFinite(board.pose, label, errors);
                 }
 
+                Require(Enum.IsDefined(typeof(BoardSurface), board.surface), $"{label}: surface {board.surface} is unknown.", errors);
+
                 foreach (MarkData mark in board.marks ?? Array.Empty<MarkData>())
                 {
                     if (mark == null || mark.positionFromStartTenths < 0 || mark.positionFromStartTenths > board.lengthTenths ||

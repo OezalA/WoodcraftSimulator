@@ -102,6 +102,9 @@ namespace WoodcraftSimulator.Persistence
         public long thicknessTenths;
         public PoseData pose = new PoseData();
         public MarkData[] marks = Array.Empty<MarkData>();
+
+        /// <summary><c>BoardSurface</c> as int (0 = raw, 1 = sanded, 2 = oiled), D-045.</summary>
+        public int surface;
     }
 
     /// <summary>A small item (tool) lying in the world. Items on the belt are listed in <see cref="BeltData"/>.</summary>

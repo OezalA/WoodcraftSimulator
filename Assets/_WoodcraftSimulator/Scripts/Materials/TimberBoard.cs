@@ -36,6 +36,9 @@ namespace WoodcraftSimulator.Materials
         [Tooltip("Material of pencil lines drawn on this board.")]
         [SerializeField] private Material markMaterial;
 
+        [Tooltip("Sanded / oiled (D-045). Serialized so that the pieces of a cut keep it.")]
+        [SerializeField] private BoardSurface surface = BoardSurface.Raw;
+
         private static Mesh unitCube; // shared by all mark visuals, scaled per mark
 
         private Mesh generatedMesh;
@@ -49,6 +52,19 @@ namespace WoodcraftSimulator.Materials
         public BoardMarks Marks { get; private set; }
 
         public WoodSpeciesDefinition SpeciesDefinition => species;
+
+        public BoardSurface Surface => surface;
+
+        /// <summary>Raised after any board was sanded or oiled (e.g. the job result counts finished parts).</summary>
+        public static event System.Action AnySurfaceChanged;
+
+        /// <summary>Sets the surface treatment and shows it (sanded: lighter, oiled: darker and warmer).</summary>
+        public void SetSurface(BoardSurface value)
+        {
+            surface = value;
+            ApplyColor();
+            AnySurfaceChanged?.Invoke();
+        }
 
         /// <summary>e.g. "Spruce 2400 × 95 × 45 mm (4.6 kg)". Invariant culture: always "4.6", never "4,6".</summary>
         public string Description => Piece == null
@@ -103,6 +119,31 @@ namespace WoodcraftSimulator.Materials
             Apply(piece, marks);
         }
 
+        private void ApplyColor()
+        {
+            if (species == null)
+            {
+                return;
+            }
+
+            Color color = species.GreyboxColor;
+            if (surface == BoardSurface.Sanded)
+            {
+                color = Color.Lerp(color, Color.white, 0.15f);
+            }
+            else if (surface == BoardSurface.Oiled)
+            {
+                color = new Color(color.r * 0.8f, color.g * 0.66f, color.b * 0.5f, color.a);
+            }
+
+            // Per-object color without creating a material instance per board.
+            propertyBlock ??= new MaterialPropertyBlock();
+            var meshRenderer = GetComponent<MeshRenderer>();
+            meshRenderer.GetPropertyBlock(propertyBlock);
+            propertyBlock.SetColor(BaseColorId, color);
+            meshRenderer.SetPropertyBlock(propertyBlock);
+        }
+
         /// <summary>Adds a pencil line across the board: stored in <see cref="Marks"/> and drawn on its face.</summary>
         public void AddMark(PencilMark mark)
         {
@@ -132,12 +173,7 @@ namespace WoodcraftSimulator.Materials
 
             GetComponent<Rigidbody>().mass = (float)Piece.MassKg;
 
-            // Per-object color without creating a material instance per board.
-            propertyBlock ??= new MaterialPropertyBlock();
-            var meshRenderer = GetComponent<MeshRenderer>();
-            meshRenderer.GetPropertyBlock(propertyBlock);
-            propertyBlock.SetColor(BaseColorId, species.GreyboxColor);
-            meshRenderer.SetPropertyBlock(propertyBlock);
+            ApplyColor();
 
             RebuildMarkVisuals();
         }

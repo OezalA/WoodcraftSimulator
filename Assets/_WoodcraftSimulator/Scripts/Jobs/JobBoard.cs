@@ -97,6 +97,8 @@ namespace WoodcraftSimulator.Jobs
                 station.Changed += OnStationChanged;
                 station.Completed += OnStationCompleted;
             }
+
+            TimberBoard.AnySurfaceChanged += OnStationChanged;
         }
 
         private void OnDisable()
@@ -106,6 +108,8 @@ namespace WoodcraftSimulator.Jobs
                 station.Changed -= OnStationChanged;
                 station.Completed -= OnStationCompleted;
             }
+
+            TimberBoard.AnySurfaceChanged -= OnStationChanged;
         }
 
         private void Update()
@@ -154,11 +158,28 @@ namespace WoodcraftSimulator.Jobs
                     double delivered = boardsDelivered * ActiveJob.Stock.Dimensions.VolumeCubicMeters;
                     double sawdust = waste != null ? Math.Max(0.0, waste.Log.TotalVolumeCubicMeters - sawdustAtStart) : 0.0;
                     cachedResult = JobResult.Create(ActiveJob, report,
-                        new MaterialUsage(boardsDelivered, boardsOrderedExtra, delivered, installed, sawdust), ElapsedSeconds);
+                        new MaterialUsage(boardsDelivered, boardsOrderedExtra, delivered, installed, sawdust), ElapsedSeconds,
+                        FinishedParts());
                 }
 
                 return cachedResult;
             }
+        }
+
+        /// <summary>Installed parts that are sanded and oiled (D-045).</summary>
+        private int FinishedParts()
+        {
+            int finished = 0;
+            for (int i = 0; i < station.Build.Blueprint.Slots.Count; i++)
+            {
+                Handling.Carryable part = station.InstalledAt(i);
+                if (part != null && part.TryGetComponent(out TimberBoard board) && board.Surface == BoardSurface.Oiled)
+                {
+                    finished++;
+                }
+            }
+
+            return finished;
         }
 
         /// <summary>Pay, material cost and profit of the completed job; null before.</summary>

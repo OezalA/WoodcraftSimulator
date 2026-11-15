@@ -34,6 +34,9 @@ namespace WoodcraftSimulator.Jobs
         [Tooltip("Full pay in euros when every quality goal is met (D-040: 70 % for delivering, 30 % for the goals).")]
         [SerializeField, Min(0f)] private float payEuros;
 
+        [Tooltip("The customer wants every part sanded and oiled (extra quality goal, D-045).")]
+        [SerializeField] private bool requiresFinish;
+
         [Header("Turkish (D-041)")]
         [SerializeField] private string displayNameTurkish = string.Empty;
         [SerializeField, TextArea] private string descriptionTurkish = string.Empty;
@@ -54,7 +57,7 @@ namespace WoodcraftSimulator.Jobs
 
         public Job ToDomain() => new Job(id, DisplayName, Loc.Pick(description, descriptionTurkish), blueprint.ToDomain(),
             new StockSpec(stockSpecies.Id, stockSpecies.DisplayName, StockDimensions), spareBoards, Tips(),
-            Economy.Money.FromEuros((decimal)Math.Round(payEuros, 2)));
+            Economy.Money.FromEuros((decimal)Math.Round(payEuros, 2)), requiresFinish);
 
         private IEnumerable<string> Tips()
         {

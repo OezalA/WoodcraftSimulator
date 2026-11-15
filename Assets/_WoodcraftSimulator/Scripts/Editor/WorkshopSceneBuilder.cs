@@ -329,6 +329,18 @@ namespace WoodcraftSimulator.Editor
                 materials.ToolYellow, new Vector3(0.18f, -0.18f, 0.38f), new Vector3(-60f, 0f, 0f));
             var glueTool = glue.AddComponent<HandFastenTool>();
             SetFastenKind(glueTool, FastenerKind.Dowel, 0.8f, economy);
+
+            var sandingSize = new Vector3(0.07f, 0.03f, 0.12f);
+            ToolHook sandingPlace = AddToolPlace(parent, materials, ItemAssets.SandingBlock(), 0.5f, sandingSize, wallZ, centerY);
+            GameObject sanding = CreateHangingItem("SandingBlock", parent, ItemAssets.SandingBlock(), sandingSize,
+                sandingPlace, materials.Paper, new Vector3(0.18f, -0.2f, 0.4f), new Vector3(0f, 0f, 0f));
+            SetSurfaceResult(sanding.AddComponent<SurfaceTool>(), BoardSurface.Sanded);
+
+            var brushSize = new Vector3(0.04f, 0.015f, 0.22f);
+            ToolHook brushPlace = AddToolPlace(parent, materials, ItemAssets.OilBrush(), 0.68f, brushSize, wallZ, centerY);
+            GameObject brush = CreateHangingItem("OilBrush", parent, ItemAssets.OilBrush(), brushSize, brushPlace,
+                materials.Workbench, new Vector3(0.18f, -0.2f, 0.4f), new Vector3(20f, 0f, 0f));
+            SetSurfaceResult(brush.AddComponent<SurfaceTool>(), BoardSurface.Oiled);
         }
 
         /// <summary>A pickup item that starts hanging on its tool-wall place.</summary>
@@ -344,6 +356,13 @@ namespace WoodcraftSimulator.Editor
             }
 
             return item;
+        }
+
+        private static void SetSurfaceResult(SurfaceTool tool, BoardSurface result)
+        {
+            var serialized = new SerializedObject(tool);
+            serialized.FindProperty("result").enumValueIndex = (int)result;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
         }
 
         private static void SetFastenKind(HandFastenTool tool, FastenerKind kind, float seconds, WorkshopEconomy economy)

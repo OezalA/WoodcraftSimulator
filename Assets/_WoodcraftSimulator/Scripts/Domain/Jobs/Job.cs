@@ -16,8 +16,9 @@ namespace WoodcraftSimulator.Jobs
     public sealed class Job
     {
         public Job(string id, string displayName, string description, Blueprint blueprint, StockSpec stock,
-            int spareBoards = 0, IEnumerable<string> tips = null, Money pay = default)
+            int spareBoards = 0, IEnumerable<string> tips = null, Money pay = default, bool requiresFinish = false)
         {
+            RequiresFinish = requiresFinish;
             if (pay.IsNegative)
             {
                 throw new ArgumentOutOfRangeException(nameof(pay), "Pay must not be negative.");
@@ -45,6 +46,9 @@ namespace WoodcraftSimulator.Jobs
 
         /// <summary>Full pay when every quality goal is met (see <see cref="JobSettlement"/>).</summary>
         public Money Pay { get; }
+
+        /// <summary>The customer wants every part sanded and oiled (an extra quality goal, D-045).</summary>
+        public bool RequiresFinish { get; }
 
         public string Id { get; }
 
@@ -224,7 +228,9 @@ namespace WoodcraftSimulator.Jobs
             }
         }
 
-        public static JobResult Create(Job job, AssemblyQualityReport report, MaterialUsage material, double seconds)
+        /// <param name="finishedParts">Installed parts that are sanded and oiled (only counted if the job asks for it).</param>
+        public static JobResult Create(Job job, AssemblyQualityReport report, MaterialUsage material, double seconds,
+            int finishedParts = 0)
         {
             if (job == null) throw new ArgumentNullException(nameof(job));
             if (report == null) throw new ArgumentNullException(nameof(report));
@@ -248,6 +254,13 @@ namespace WoodcraftSimulator.Jobs
                         ? Loc.T("none", "yok")
                         : Loc.T($"{material.BoardsOrderedExtra} extra board(s)", $"{material.BoardsOrderedExtra} ek tahta"))
             };
+
+            if (job.RequiresFinish)
+            {
+                goals.Add(new QualityGoal(Loc.T("Every part sanded and oiled", "Her parça zımparalı ve yağlı"),
+                    finishedParts >= report.PartsRequired,
+                    Loc.T($"{finishedParts}/{report.PartsRequired} parts", $"{finishedParts}/{report.PartsRequired} parça")));
+            }
 
             return new JobResult(job, report, material, seconds, goals.AsReadOnly());
         }

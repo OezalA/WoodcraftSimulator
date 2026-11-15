@@ -273,6 +273,25 @@ namespace WoodcraftSimulator.Tests.Jobs
         }
 
         [Test]
+        public void FinishedJob_HasAFifthGoal_ThatSharesTheBonus()
+        {
+            var job = new Job("box", "Box", "", Shelf(), new StockSpec("spruce", "Spruce", Size(2000)),
+                pay: Money.FromEuros(100m), requiresFinish: true);
+            AssemblyQualityReport report = CompletedShelf(careful: true).CreateReport();
+
+            JobResult partly = JobResult.Create(job, report, ShelfUsage(2, 0), 600, finishedParts: 3);
+            Assert.That(partly.Goals.Count, Is.EqualTo(5));
+            Assert.That(partly.Goals[4].Met, Is.False);
+            Assert.That(partly.Goals[4].Detail, Is.EqualTo("3/5 parts"));
+
+            // 4 of 5 goals: €70 + €30 × 4/5.
+            Assert.That(JobSettlement.Calculate(partly, Catalog()).Earned, Is.EqualTo(Money.FromEuros(94m)));
+
+            JobResult done = JobResult.Create(job, report, ShelfUsage(2, 0), 600, finishedParts: 5);
+            Assert.That(done.GoalsMet, Is.EqualTo(5));
+        }
+
+        [Test]
         public void Settlement_MissedGoals_LowerThePay()
         {
             Job job = PaidShelfJob();

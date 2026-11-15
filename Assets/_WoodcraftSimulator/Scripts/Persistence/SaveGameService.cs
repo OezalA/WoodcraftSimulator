@@ -200,6 +200,7 @@ namespace WoodcraftSimulator.Persistence
 
                 BoardData boardData = SaveFormat.ToData(id.Id, board.Piece, board.Marks);
                 boardData.pose = ToPose(board.transform);
+                boardData.surface = (int)board.Surface;
                 boards.Add(boardData);
             }
 
@@ -305,6 +306,7 @@ namespace WoodcraftSimulator.Persistence
                 TimberPiece piece = SaveFormat.ToPiece(boardData, definition.ToDomain(), out BoardMarks marks);
                 TimberBoard board = boardFactory.Create(boardData.id, definition, piece, marks,
                     ToPosition(boardData.pose), ToRotation(boardData.pose));
+                board.SetSurface((BoardSurface)boardData.surface);
 
                 // A board saved while carried was in the air: let it fall (supported ones don't move, D-031).
                 // Installed boards are exempt: the station below takes them over.
