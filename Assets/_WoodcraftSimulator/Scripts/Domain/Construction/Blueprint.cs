@@ -67,7 +67,12 @@ namespace WoodcraftSimulator.Construction
     /// <summary>A joint between two slots, made with a number of fasteners of one type (one per fastening point).</summary>
     public sealed class ConnectionSpec
     {
-        public ConnectionSpec(string id, string partA, string partB, string fastenerId, int fastenerCount)
+        /// <param name="endDistances">
+        /// Optional, one per fastening point: distance from the point to the nearest end of <paramref name="partA"/>
+        /// (the board the fastener goes through). Used for the pilot-hole rule; null = far from any end.
+        /// </param>
+        public ConnectionSpec(string id, string partA, string partB, string fastenerId, int fastenerCount,
+            IEnumerable<Length> endDistances = null)
         {
             if (string.IsNullOrWhiteSpace(id))
             {
@@ -84,7 +89,24 @@ namespace WoodcraftSimulator.Construction
             PartB = partB ?? throw new ArgumentNullException(nameof(partB));
             FastenerId = fastenerId ?? throw new ArgumentNullException(nameof(fastenerId));
             FastenerCount = fastenerCount;
+
+            if (endDistances != null)
+            {
+                var distances = new List<Length>(endDistances);
+                if (distances.Count != fastenerCount)
+                {
+                    throw new ArgumentException("One end distance per fastening point is needed.", nameof(endDistances));
+                }
+
+                EndDistances = distances.AsReadOnly();
+            }
         }
+
+        /// <summary>Per fastening point: distance to the nearest end of <see cref="PartA"/>; null if not given.</summary>
+        public IReadOnlyList<Length> EndDistances { get; }
+
+        public Length? EndDistance(int point) =>
+            EndDistances != null && point >= 0 && point < EndDistances.Count ? EndDistances[point] : (Length?)null;
 
         public string Id { get; }
 

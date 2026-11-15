@@ -200,7 +200,11 @@ namespace WoodcraftSimulator.Persistence
                     }
 
                     int[] points = connection.points ?? Array.Empty<int>();
-                    if (Array.Exists(points, point => point < 0) || new HashSet<int>(points).Count != points.Length)
+                    int[] pilots = connection.pilotHoles ?? Array.Empty<int>();
+                    long[] heights = connection.headHeightsTenths ?? Array.Empty<long>();
+                    if (Array.Exists(points, point => point < 0) || new HashSet<int>(points).Count != points.Length ||
+                        Array.Exists(pilots, point => point < 0) || new HashSet<int>(pilots).Count != pilots.Length ||
+                        heights.Length != 0 && heights.Length != points.Length)
                     {
                         errors.Add($"{label}: connection '{connection.connectionId}' has invalid fastening points.");
                     }
@@ -230,6 +234,15 @@ namespace WoodcraftSimulator.Persistence
             }
 
             WasteData waste = data.waste ?? new WasteData();
+            JobData job = data.job ?? new JobData();
+            if (!(job.elapsedSeconds >= 0.0) || double.IsInfinity(job.elapsedSeconds) || job.boardsDelivered < 0 ||
+                job.boardsOrderedExtra < 0 || job.boardsOrderedExtra > job.boardsDelivered ||
+                !(job.sawdustAtStartCubicMeters >= 0.0) || double.IsInfinity(job.sawdustAtStartCubicMeters) ||
+                Array.Exists(job.completedJobIds ?? Array.Empty<string>(), string.IsNullOrWhiteSpace))
+            {
+                errors.Add("Job data is invalid.");
+            }
+
             // "!(x >= 0)" also catches NaN.
             if (waste.cutCount < 0 || !(waste.volumeCubicMeters >= 0.0) || !(waste.massKg >= 0.0) ||
                 double.IsInfinity(waste.volumeCubicMeters) || double.IsInfinity(waste.massKg))

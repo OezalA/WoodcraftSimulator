@@ -1,0 +1,241 @@
+using System;
+using System.Collections.Generic;
+using WoodcraftSimulator.Construction;
+using WoodcraftSimulator.Materials;
+using WoodcraftSimulator.Measurement;
+
+namespace WoodcraftSimulator.Jobs
+{
+    /// <summary>
+    /// A woodworking assignment (master prompt §6.14): what to build, from which stock, how many spare boards come
+    /// with the delivery, and tips. Objectives: cut the parts, assemble, fasten; quality goals are reported separately
+    /// (<see cref="JobResult"/>). Rewards and money come with the economy (Phase 7).
+    /// </summary>
+    public sealed class Job
+    {
+        public Job(string id, string displayName, string description, Blueprint blueprint, StockSpec stock,
+            int spareBoards = 0, IEnumerable<string> tips = null)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                throw new ArgumentException("Job id must not be empty.", nameof(id));
+            }
+
+            if (spareBoards < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(spareBoards), spareBoards, "Spare boards must not be negative.");
+            }
+
+            Id = id;
+            DisplayName = string.IsNullOrWhiteSpace(displayName) ? id : displayName;
+            Description = description ?? string.Empty;
+            Blueprint = blueprint ?? throw new ArgumentNullException(nameof(blueprint));
+            Stock = stock ?? throw new ArgumentNullException(nameof(stock));
+            SpareBoards = spareBoards;
+            Tips = new List<string>(tips ?? Array.Empty<string>()).AsReadOnly();
+        }
+
+        public string Id { get; }
+
+        public string DisplayName { get; }
+
+        public string Description { get; }
+
+        public Blueprint Blueprint { get; }
+
+        public StockSpec Stock { get; }
+
+        public int SpareBoards { get; }
+
+        public IReadOnlyList<string> Tips { get; }
+
+        public MaterialPlan Plan(Length kerf) => MaterialPlan.Calculate(Blueprint, Stock, kerf);
+
+        /// <summary>Boards delivered when the job is accepted: what the plan needs plus the spares.</summary>
+        public int BoardsToDeliver(Length kerf) => Plan(kerf).BoardsNeeded + SpareBoards;
+    }
+
+    /// <summary>Progress of one cut list line: parts installed, and fitting pieces lying ready.</summary>
+    public readonly struct CutListLineProgress
+    {
+        public CutListLineProgress(CutListLine line, int installed, int ready)
+        {
+            Line = line;
+            Installed = installed;
+            Ready = ready;
+        }
+
+        public CutListLine Line { get; }
+
+        public int Installed { get; }
+
+        /// <summary>Cut pieces that fit this line and are not installed yet (capped at what is still needed).</summary>
+        public int Ready { get; }
+
+        public int Missing => Math.Max(0, Line.Quantity - Installed - Ready);
+
+        public bool IsDone => Installed >= Line.Quantity;
+    }
+
+    public static class CutListProgress
+    {
+        /// <summary>
+        /// For each cut list line: how many parts are installed in the assembly and how many loose pieces fit it (within
+        /// the blueprint's fit tolerance). A loose piece is counted for one line only.
+        /// </summary>
+        public static IReadOnlyList<CutListLineProgress> Evaluate(MaterialPlan plan, AssemblyBuild build,
+            IEnumerable<TimberPiece> loosePieces)
+        {
+            if (plan == null) throw new ArgumentNullException(nameof(plan));
+            if (build == null) throw new ArgumentNullException(nameof(build));
+
+            var unused = new List<TimberPiece>(loosePieces ?? Array.Empty<TimberPiece>());
+            var result = new List<CutListLineProgress>();
+            foreach (CutListLine line in plan.Lines)
+            {
+                int installed = 0;
+                foreach (PartSlot slot in line.Slots)
+                {
+                    if (build.GetPiece(slot.Id) != null)
+                    {
+                        installed++;
+                    }
+                }
+
+                int ready = 0;
+                int needed = line.Quantity - installed;
+                PartSlot reference = line.Slots[0];
+                for (int i = unused.Count - 1; i >= 0 && ready < needed; i--)
+                {
+                    if (build.CheckFit(reference, unused[i]).Fits)
+                    {
+                        ready++;
+                        unused.RemoveAt(i);
+                    }
+                }
+
+                result.Add(new CutListLineProgress(line, installed, ready));
+            }
+
+            return result.AsReadOnly();
+        }
+    }
+
+    /// <summary>Material of a job: what was delivered and ordered, what went into the structure, what became dust.</summary>
+    public readonly struct MaterialUsage
+    {
+        public MaterialUsage(int boardsDelivered, int boardsOrderedExtra, double deliveredCubicMeters,
+            double installedCubicMeters, double sawdustCubicMeters)
+        {
+            BoardsDelivered = boardsDelivered;
+            BoardsOrderedExtra = boardsOrderedExtra;
+            DeliveredCubicMeters = deliveredCubicMeters;
+            InstalledCubicMeters = installedCubicMeters;
+            SawdustCubicMeters = sawdustCubicMeters;
+        }
+
+        /// <summary>Boards delivered with the job, including extra ones ordered later.</summary>
+        public int BoardsDelivered { get; }
+
+        public int BoardsOrderedExtra { get; }
+
+        public double DeliveredCubicMeters { get; }
+
+        public double InstalledCubicMeters { get; }
+
+        public double SawdustCubicMeters { get; }
+
+        /// <summary>Delivered material that is neither in the structure nor sawdust: offcuts and rejects.</summary>
+        public double OffcutCubicMeters => Math.Max(0.0, DeliveredCubicMeters - InstalledCubicMeters - SawdustCubicMeters);
+
+        /// <summary>Share of the delivered material that went into the structure (0..1), or 0 if nothing was delivered.</summary>
+        public double Utilization => DeliveredCubicMeters > 0.0 ? Math.Min(1.0, InstalledCubicMeters / DeliveredCubicMeters) : 0.0;
+    }
+
+    /// <summary>One optional quality goal and whether it was met.</summary>
+    public readonly struct QualityGoal
+    {
+        public QualityGoal(string name, bool met, string detail)
+        {
+            Name = name;
+            Met = met;
+            Detail = detail;
+        }
+
+        public string Name { get; }
+
+        public bool Met { get; }
+
+        public string Detail { get; }
+    }
+
+    /// <summary>
+    /// The outcome of a finished job, as separate explained components (master prompt §6.12): the assembly report,
+    /// material usage, time and the quality goals. No single score; nothing here certifies structural safety.
+    /// </summary>
+    public sealed class JobResult
+    {
+        private JobResult(Job job, AssemblyQualityReport report, MaterialUsage material, double seconds,
+            IReadOnlyList<QualityGoal> goals)
+        {
+            Job = job;
+            Report = report;
+            Material = material;
+            Seconds = seconds;
+            Goals = goals;
+        }
+
+        public Job Job { get; }
+
+        public AssemblyQualityReport Report { get; }
+
+        public MaterialUsage Material { get; }
+
+        /// <summary>Playing time from accepting the job to completing it.</summary>
+        public double Seconds { get; }
+
+        public IReadOnlyList<QualityGoal> Goals { get; }
+
+        public int GoalsMet
+        {
+            get
+            {
+                int met = 0;
+                foreach (QualityGoal goal in Goals)
+                {
+                    if (goal.Met)
+                    {
+                        met++;
+                    }
+                }
+
+                return met;
+            }
+        }
+
+        public static JobResult Create(Job job, AssemblyQualityReport report, MaterialUsage material, double seconds)
+        {
+            if (job == null) throw new ArgumentNullException(nameof(job));
+            if (report == null) throw new ArgumentNullException(nameof(report));
+            if (seconds < 0.0) throw new ArgumentOutOfRangeException(nameof(seconds), seconds, "Time must not be negative.");
+
+            var goals = new List<QualityGoal>
+            {
+                new QualityGoal($"Every part within {job.Blueprint.AccuracyTolerance}",
+                    report.AccurateParts == report.PartsRequired,
+                    $"{report.AccurateParts}/{report.PartsRequired} parts"),
+                new QualityGoal("Every screw head flush",
+                    report.FlushFasteners == report.FastenersRequired,
+                    $"{report.FlushFasteners}/{report.FastenersRequired} flush"),
+                new QualityGoal("No split boards",
+                    report.Splits == 0,
+                    report.Splits == 0 ? "none" : $"{report.Splits} split"),
+                new QualityGoal("No extra stock ordered",
+                    material.BoardsOrderedExtra == 0,
+                    material.BoardsOrderedExtra == 0 ? "none" : $"{material.BoardsOrderedExtra} extra board(s)")
+            };
+
+            return new JobResult(job, report, material, seconds, goals.AsReadOnly());
+        }
+    }
+}

@@ -20,7 +20,7 @@ namespace WoodcraftSimulator.Construction
         UnknownSlot,
         SlotEmpty,
 
-        /// <summary>A connection of this part already has fasteners in it.</summary>
+        /// <summary>A connection of this part already has fasteners (or pilot holes) in it.</summary>
         Fastened
     }
 
@@ -31,7 +31,20 @@ namespace WoodcraftSimulator.Construction
         InvalidPoint,
         PointAlreadyFastened,
         PartsMissing,
-        WrongFastener
+        WrongFastener,
+
+        /// <summary>Only a fastened screw whose head still stands out can be driven further, and only deeper.</summary>
+        NotProud
+    }
+
+    public enum PilotResult
+    {
+        Drilled,
+        UnknownConnection,
+        InvalidPoint,
+        AlreadyDrilled,
+        AlreadyFastened,
+        PartsMissing
     }
 
     /// <summary>How a piece compares with a slot's nominal dimensions (actual minus nominal, per dimension).</summary>
@@ -84,16 +97,45 @@ namespace WoodcraftSimulator.Construction
         public bool IsAccurate => Fit.HasValue && Fit.Value.IsAccurate;
     }
 
+    /// <summary>A driven fastener in the quality report.</summary>
+    public sealed class FastenerQuality
+    {
+        internal FastenerQuality(ConnectionSpec connection, int point, Length headHeight, bool pilotHole, bool split)
+        {
+            Connection = connection;
+            Point = point;
+            HeadHeight = headHeight;
+            PilotHole = pilotHole;
+            Split = split;
+        }
+
+        public ConnectionSpec Connection { get; }
+
+        public int Point { get; }
+
+        /// <summary>Height of the head above the surface (negative = below).</summary>
+        public Length HeadHeight { get; }
+
+        public ScrewSeat Seat => FasteningRules.Seat(HeadHeight);
+
+        public bool PilotHole { get; }
+
+        /// <summary>The board split at this screw (no pilot hole where one was needed).</summary>
+        public bool Split { get; }
+    }
+
     /// <summary>
     /// Quality of an assembly as separate, explained components (master prompt §6.12: no unexplained single score).
     /// It describes this build only and certifies nothing about structural safety.
     /// </summary>
     public sealed class AssemblyQualityReport
     {
-        internal AssemblyQualityReport(IReadOnlyList<PartQuality> parts, int fastenersInstalled, int fastenersRequired)
+        internal AssemblyQualityReport(IReadOnlyList<PartQuality> parts, IReadOnlyList<FastenerQuality> fasteners,
+            int fastenersRequired)
         {
             Parts = parts;
-            FastenersInstalled = fastenersInstalled;
+            Fasteners = fasteners;
+            FastenersInstalled = fasteners.Count;
             FastenersRequired = fastenersRequired;
 
             foreach (PartQuality part in parts)
@@ -107,9 +149,33 @@ namespace WoodcraftSimulator.Construction
                     }
                 }
             }
+
+            foreach (FastenerQuality fastener in fasteners)
+            {
+                switch (fastener.Seat)
+                {
+                    case ScrewSeat.Flush:
+                        FlushFasteners++;
+                        break;
+                    case ScrewSeat.Proud:
+                        ProudFasteners++;
+                        break;
+                    default:
+                        OverdrivenFasteners++;
+                        break;
+                }
+
+                if (fastener.Split)
+                {
+                    Splits++;
+                }
+            }
         }
 
         public IReadOnlyList<PartQuality> Parts { get; }
+
+        /// <summary>Every driven fastener, in blueprint order.</summary>
+        public IReadOnlyList<FastenerQuality> Fasteners { get; }
 
         public int PartsInstalled { get; }
 
@@ -122,25 +188,51 @@ namespace WoodcraftSimulator.Construction
 
         public int FastenersRequired { get; }
 
+        public int FlushFasteners { get; }
+
+        public int ProudFasteners { get; }
+
+        public int OverdrivenFasteners { get; }
+
+        /// <summary>Screws that split the board (no pilot hole where one was needed).</summary>
+        public int Splits { get; }
+
+        /// <summary>Everything installed and fastened. Quality (accuracy, seats, splits) is reported separately.</summary>
         public bool IsComplete => PartsInstalled == PartsRequired && FastenersInstalled == FastenersRequired;
     }
 
     /// <summary>
-    /// The state of one assembly being built from a <see cref="Blueprint"/>: which piece is in which slot and which
-    /// fastening points are done. Rules: a piece must fit its slot; prerequisites first; fasteners only when both parts
-    /// are in place and of the required type; a part can't be removed once one of its connections is fastened.
+    /// The state of one assembly being built from a <see cref="Blueprint"/>: which piece is in which slot and, per
+    /// fastening point, pilot hole and driven screw. Rules: a piece must fit its slot; prerequisites first; drilling and
+    /// fastening only when both parts are in place, with the required fastener type; a part can't be removed once a
+    /// connection of it is drilled or fastened. A screw without a pilot hole where one is needed splits the board
+    /// (<see cref="FasteningRules.NeedsPilotHole"/>, D-038): it still holds, but the report lists the split.
     /// </summary>
     public sealed class AssemblyBuild
     {
+        private sealed class PointState
+        {
+            public bool PilotHole;
+            public bool Fastened;
+            public Length HeadHeight;
+            public bool Split;
+        }
+
         private readonly Dictionary<string, TimberPiece> installed = new Dictionary<string, TimberPiece>();
-        private readonly Dictionary<string, bool[]> fastened = new Dictionary<string, bool[]>();
+        private readonly Dictionary<string, PointState[]> points = new Dictionary<string, PointState[]>();
 
         public AssemblyBuild(Blueprint blueprint)
         {
             Blueprint = blueprint ?? throw new ArgumentNullException(nameof(blueprint));
             foreach (ConnectionSpec connection in blueprint.Connections)
             {
-                fastened[connection.Id] = new bool[connection.FastenerCount];
+                var states = new PointState[connection.FastenerCount];
+                for (int i = 0; i < states.Length; i++)
+                {
+                    states[i] = new PointState();
+                }
+
+                points[connection.Id] = states;
             }
         }
 
@@ -148,7 +240,7 @@ namespace WoodcraftSimulator.Construction
 
         public bool IsComplete => CreateReport().IsComplete;
 
-        /// <summary>Raised after a piece was placed or removed, or a fastener was driven.</summary>
+        /// <summary>Raised after a piece was placed or removed, a hole drilled or a fastener driven.</summary>
         public event Action Changed;
 
         /// <summary>Raised once, when the last missing step completes the assembly.</summary>
@@ -156,8 +248,46 @@ namespace WoodcraftSimulator.Construction
 
         public TimberPiece GetPiece(string slotId) => installed.TryGetValue(slotId ?? string.Empty, out TimberPiece piece) ? piece : null;
 
-        public bool IsFastened(string connectionId, int point) =>
-            fastened.TryGetValue(connectionId ?? string.Empty, out bool[] points) && point >= 0 && point < points.Length && points[point];
+        public bool IsFastened(string connectionId, int point) => TryGetPoint(connectionId, point, out PointState state) && state.Fastened;
+
+        public bool HasPilotHole(string connectionId, int point) => TryGetPoint(connectionId, point, out PointState state) && state.PilotHole;
+
+        public bool IsSplit(string connectionId, int point) => TryGetPoint(connectionId, point, out PointState state) && state.Split;
+
+        /// <summary>Head height of the screw in the point, or null if there is none.</summary>
+        public Length? HeadHeight(string connectionId, int point) =>
+            TryGetPoint(connectionId, point, out PointState state) && state.Fastened ? state.HeadHeight : (Length?)null;
+
+        /// <summary>
+        /// Whether a screw at this point needs a pilot hole with the pieces now installed (the denser of the two
+        /// counts). False while a part is missing.
+        /// </summary>
+        public bool NeedsPilotHole(string connectionId, int point, FastenerSpec fastener)
+        {
+            if (!Blueprint.TryGetConnection(connectionId, out ConnectionSpec connection) ||
+                !installed.TryGetValue(connection.PartA, out TimberPiece a) ||
+                !installed.TryGetValue(connection.PartB, out TimberPiece b))
+            {
+                return false;
+            }
+
+            double density = Math.Max(a.Species.DensityKgPerCubicMeter, b.Species.DensityKgPerCubicMeter);
+            return FasteningRules.NeedsPilotHole(fastener, connection.EndDistance(point), density);
+        }
+
+        /// <summary>Seating torque (clutch scale) for a screw at this point, from the denser installed piece.</summary>
+        public double SeatingTorque(string connectionId, FastenerSpec fastener)
+        {
+            double density = 450.0;
+            if (Blueprint.TryGetConnection(connectionId, out ConnectionSpec connection))
+            {
+                TimberPiece a = GetPiece(connection.PartA);
+                TimberPiece b = GetPiece(connection.PartB);
+                density = Math.Max(a?.Species.DensityKgPerCubicMeter ?? 0.0, b?.Species.DensityKgPerCubicMeter ?? 0.0);
+            }
+
+            return FasteningRules.SeatingTorque(fastener, density > 0.0 ? density : 450.0);
+        }
 
         /// <summary>Compares a piece with a slot without placing it (e.g. for HUD feedback).</summary>
         public SlotFit CheckFit(PartSlot slot, TimberPiece piece)
@@ -229,9 +359,17 @@ namespace WoodcraftSimulator.Construction
 
             foreach (ConnectionSpec connection in Blueprint.Connections)
             {
-                if ((connection.PartA == slotId || connection.PartB == slotId) && Array.IndexOf(fastened[connection.Id], true) >= 0)
+                if (connection.PartA != slotId && connection.PartB != slotId)
                 {
-                    return RemoveResult.Fastened;
+                    continue;
+                }
+
+                foreach (PointState state in points[connection.Id])
+                {
+                    if (state.Fastened || state.PilotHole)
+                    {
+                        return RemoveResult.Fastened;
+                    }
                 }
             }
 
@@ -253,35 +391,99 @@ namespace WoodcraftSimulator.Construction
             return RemoveResult.Removed;
         }
 
-        /// <summary>Drives one fastener into one fastening point of a connection.</summary>
-        public FastenResult TryFasten(string connectionId, int point, FastenerSpec fastener)
+        /// <summary>Drills a pilot hole at a fastening point (through part A into part B).</summary>
+        public PilotResult TryDrillPilot(string connectionId, int point)
+        {
+            if (!Blueprint.TryGetConnection(connectionId, out ConnectionSpec connection))
+            {
+                return PilotResult.UnknownConnection;
+            }
+
+            if (!TryGetPoint(connectionId, point, out PointState state))
+            {
+                return PilotResult.InvalidPoint;
+            }
+
+            if (state.Fastened)
+            {
+                return PilotResult.AlreadyFastened;
+            }
+
+            if (state.PilotHole)
+            {
+                return PilotResult.AlreadyDrilled;
+            }
+
+            if (!installed.ContainsKey(connection.PartA) || !installed.ContainsKey(connection.PartB))
+            {
+                return PilotResult.PartsMissing;
+            }
+
+            state.PilotHole = true;
+            NotifyChanged(wasComplete: false);
+            return PilotResult.Drilled;
+        }
+
+        /// <summary>Drives one fastener with its head flush.</summary>
+        public FastenResult TryFasten(string connectionId, int point, FastenerSpec fastener) =>
+            TryFasten(connectionId, point, fastener, Length.Zero);
+
+        /// <summary>Drives one fastener into one fastening point; <paramref name="headHeight"/> is where its head ended up.</summary>
+        public FastenResult TryFasten(string connectionId, int point, FastenerSpec fastener, Length headHeight)
         {
             if (fastener == null) throw new ArgumentNullException(nameof(fastener));
 
-            return Fasten(connectionId, point, fastener.Id);
+            return Fasten(connectionId, point, fastener, headHeight, checkType: true);
+        }
+
+        /// <summary>Drives a proud screw further: the head may only go deeper.</summary>
+        public FastenResult TryDriveFurther(string connectionId, int point, Length headHeight)
+        {
+            if (!Blueprint.TryGetConnection(connectionId, out _))
+            {
+                return FastenResult.UnknownConnection;
+            }
+
+            if (!TryGetPoint(connectionId, point, out PointState state) || !state.Fastened)
+            {
+                return FastenResult.InvalidPoint;
+            }
+
+            if (FasteningRules.Seat(state.HeadHeight) != ScrewSeat.Proud || headHeight >= state.HeadHeight)
+            {
+                return FastenResult.NotProud;
+            }
+
+            state.HeadHeight = headHeight;
+            NotifyChanged(wasComplete: true);
+            return FastenResult.Fastened;
         }
 
         /// <summary>
-        /// Marks a point as fastened when loading a save: the same rules as <see cref="TryFasten"/> except the fastener
-        /// type, which was checked when the fastener was driven (the save stores only which points are done).
+        /// Loading a save: marks a point as fastened with the same rules as <see cref="TryFasten(string, int, FastenerSpec, Length)"/>
+        /// except the fastener type, which was checked when it was driven (the save doesn't store it). The split is
+        /// recomputed from the rules when <paramref name="fastener"/> (the connection's type) is given.
         /// </summary>
-        public FastenResult RestoreFastened(string connectionId, int point) => Fasten(connectionId, point, null);
+        public FastenResult RestoreFastened(string connectionId, int point, Length headHeight = default,
+            FastenerSpec fastener = null) =>
+            Fasten(connectionId, point, fastener, headHeight, checkType: false);
 
-        /// <param name="fastenerId">The driven fastener's type; null skips the type check (restoring a save).</param>
-        private FastenResult Fasten(string connectionId, int point, string fastenerId)
+        /// <summary>Loading a save: a pilot hole that was drilled.</summary>
+        public PilotResult RestorePilot(string connectionId, int point) => TryDrillPilot(connectionId, point);
+
+        private FastenResult Fasten(string connectionId, int point, FastenerSpec fastener, Length headHeight, bool checkType)
         {
             if (!Blueprint.TryGetConnection(connectionId, out ConnectionSpec connection))
             {
                 return FastenResult.UnknownConnection;
             }
 
-            bool[] points = fastened[connection.Id];
-            if (point < 0 || point >= points.Length)
+            if (!TryGetPoint(connectionId, point, out PointState state))
             {
                 return FastenResult.InvalidPoint;
             }
 
-            if (points[point])
+            if (state.Fastened)
             {
                 return FastenResult.PointAlreadyFastened;
             }
@@ -291,13 +493,15 @@ namespace WoodcraftSimulator.Construction
                 return FastenResult.PartsMissing;
             }
 
-            if (fastenerId != null && fastenerId != connection.FastenerId)
+            if (checkType && fastener.Id != connection.FastenerId)
             {
                 return FastenResult.WrongFastener;
             }
 
             bool wasComplete = IsComplete;
-            points[point] = true;
+            state.Fastened = true;
+            state.HeadHeight = headHeight;
+            state.Split = !state.PilotHole && fastener != null && NeedsPilotHole(connectionId, point, fastener);
             NotifyChanged(wasComplete);
             return FastenResult.Fastened;
         }
@@ -312,20 +516,33 @@ namespace WoodcraftSimulator.Construction
             }
 
             int required = 0;
-            int done = 0;
-            foreach (bool[] points in fastened.Values)
+            var fasteners = new List<FastenerQuality>();
+            foreach (ConnectionSpec connection in Blueprint.Connections)
             {
-                required += points.Length;
-                foreach (bool point in points)
+                PointState[] states = points[connection.Id];
+                required += states.Length;
+                for (int i = 0; i < states.Length; i++)
                 {
-                    if (point)
+                    if (states[i].Fastened)
                     {
-                        done++;
+                        fasteners.Add(new FastenerQuality(connection, i, states[i].HeadHeight, states[i].PilotHole, states[i].Split));
                     }
                 }
             }
 
-            return new AssemblyQualityReport(parts.AsReadOnly(), done, required);
+            return new AssemblyQualityReport(parts.AsReadOnly(), fasteners.AsReadOnly(), required);
+        }
+
+        private bool TryGetPoint(string connectionId, int point, out PointState state)
+        {
+            state = null;
+            if (!points.TryGetValue(connectionId ?? string.Empty, out PointState[] states) || point < 0 || point >= states.Length)
+            {
+                return false;
+            }
+
+            state = states[point];
+            return true;
         }
 
         private void NotifyChanged(bool wasComplete)

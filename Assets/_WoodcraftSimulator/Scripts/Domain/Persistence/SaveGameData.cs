@@ -24,6 +24,7 @@ namespace WoodcraftSimulator.Persistence
         public WasteData waste = new WasteData();
         public SwitchData[] switches = Array.Empty<SwitchData>();
         public CutListData[] cutLists = Array.Empty<CutListData>();
+        public JobData job = new JobData();
     }
 
     [Serializable]
@@ -100,7 +101,31 @@ namespace WoodcraftSimulator.Persistence
     public sealed class FastenedConnectionData
     {
         public string connectionId;
+
+        /// <summary>Fastened point indices.</summary>
         public int[] points = Array.Empty<int>();
+
+        /// <summary>Head height (tenths of a mm above the surface) per entry of <see cref="points"/>; empty = flush.</summary>
+        public long[] headHeightsTenths = Array.Empty<long>();
+
+        /// <summary>Point indices with a pilot hole.</summary>
+        public int[] pilotHoles = Array.Empty<int>();
+    }
+
+    /// <summary>The job in progress (none if <see cref="activeJobId"/> is empty) and the jobs already delivered.</summary>
+    [Serializable]
+    public sealed class JobData
+    {
+        public string activeJobId = string.Empty;
+        public double elapsedSeconds;
+        public int boardsDelivered;
+        public int boardsOrderedExtra;
+
+        /// <summary>The workshop's sawdust total when the job was accepted (the job's own sawdust is the difference).</summary>
+        public double sawdustAtStartCubicMeters;
+
+        /// <summary>Completed and delivered job ids, oldest first (a job may appear more than once).</summary>
+        public string[] completedJobIds = Array.Empty<string>();
     }
 
     [Serializable]

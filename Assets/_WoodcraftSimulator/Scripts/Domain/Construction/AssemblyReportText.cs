@@ -14,7 +14,7 @@ namespace WoodcraftSimulator.Construction
 
         /// <param name="sawdustCubicCentimeters">Material lost to cutting so far, or null if unknown.</param>
         public static string Format(Blueprint blueprint, AssemblyQualityReport report, string fastenerName,
-            double? sawdustCubicCentimeters)
+            double? sawdustCubicCentimeters, bool includeSafetyNote = true)
         {
             var text = new StringBuilder();
             text.Append(blueprint.DisplayName).Append(": ").Append(report.IsComplete ? "COMPLETE" : "in progress").Append('\n');
@@ -47,6 +47,26 @@ namespace WoodcraftSimulator.Construction
             }
 
             text.Append('\n');
+            if (report.FastenersInstalled > 0)
+            {
+                text.Append($"  heads: {report.FlushFasteners} flush");
+                if (report.ProudFasteners > 0)
+                {
+                    text.Append($", {report.ProudFasteners} standing out");
+                }
+
+                if (report.OverdrivenFasteners > 0)
+                {
+                    text.Append($", {report.OverdrivenFasteners} driven too deep");
+                }
+
+                text.Append('\n');
+                if (report.Splits > 0)
+                {
+                    text.Append($"  {report.Splits} split: screwed near the end of a board without a pilot hole\n");
+                }
+            }
+
             if (sawdustCubicCentimeters.HasValue)
             {
                 text.Append("Sawdust so far: ")
@@ -54,8 +74,12 @@ namespace WoodcraftSimulator.Construction
                     .Append(" cm³\n");
             }
 
-            text.Append(SafetyNote);
-            return text.ToString();
+            if (includeSafetyNote)
+            {
+                text.Append(SafetyNote);
+            }
+
+            return text.ToString().TrimEnd('\n');
         }
     }
 }

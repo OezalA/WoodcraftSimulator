@@ -115,6 +115,40 @@ namespace WoodcraftSimulator.Cutting
             // Kerf on the waste side: beyond the line as seen from the reference end.
             Length line = cutMark.PositionFromStart;
             Length kerfStart = cutMark.MeasuredFrom == BoardEnd.Start ? line : line - saw.Kerf;
+            return Cut(piece, marks, kerfStart, cutMark.MeasuredFrom, saw, minimumPieceLength, out result);
+        }
+
+        /// <summary>
+        /// A cut wherever the saw blade actually is (D-038, free saw placement): the kerf is centered on
+        /// <paramref name="bladeCenterFromStart"/>, wherever the pencil line is. <paramref name="measuredSide"/> names
+        /// the piece that was measured (it is reported as <see cref="CrosscutResult.MeasuredPiece"/>).
+        /// </summary>
+        public static CrosscutRefusal TryCutAt(TimberPiece piece, BoardMarks marks, Length bladeCenterFromStart,
+            BoardEnd measuredSide, Saw saw, out CrosscutResult result) =>
+            TryCutAt(piece, marks, bladeCenterFromStart, measuredSide, saw, DefaultMinimumPieceLength, out result);
+
+        public static CrosscutRefusal TryCutAt(TimberPiece piece, BoardMarks marks, Length bladeCenterFromStart,
+            BoardEnd measuredSide, Saw saw, Length minimumPieceLength, out CrosscutResult result)
+        {
+            if (piece == null) throw new ArgumentNullException(nameof(piece));
+            if (marks == null) throw new ArgumentNullException(nameof(marks));
+            if (saw == null) throw new ArgumentNullException(nameof(saw));
+
+            if (marks.PieceLength != piece.Dimensions.Length)
+            {
+                throw new ArgumentException("The marks belong to a piece of a different length.", nameof(marks));
+            }
+
+            Length kerfStart = bladeCenterFromStart - Length.FromTenthsOfMillimeter(saw.Kerf.TenthsOfMillimeter / 2);
+            return Cut(piece, marks, kerfStart, measuredSide, saw, minimumPieceLength, out result);
+        }
+
+        private static CrosscutRefusal Cut(TimberPiece piece, BoardMarks marks, Length kerfStart, BoardEnd measuredSide,
+            Saw saw, Length minimumPieceLength, out CrosscutResult result)
+        {
+            result = null;
+            BoardDimensions dimensions = piece.Dimensions;
+            Length length = dimensions.Length;
             Length kerfEnd = kerfStart + saw.Kerf;
             Length startLength = kerfStart;
             Length endLength = length - kerfEnd;
@@ -149,7 +183,7 @@ namespace WoodcraftSimulator.Cutting
             var waste = new CutWaste(saw.Kerf, wasteVolume, wasteVolume * piece.Species.DensityKgPerCubicMeter);
 
             result = new CrosscutResult(startPiece, endPiece, startMarks, endMarks, kerfStart, kerfEnd,
-                cutMark.MeasuredFrom, waste);
+                measuredSide, waste);
             return CrosscutRefusal.None;
         }
 
