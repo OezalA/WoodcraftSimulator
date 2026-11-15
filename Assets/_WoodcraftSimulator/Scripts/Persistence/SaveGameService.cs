@@ -46,6 +46,9 @@ namespace WoodcraftSimulator.Persistence
         [Tooltip("Optional: equipment upgrades owned (D-044).")]
         [SerializeField] private Economy.WorkshopUpgrades upgrades;
 
+        [Tooltip("Optional: the terrace site preparation (D-046).")]
+        [SerializeField] private Workshop.SitePreparation site;
+
         private bool restarting;
 
         public string SavePath => Path.Combine(Application.persistentDataPath, FileName);
@@ -257,6 +260,11 @@ namespace WoodcraftSimulator.Persistence
                 data.upgrades = upgrades.Capture();
             }
 
+            if (site != null)
+            {
+                data.site = site.Capture();
+            }
+
             return data;
         }
 
@@ -324,6 +332,12 @@ namespace WoodcraftSimulator.Persistence
             if (upgrades != null)
             {
                 upgrades.Restore(data.upgrades);
+            }
+
+            // Before the assemblies: the site gates where piers may stand.
+            if (site != null)
+            {
+                site.Restore(data.site);
             }
 
             // The job sets the station's blueprint and the cut list before the assembly is restored.

@@ -158,6 +158,13 @@ namespace WoodcraftSimulator.Tools
                 return;
             }
 
+            if (!board.Piece.Species.IsTimber)
+            {
+                SetGuideVisible(false);
+                SetLines(header + "\n" + NotTimberText(board), resultLine);
+                return;
+            }
+
             if (IsOnFloor(board))
             {
                 SetGuideVisible(false);
@@ -352,6 +359,13 @@ namespace WoodcraftSimulator.Tools
                 return;
             }
 
+            if (!point.Board.Piece.Species.IsTimber)
+            {
+                SetGuideVisible(false);
+                SetLines(NotTimberText(point.Board), resultLine);
+                return;
+            }
+
             // A board lying on the floor is not sawn (D-044): put it on the workbench or the sawhorses.
             if (IsOnFloor(point.Board))
             {
@@ -395,6 +409,9 @@ namespace WoodcraftSimulator.Tools
                 SetLines(Loc.T($"Sawing  {percent}%", $"Kesiliyor  %{percent}"), resultLine);
             }
         }
+
+        private static string NotTimberText(TimberBoard board) =>
+            Loc.T($"{board.Piece.Species.DisplayName} is not cut with a saw (D-046)", $"{board.Piece.Species.DisplayName} testereyle kesilmez");
 
         private bool IsOnFloor(TimberBoard board)
         {

@@ -31,6 +31,9 @@ namespace WoodcraftSimulator.Persistence
 
         /// <summary>Equipment upgrades owned (ids, D-044). Older saves have none.</summary>
         public string[] upgrades = Array.Empty<string>();
+
+        /// <summary>Terrace site preparation done ("marked" and prepared pier slot ids, D-046).</summary>
+        public string[] site = Array.Empty<string>();
     }
 
     [Serializable]
@@ -164,6 +167,9 @@ namespace WoodcraftSimulator.Persistence
 
         /// <summary>The workshop's sawdust total when the job was accepted (the job's own sawdust is the difference).</summary>
         public double sawdustAtStartCubicMeters;
+
+        /// <summary>Deposit the customer paid when the job was accepted (cents, D-046).</summary>
+        public long depositCents;
 
         /// <summary>Completed and delivered job ids, oldest first (a job may appear more than once).</summary>
         public string[] completedJobIds = Array.Empty<string>();

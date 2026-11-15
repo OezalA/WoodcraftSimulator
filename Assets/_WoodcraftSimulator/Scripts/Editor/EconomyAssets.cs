@@ -31,11 +31,20 @@ namespace WoodcraftSimulator.Editor
             EnsureBoard(boards, "spruce-2000x145x18", species["spruce"], 2000f, 145f, 18f, 8.5f);
             EnsureBoard(boards, "spruce-2400x95x45", species["spruce"], 2400f, 95f, 45f, 9.9f);
 
+            // Terrace material (D-046), delivered to the site outside.
+            EnsureBoard(boards, "larch-2400x145x28", species["larch"], 2400f, 145f, 28f, 12f, outdoors: true);
+            EnsureBoard(boards, "spruce-2400x145x45", species["spruce"], 2400f, 145f, 45f, 14f, outdoors: true);
+            EnsureBoard(boards, "spruce-2400x120x45", species["spruce"], 2400f, 120f, 45f, 11f, outdoors: true);
+            EnsureBoard(boards, "concrete-pier-200", species["concrete"], 200f, 200f, 200f, 4.5f, outdoors: true);
+
             SerializedProperty boxes = serialized.FindProperty("fastenerBoxes");
             EnsureBox(boxes, "screws-4x40-200", BlueprintAssets.WoodScrew4x40(), 200, 6f);
             EnsureBox(boxes, "screws-5x80-50", BlueprintAssets.WoodScrew5x80(), 50, 7.5f);
             EnsureBox(boxes, "nails-2.8x50-250", BlueprintAssets.Nail2_8x50(), 250, 4f);
             EnsureBox(boxes, "dowels-8x40-50", BlueprintAssets.Dowel8x40(), 50, 3.5f);
+            EnsureBox(boxes, "deck-screws-5x60-200", TerraceAssets.DeckScrew(), 200, 18f);
+            EnsureBox(boxes, "joist-hangers-10", TerraceAssets.JoistHanger(), 10, 15f);
+            EnsureBox(boxes, "post-bases-6", TerraceAssets.PostBase(), 6, 12f);
             serialized.ApplyModifiedPropertiesWithoutUndo();
             AssetDatabase.SaveAssets();
             return catalog;
@@ -43,12 +52,14 @@ namespace WoodcraftSimulator.Editor
 
         /// <summary>Adds a board entry unless one with this id exists.</summary>
         public static void EnsureBoard(SerializedProperty boards, string id, WoodSpeciesDefinition species, float length,
-            float width, float thickness, float price)
+            float width, float thickness, float price, bool outdoors = false)
         {
             if (IndexOf(boards, id) < 0)
             {
                 boards.arraySize++;
-                SetBoard(boards.GetArrayElementAtIndex(boards.arraySize - 1), id, species, length, width, thickness, price);
+                SerializedProperty entry = boards.GetArrayElementAtIndex(boards.arraySize - 1);
+                SetBoard(entry, id, species, length, width, thickness, price);
+                entry.FindPropertyRelative("deliverOutdoors").boolValue = outdoors;
             }
         }
 

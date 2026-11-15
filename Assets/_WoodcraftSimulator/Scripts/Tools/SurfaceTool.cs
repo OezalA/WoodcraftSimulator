@@ -105,6 +105,12 @@ namespace WoodcraftSimulator.Tools
                 return;
             }
 
+            if (!board.Piece.Species.IsTimber)
+            {
+                SetLines(Loc.T($"{board.Piece.Species.DisplayName} is not sanded or oiled", $"{board.Piece.Species.DisplayName} zımparalanmaz, yağlanmaz"), resultLine);
+                return;
+            }
+
             if (board.Surface >= result)
             {
                 SetLines(result == BoardSurface.Sanded && board.Surface == BoardSurface.Oiled

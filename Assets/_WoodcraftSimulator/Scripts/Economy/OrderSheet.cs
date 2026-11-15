@@ -54,9 +54,7 @@ namespace WoodcraftSimulator.Economy
 
             PurchaseResult result = economy.Buy(item, 1);
             lastResult = result == PurchaseResult.Bought
-                ? (item.Kind == CatalogItemKind.Board
-                    ? Loc.T("Bought: delivered to the delivery area", "Satın alındı: teslim alanına bırakıldı")
-                    : Loc.T("Bought: the screws are in the box", "Satın alındı: vidalar kutuda"))
+                ? Loc.T("Bought: ", "Satın alındı: ") + economy.DeliveryText(item)
                 : WorkshopEconomy.PurchaseText(result);
             lastResultUntil = Time.unscaledTime + 3f;
         }

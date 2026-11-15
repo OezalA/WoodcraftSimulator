@@ -785,8 +785,18 @@ namespace WoodcraftSimulator.Construction
             }
 
             PlaceResult result = Build.CanPlace(active.Slots[chosen].id, board.Piece);
-            snap = new SnapPlacement(SlotPosition(chosen), SlotRotation(chosen), result == PlaceResult.Placed,
-                Describe(chosen, board.Piece, result), chosen);
+
+            // An outdoor site may still need preparing for this part (pier spots, D-046).
+            string blocked = null;
+            if (result == PlaceResult.Placed && TryGetComponent(out Workshop.SitePreparation site) &&
+                !site.CanPlace(active.Slots[chosen].id, out string reason))
+            {
+                Build.Blueprint.TryGetSlot(active.Slots[chosen].id, out PartSlot slot);
+                blocked = $"{slot?.DisplayName}: {reason}";
+            }
+
+            snap = new SnapPlacement(SlotPosition(chosen), SlotRotation(chosen), result == PlaceResult.Placed && blocked == null,
+                blocked ?? Describe(chosen, board.Piece, result), chosen);
             return true;
         }
 

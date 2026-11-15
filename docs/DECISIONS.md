@@ -536,3 +536,27 @@ Risk accepted by the owner: errors found late may touch several phases. Scope ch
   handle 45 mm (ripped), ends doweled and glued to the base, sides nailed (ends pre-drilled), handle screwed. Plan: 3 boards.
 - New tools hang on the tool wall at start: claw hammer, wood glue, sanding block, oil brush. Catalog: nails 2.8 × 50 (250,
   €4), dowels 8 × 40 (50, €3.50); new workshops also start with 100 nails and 24 dowels.
+
+## D-046: Phase 10 outdoor terrace: site preparation, several stocks, connectors, deposit (Accepted, 2026-11-15, batch D-043)
+- **Site** in front of the workshop door (`TerraceSite`): a second assembly station on the ground (origin = ground at the
+  terrace centre) with a thin site floor to aim at, an outdoor delivery area and two sawhorses. The job board builds each
+  job at the station that knows its blueprint (`JobBoard.otherStations`).
+- **Site preparation** (`SitePreparation`, `SiteMarker`, `SiteSpot`): E on the corner stake sets out the 2.4 × 1.8 m
+  outline (string line), then E on each of the six pier spots digs, levels and gravels it; a pier block snaps only onto a
+  prepared spot. Saved (`SaveGameData.site`).
+- **Terrace blueprint** (`TerraceAssets`): 6 concrete pier blocks 200 mm, 2 beams 2400 × 145 × 45 on edge (each needs its
+  3 piers), 5 joists 1800 × 120 × 45 (need both beams), 12 larch deck boards 2400 × 145 × 28 with 5 mm gaps (need all
+  joists). Fixing: 6 post base plates and 10 joist hangers (steel connectors, drill-driver, `FastenerKind.Connector`,
+  never split), 36 deck screws 5 × 60 (outer and middle joists; the ones at the board ends need pilot holes).
+- **Construction-stage validation**: prerequisites enforce bottom-up order; the job sheet names the stage ("Aşama 3/5:
+  kirişler (1/2)") from site preparation to decking.
+- **Several stocks per job**: `MaterialPlan` plans each part from the best fitting stock (same thickness, wide enough,
+  long enough; exact width first); the shopping list and the bought boards are per stock; the settlement prices each part
+  at its section's catalog price. **Non-timber** materials (`WoodSpecies.IsTimber = false`, concrete) are sold and carried
+  like boards but not sawn, sanded or oiled, and don't count for screw torque or splitting.
+- **Deposit**: the terrace customer pays 50 % of the pay on acceptance (`depositShare`, max 70 %), so the ~€300 of material
+  can be bought without saving up first; the rest is paid on delivery. Saved (`JobData.depositCents`).
+- Terrace pay €650. Catalog: larch decking €12, beams €14, joists €11, pier blocks €4.50 (delivered outdoors), deck screws
+  200 €18, joist hangers 10 €15, post base plates 6 €12. The order board now has rows (seven sheets each).
+- Known simplifications: the terrace is level ground only (no slope, no frost depth); connectors are one point each (the
+  screws of a bracket are not counted separately); concrete blocks are listed as "boards" in texts.

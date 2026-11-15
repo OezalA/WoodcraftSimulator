@@ -459,6 +459,23 @@ Console errors), **Build Test Workshop Scene**, Play, Esc → `Yeni atölye`. Re
 | Result | Five goals incl. `Her parça zımparalı ve yağlı (n/6 parça)`; pay split over five goals |
 | Save while glue dries, quit, Play | Drying continues where it stopped; surfaces kept |
 
+### MT-026: Outdoor terrace (Phase 10, D-046)
+| Step | Expected |
+|---|---|
+| Go out of the door | A grey site floor 2.8 × 2.2 m, six small dark spots with red stakes, a corner stake, a delivery area to the right, sawhorses to the left |
+| Job board: fourth sheet `Küçük teras` | Offer lists four stocks (larch decking, beams, joists, concrete blocks); prompt shows `ücret €650.00, avans €325.00 hemen` |
+| E | Money: +€325 deposit, then the material is paid; boards and blocks appear at the outdoor delivery area; message `dışarıdaki şantiyeye bırakıldı` |
+| Job sheet | First line `Aşama 1/5: zemin hazırlığı (0/6 yer, önce işaretle)` |
+| Carry a block to a spot before preparing | Red preview: `önce alanı işaretle ...` |
+| E on the corner stake | A string line appears around the outline |
+| E on each spot | The stake goes, a gravel bed appears; stage counts up |
+| Set the six blocks, then the beams, joists (cut 1800 mm on the outdoor sawhorses), deck boards | Each layer only after the one below; the stage line follows (`Aşama 3/5: kirişler ...`) |
+| Try to saw a concrete block | `Beton testereyle kesilmez` |
+| Drill-driver on a post base / joist hanger point | Works like a screw (clutch advice shown), never splits |
+| Deck screws at the board ends | Red points: pre-drill |
+| Complete | Result with pay, timber cost of all four stocks, profit; delivering pays the rest (pay minus the €325 deposit) |
+| Save during the build, quit, Play | Site preparation, deposit and progress kept |
+
 ## Game view setup (corrects the earlier tip)
 A fixed resolution such as *Full HD (1920x1080)* at `Scale 1x` **crops** the image when the Game view window is
 smaller than 1920×1080: the bottom (tool belt bar) and the lower right (tool in hand) are cut off.

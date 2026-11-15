@@ -23,6 +23,10 @@ namespace WoodcraftSimulator.Jobs
     {
         [SerializeField] private JobDefinition[] jobs = Array.Empty<JobDefinition>();
         [SerializeField] private AssemblyStation station;
+
+        [Tooltip("Further assembly places (e.g. the terrace site); a job is built where its blueprint is known.")]
+        [SerializeField] private AssemblyStation[] otherStations = Array.Empty<AssemblyStation>();
+
         [SerializeField] private CutList cutList;
         [SerializeField] private WorkshopWaste waste;
         [SerializeField] private WorkshopEconomy economy;
@@ -42,6 +46,7 @@ namespace WoodcraftSimulator.Jobs
         private double sawdustAtStart;
         private JobResult cachedResult;
         private JobSettlement cachedSettlement;
+        private Money depositPaid;
         private string lastMessage;
         private float lastMessageUntil;
 
@@ -61,7 +66,7 @@ namespace WoodcraftSimulator.Jobs
         public IReadOnlyList<string> CompletedJobIds => completedJobIds;
 
         /// <summary>The structure of the active job is complete (waiting to be delivered).</summary>
-        public bool IsComplete => HasActiveJob && station.Build.IsComplete;
+        public bool IsComplete => HasActiveJob && Active.Build.IsComplete;
 
         /// <summary>Raised after a job was accepted, completed, delivered or more stock was bought.</summary>
         public event Action Changed;
@@ -92,10 +97,10 @@ namespace WoodcraftSimulator.Jobs
 
         private void OnEnable()
         {
-            if (station != null)
+            foreach (AssemblyStation each in AllStations())
             {
-                station.Changed += OnStationChanged;
-                station.Completed += OnStationCompleted;
+                each.Changed += OnStationChanged;
+                each.Completed += OnStationCompleted;
             }
 
             TimberBoard.AnySurfaceChanged += OnStationChanged;
@@ -103,14 +108,48 @@ namespace WoodcraftSimulator.Jobs
 
         private void OnDisable()
         {
-            if (station != null)
+            foreach (AssemblyStation each in AllStations())
             {
-                station.Changed -= OnStationChanged;
-                station.Completed -= OnStationCompleted;
+                each.Changed -= OnStationChanged;
+                each.Completed -= OnStationCompleted;
             }
 
             TimberBoard.AnySurfaceChanged -= OnStationChanged;
         }
+
+        /// <summary>The workshop's assembly table and any other station (the terrace site outside, D-046).</summary>
+        private IEnumerable<AssemblyStation> AllStations()
+        {
+            if (station != null)
+            {
+                yield return station;
+            }
+
+            foreach (AssemblyStation other in otherStations)
+            {
+                if (other != null)
+                {
+                    yield return other;
+                }
+            }
+        }
+
+        /// <summary>Where a job is built: the station that knows its blueprint.</summary>
+        private AssemblyStation StationFor(int index)
+        {
+            foreach (AssemblyStation each in AllStations())
+            {
+                if (each.FindBlueprint(jobs[index].Blueprint.Id) != null)
+                {
+                    return each;
+                }
+            }
+
+            return station;
+        }
+
+        /// <summary>The station of the active job (the workshop table when none is active).</summary>
+        private AssemblyStation Active => HasActiveJob ? StationFor(activeIndex) : station;
 
         private void Update()
         {
@@ -148,14 +187,20 @@ namespace WoodcraftSimulator.Jobs
 
                 if (cachedResult == null)
                 {
-                    AssemblyQualityReport report = station.Build.CreateReport();
+                    AssemblyQualityReport report = Active.Build.CreateReport();
                     double installed = 0.0;
                     foreach (PartQuality part in report.Parts)
                     {
                         installed += part.Piece != null ? part.Piece.Dimensions.VolumeCubicMeters : 0.0;
                     }
 
-                    double delivered = boardsDelivered * ActiveJob.Stock.Dimensions.VolumeCubicMeters;
+                    // The planned boards of every stock, plus extra boards of the main stock.
+                    double delivered = boardsOrderedExtra * ActiveJob.Stock.Dimensions.VolumeCubicMeters;
+                    foreach (StockBoardPlan planned in ActivePlan.Boards)
+                    {
+                        delivered += planned.Stock.Dimensions.VolumeCubicMeters;
+                    }
+
                     double sawdust = waste != null ? Math.Max(0.0, waste.Log.TotalVolumeCubicMeters - sawdustAtStart) : 0.0;
                     cachedResult = JobResult.Create(ActiveJob, report,
                         new MaterialUsage(boardsDelivered, boardsOrderedExtra, delivered, installed, sawdust), ElapsedSeconds,
@@ -170,9 +215,9 @@ namespace WoodcraftSimulator.Jobs
         private int FinishedParts()
         {
             int finished = 0;
-            for (int i = 0; i < station.Build.Blueprint.Slots.Count; i++)
+            for (int i = 0; i < Active.Build.Blueprint.Slots.Count; i++)
             {
-                Handling.Carryable part = station.InstalledAt(i);
+                Handling.Carryable part = Active.InstalledAt(i);
                 if (part != null && part.TryGetComponent(out TimberBoard board) && board.Surface == BoardSurface.Oiled)
                 {
                     finished++;
@@ -220,8 +265,11 @@ namespace WoodcraftSimulator.Jobs
 
             // Loose pieces lying in the workshop count as "ready" for the cut list (installed ones are counted by slot).
             IReadOnlyList<CutListLineProgress> progress =
-                CutListProgress.Evaluate(ActivePlan, station.Build, WorkshopEconomy.LooseTimber());
-            return JobText.Sheet(ActiveJob, ActivePlan, progress, FastenerName, boardsDelivered, ElapsedSeconds);
+                CutListProgress.Evaluate(ActivePlan, Active.Build, WorkshopEconomy.LooseTimber());
+            string sheet = JobText.Sheet(ActiveJob, ActivePlan, progress, FastenerName, boardsDelivered, ElapsedSeconds);
+
+            // Outdoor construction (D-046): the stage of the work.
+            return Active.TryGetComponent(out Workshop.SitePreparation site) ? site.StageText(Active.Build) + "\n" + sheet : sheet;
         }
 
         /// <summary>What a job needs, before accepting it: material plan and what has to be bought.</summary>
@@ -231,9 +279,12 @@ namespace WoodcraftSimulator.Jobs
                 : null;
 
         /// <summary>The job's bill of materials against what the workshop has (stock boards lying around, fasteners).</summary>
-        public ShoppingList Shopping(int index) => ShoppingList.For(plans[index], economy.Catalog,
-            WorkshopInventory.CountStockBoards(WorkshopEconomy.LooseTimber(), domainJobs[index].Stock),
-            economy.Fasteners, FastenerName);
+        public ShoppingList Shopping(int index)
+        {
+            List<TimberPiece> loose = WorkshopEconomy.LooseTimber();
+            return ShoppingList.For(plans[index], economy.Catalog, stock => WorkshopInventory.CountStockBoards(loose, stock),
+                economy.Fasteners, FastenerName);
+        }
 
         public string PromptFor(int index)
         {
@@ -261,16 +312,18 @@ namespace WoodcraftSimulator.Jobs
                     return Loc.T($"{jobName}: can't be made from the stock (see Console)", $"{jobName}: bu malzemeden yapılamaz (Console'a bak)");
                 }
 
-                if (!station.IsEmpty)
+                if (!StationFor(index).IsEmpty)
                 {
-                    return Loc.T($"Accept job: {jobName}   (clear the {station.DisplayName} first)",
-                        $"İşi kabul et: {jobName}   (önce {station.DisplayName} boşaltılmalı)");
+                    return Loc.T($"Accept job: {jobName}   (clear the {StationFor(index).DisplayName} first)",
+                        $"İşi kabul et: {jobName}   (önce {StationFor(index).DisplayName} boşaltılmalı)");
                 }
 
                 Money pay = domainJobs[index].Pay;
                 Money cost = Shopping(index).TotalCost;
-                return Loc.T($"Accept job: {jobName}   (pay {pay}; material to buy {cost}, money {economy.Ledger.Balance})",
-                    $"İşi kabul et: {jobName}   (ücret {pay}; alınacak malzeme {cost}, para {economy.Ledger.Balance})");
+                Money deposit = domainJobs[index].Deposit;
+                string depositText = deposit > Money.Zero ? Loc.T($", deposit {deposit} now", $", avans {deposit} hemen") : string.Empty;
+                return Loc.T($"Accept job: {jobName}   (pay {pay}{depositText}; material to buy {cost}, money {economy.Ledger.Balance})",
+                    $"İşi kabul et: {jobName}   (ücret {pay}{depositText}; alınacak malzeme {cost}, para {economy.Ledger.Balance})");
             }
 
             if (index != activeIndex)
@@ -317,7 +370,7 @@ namespace WoodcraftSimulator.Jobs
 
         private void Accept(int index)
         {
-            if (!plans[index].IsFeasible || !station.IsEmpty)
+            if (!plans[index].IsFeasible || !StationFor(index).IsEmpty)
             {
                 return;
             }
@@ -333,18 +386,26 @@ namespace WoodcraftSimulator.Jobs
                 }
             }
 
-            if (!economy.Ledger.CanAfford(shopping.TotalCost))
+            // A deposit from the customer (D-046) helps to pay for the material.
+            Money deposit = domainJobs[index].Deposit;
+            if (economy.Ledger.Balance + deposit < shopping.TotalCost)
             {
                 ShowMessage(Loc.T($"Not enough money for the material ({shopping.TotalCost})",
                     $"Malzeme için para yetmiyor ({shopping.TotalCost})"));
                 return;
             }
 
-            if (!station.TrySetBlueprint(jobs[index].Blueprint))
+            if (!StationFor(index).TrySetBlueprint(jobs[index].Blueprint))
             {
                 return;
             }
 
+            if (deposit > Money.Zero)
+            {
+                economy.Ledger.Earn(deposit, Loc.T($"Deposit: {jobs[index].DisplayName}", $"Avans: {jobs[index].DisplayName}"));
+            }
+
+            depositPaid = deposit;
             foreach (ShoppingLine line in shopping.Lines)
             {
                 if (line.UnitsToBuy > 0)
@@ -361,7 +422,9 @@ namespace WoodcraftSimulator.Jobs
             OnStationChanged();
             ShowCutList();
             ShowMessage(shopping.TotalCost > Money.Zero
-                ? Loc.T($"Material bought ({shopping.TotalCost}): see the delivery area", $"Malzeme alındı ({shopping.TotalCost}): teslim alanına bak")
+                ? (StationFor(index) == station
+                    ? Loc.T($"Material bought ({shopping.TotalCost}): see the delivery area", $"Malzeme alındı ({shopping.TotalCost}): teslim alanına bak")
+                    : Loc.T($"Material bought ({shopping.TotalCost}): delivered to the site outside", $"Malzeme alındı ({shopping.TotalCost}): dışarıdaki şantiyeye bırakıldı"))
                 : Loc.T("The workshop has all the material", "Atölyede tüm malzeme var"));
             Changed?.Invoke();
         }
@@ -393,9 +456,16 @@ namespace WoodcraftSimulator.Jobs
         {
             JobSettlement settlement = Settlement;
             string jobName = jobs[activeIndex].DisplayName;
-            economy.Ledger.Earn(settlement.Earned, Loc.T($"Job: {jobName}", $"İş: {jobName}"));
+            // The deposit was paid on acceptance; the rest now (the deposit never exceeds the delivery share).
+            Money rest = settlement.Earned - depositPaid;
+            if (rest > Money.Zero)
+            {
+                economy.Ledger.Earn(rest, Loc.T($"Job: {jobName}", $"İş: {jobName}"));
+            }
+
+            depositPaid = Money.Zero;
             completedJobIds.Add(jobs[activeIndex].Id);
-            station.ClearAll();
+            Active.ClearAll();
             activeIndex = -1;
             OnStationChanged();
             if (cutList != null)
@@ -446,6 +516,7 @@ namespace WoodcraftSimulator.Jobs
             boardsDelivered = boardsDelivered,
             boardsOrderedExtra = boardsOrderedExtra,
             sawdustAtStartCubicMeters = sawdustAtStart,
+            depositCents = depositPaid.Cents,
             completedJobIds = completedJobIds.ToArray()
         };
 
@@ -472,9 +543,10 @@ namespace WoodcraftSimulator.Jobs
             boardsDelivered = data.boardsDelivered;
             boardsOrderedExtra = data.boardsOrderedExtra;
             sawdustAtStart = data.sawdustAtStartCubicMeters;
+            depositPaid = Money.FromCents(data.depositCents);
             if (HasActiveJob)
             {
-                station.TrySetBlueprint(jobs[activeIndex].Blueprint);
+                StationFor(activeIndex).TrySetBlueprint(jobs[activeIndex].Blueprint);
                 ShowCutList();
             }
 

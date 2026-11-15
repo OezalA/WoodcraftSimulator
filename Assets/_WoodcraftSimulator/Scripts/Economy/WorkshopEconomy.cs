@@ -26,6 +26,9 @@ namespace WoodcraftSimulator.Economy
         [SerializeField] private MaterialCatalogDefinition catalog;
         [SerializeField] private StockDelivery delivery;
 
+        [Tooltip("Optional: delivery area at the outdoor site, for catalog boards marked 'deliver outdoors' (D-046).")]
+        [SerializeField] private StockDelivery outdoorDelivery;
+
         [Tooltip("Fastener types (display names in the inventory).")]
         [SerializeField] private FastenerDefinition[] fasteners = Array.Empty<FastenerDefinition>();
 
@@ -95,11 +98,22 @@ namespace WoodcraftSimulator.Economy
             PurchaseResult result = MaterialCatalog.TryBuy(Ledger, item, quantity, Fasteners);
             if (result == PurchaseResult.Bought && species != null)
             {
-                delivery.Deliver(species, item.BoardStock.Dimensions, quantity);
+                (DeliversOutdoors(item) ? outdoorDelivery : delivery).Deliver(species, item.BoardStock.Dimensions, quantity);
             }
 
             return result;
         }
+
+        /// <summary>Whether a bought board goes to the outdoor site rather than the workshop.</summary>
+        public bool DeliversOutdoors(CatalogItem item) =>
+            item != null && item.Kind == CatalogItemKind.Board && outdoorDelivery != null && catalog.DeliversOutdoors(item.Id);
+
+        /// <summary>Where a bought item ends up, for messages.</summary>
+        public string DeliveryText(CatalogItem item) => item.Kind != CatalogItemKind.Board
+            ? Loc.T("the fasteners are in the stock", "bağlantı elemanları stokta")
+            : DeliversOutdoors(item)
+                ? Loc.T("delivered to the terrace site outside", "dışarıdaki teras şantiyesine bırakıldı")
+                : Loc.T("delivered to the delivery area", "teslim alanına bırakıldı");
 
         /// <summary>Uses one fastener of this type for a driven screw or nail; false if none is left.</summary>
         public bool TryUseFastener(string fastenerId) => Fasteners.TryUse(fastenerId);

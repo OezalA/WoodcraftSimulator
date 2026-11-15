@@ -214,7 +214,7 @@ namespace WoodcraftSimulator.Tools
 
             // Nails and dowels are not driven with the drill (D-045); the drill bit still makes their holes.
             FastenerKind kind = station.Fastener(station.FastenerIdAt(connection))?.Kind ?? FastenerKind.Screw;
-            if (bit == Bit.Driver && kind != FastenerKind.Screw)
+            if (bit == Bit.Driver && kind != FastenerKind.Screw && kind != FastenerKind.Connector)
             {
                 pickup.HandOffset = Vector3.zero;
                 string hint = kind == FastenerKind.Nail

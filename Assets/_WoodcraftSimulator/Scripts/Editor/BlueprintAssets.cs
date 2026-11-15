@@ -104,7 +104,7 @@ namespace WoodcraftSimulator.Editor
         public static FastenerDefinition Dowel8x40() =>
             GetOrCreateFastener("Dowel8x40", DowelId, "Wooden dowel 8 × 40 mm", 8f, 40f, FastenerKind.Dowel);
 
-        private static FastenerDefinition GetOrCreateFastener(string fileName, string id, string displayName,
+        public static FastenerDefinition GetOrCreateFastener(string fileName, string id, string displayName,
             float diameter, float length, FastenerKind kind)
         {
             string path = $"{FastenerFolder}/{fileName}.asset";

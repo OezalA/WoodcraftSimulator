@@ -37,6 +37,21 @@ namespace WoodcraftSimulator.Jobs
         [Tooltip("The customer wants every part sanded and oiled (extra quality goal, D-045).")]
         [SerializeField] private bool requiresFinish;
 
+        [Serializable]
+        public sealed class ExtraStock
+        {
+            public WoodSpeciesDefinition species;
+            [Min(1f)] public float lengthMillimeters = 2400f;
+            [Min(1f)] public float widthMillimeters = 95f;
+            [Min(1f)] public float thicknessMillimeters = 45f;
+        }
+
+        [Tooltip("Further stocks for jobs with parts of several sizes (terrace, D-046); each part uses the best fit.")]
+        [SerializeField] private ExtraStock[] extraStocks = Array.Empty<ExtraStock>();
+
+        [Tooltip("Share of the pay the customer pays on acceptance, for the material (0..0.7, D-046).")]
+        [SerializeField, Range(0f, 0.7f)] private float depositShare;
+
         [Header("Turkish (D-041)")]
         [SerializeField] private string displayNameTurkish = string.Empty;
         [SerializeField, TextArea] private string descriptionTurkish = string.Empty;
@@ -57,7 +72,36 @@ namespace WoodcraftSimulator.Jobs
 
         public Job ToDomain() => new Job(id, DisplayName, Loc.Pick(description, descriptionTurkish), blueprint.ToDomain(),
             new StockSpec(stockSpecies.Id, stockSpecies.DisplayName, StockDimensions), spareBoards, Tips(),
-            Economy.Money.FromEuros((decimal)Math.Round(payEuros, 2)), requiresFinish);
+            Economy.Money.FromEuros((decimal)Math.Round(payEuros, 2)), requiresFinish, ExtraStocks(), depositShare);
+
+        /// <summary>All stocks with their species assets (the main one first), to deliver bought boards.</summary>
+        public IEnumerable<(StockSpec stock, WoodSpeciesDefinition species)> StockAssets()
+        {
+            yield return (new StockSpec(stockSpecies.Id, stockSpecies.DisplayName, StockDimensions), stockSpecies);
+            foreach (ExtraStock extra in extraStocks)
+            {
+                if (extra?.species != null)
+                {
+                    yield return (new StockSpec(extra.species.Id, extra.species.DisplayName,
+                        BoardDimensions.FromMillimeters(extra.lengthMillimeters, extra.widthMillimeters, extra.thicknessMillimeters)),
+                        extra.species);
+                }
+            }
+        }
+
+        private IEnumerable<StockSpec> ExtraStocks()
+        {
+            bool first = true;
+            foreach ((StockSpec stock, WoodSpeciesDefinition _) in StockAssets())
+            {
+                if (!first)
+                {
+                    yield return stock;
+                }
+
+                first = false;
+            }
+        }
 
         private IEnumerable<string> Tips()
         {

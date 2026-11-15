@@ -173,9 +173,10 @@ namespace WoodcraftSimulator.Editor
             BuildBenchTools(workshop, materials);
             BuildWorkbenchLamp(workshop, materials.Wall);
             BuildAssemblyTable(workshop, materials);
+            BuildTerraceSite(environment, materials);
             BuildJobBoard(workshop, materials, species);
             BuildToolWall(workshop, materials);
-            BuildSawhorses(workshop, materials.Workbench);
+            BuildSawhorses(workshop, materials.Workbench, new Vector3(-1.6f, FloorTop, 0f));
         }
 
         /// <summary>
@@ -190,11 +191,14 @@ namespace WoodcraftSimulator.Editor
             float centerY = FloorTop + 1.5f;
             const float centerX = -1.9f;
             GameObject board = CreateBox("JobBoard", parent, new Vector3(centerX, centerY, wallZ - 0.01f),
-                new Vector3(1.0f, 0.5f, 0.02f), materials.Workbench);
+                new Vector3(1.3f, 0.5f, 0.02f), materials.Workbench);
             Object.DestroyImmediate(board.GetComponent<BoxCollider>()); // the sheets are what you aim at
 
             var jobBoard = board.AddComponent<JobBoard>();
-            JobDefinition[] jobs = { JobAssets.FrameJob(species), JobAssets.ShelfJob(species), ToteAssets.ToteJob(species) };
+            JobDefinition[] jobs =
+            {
+                JobAssets.FrameJob(species), JobAssets.ShelfJob(species), ToteAssets.ToteJob(species), TerraceAssets.TerraceJob(species)
+            };
             for (int i = 0; i < jobs.Length; i++)
             {
                 // A4 portrait (210 × 297 mm) pinned on the board; the sheet is a child of the workshop, not the board,
@@ -228,6 +232,9 @@ namespace WoodcraftSimulator.Editor
             SetReference(jobBoard, "cutList", Object.FindFirstObjectByType<CutList>());
             SetReference(jobBoard, "waste", Object.FindFirstObjectByType<WorkshopWaste>());
             SetReference(jobBoard, "economy", economy);
+            GameObject terraceSite = GameObject.Find("Environment/TerraceSite");
+            SetReferences(jobBoard, "otherStations",
+                terraceSite != null ? new Object[] { terraceSite.GetComponent<AssemblyStation>() } : new Object[0]);
             SetReference(jobBoard, "saw", SawAssets.HandSaw());
             SetReferences(jobBoard, "fasteners", Fasteners());
         }
@@ -246,6 +253,8 @@ namespace WoodcraftSimulator.Editor
             var economy = economyObject.AddComponent<WorkshopEconomy>();
             SetReference(economy, "catalog", catalog);
             SetReference(economy, "delivery", delivery);
+            GameObject outdoor = GameObject.Find("Environment/OutdoorDelivery");
+            SetReference(economy, "outdoorDelivery", outdoor != null ? outdoor.GetComponent<StockDelivery>() : null);
             SetReferences(economy, "fasteners", Fasteners());
             var serializedEconomy = new SerializedObject(economy);
             serializedEconomy.FindProperty("startingFundsEuros").floatValue = 100f;
@@ -262,18 +271,24 @@ namespace WoodcraftSimulator.Editor
             serializedEconomy.ApplyModifiedPropertiesWithoutUndo();
 
             float wallZ = InteriorDepth / 2f;
-            float centerY = FloorTop + 1.5f;
-            const float centerX = 2.6f; // right of the light switch (x 1.4), six sheets wide
+            // Up to seven sheets per row, material rows on top, equipment upgrades in the last row (D-044, D-046).
+            const int columns = 7;
+            const float rowStep = 0.33f;
+            const float centerX = 2.75f; // right of the light switch (x 1.4)
+            float topY = FloorTop + 1.85f;
             int count = catalog.Boards.Count + catalog.FastenerBoxes.Count;
-            // Two rows: material on top, equipment upgrades below (D-044).
-            GameObject board = CreateBox("OrderBoard", parent, new Vector3(centerX, centerY - 0.17f, wallZ - 0.01f),
-                new Vector3(0.3f * count + 0.1f, 0.85f, 0.02f), materials.Workbench);
+            int rows = (count + columns - 1) / columns;
+            float bottomY = topY - rows * rowStep;
+            GameObject board = CreateBox("OrderBoard", parent,
+                new Vector3(centerX, (topY + bottomY) / 2f, wallZ - 0.01f),
+                new Vector3(0.3f * columns + 0.1f, (rows + 1) * rowStep + 0.05f, 0.02f), materials.Workbench);
             Object.DestroyImmediate(board.GetComponent<BoxCollider>());
             var sheetSize = new Vector3(0.21f, 0.297f, 0.002f);
             for (int i = 0; i < count; i++)
             {
-                float x = centerX + (i - (count - 1) / 2f) * 0.3f;
-                GameObject sheet = CreateBox($"OrderSheet_{i}", parent, new Vector3(x, centerY, wallZ - 0.021f),
+                float x = centerX + (i % columns - (columns - 1) / 2f) * 0.3f;
+                float y = topY - i / columns * rowStep;
+                GameObject sheet = CreateBox($"OrderSheet_{i}", parent, new Vector3(x, y, wallZ - 0.021f),
                     sheetSize, materials.Paper);
                 EnlargeGrabCollider(sheet, sheetSize);
                 var orderSheet = sheet.AddComponent<OrderSheet>();
@@ -283,7 +298,7 @@ namespace WoodcraftSimulator.Editor
                 serializedSheet.ApplyModifiedPropertiesWithoutUndo();
             }
 
-            BuildUpgrades(parent, materials, economy, centerX, centerY - 0.34f, wallZ);
+            BuildUpgrades(parent, materials, economy, centerX, bottomY, wallZ);
 
             // The drill takes its screws from the stock.
             DrillDriverTool drill = Object.FindFirstObjectByType<DrillDriverTool>();
@@ -467,33 +482,34 @@ namespace WoodcraftSimulator.Editor
         /// room's Z axis 1.2 m apart, so a long board laid along Z rests on both. Boards are sawn at work height only
         /// (bench, sawhorses, table), not on the floor; the saw is told where the floor is.
         /// </summary>
-        private static void BuildSawhorses(Transform parent, Material wood)
+        private static void BuildSawhorses(Transform parent, Material wood, Vector3 baseCenter, bool setSawFloor = true)
         {
             const float height = 0.65f;
             const float beamLength = 0.9f;
             const float beamWidth = 0.09f;
             const float beamThickness = 0.06f;
             const float legSize = 0.045f;
-            const float centerX = -1.6f;
+            const float centerX = 0f;
             var horses = new GameObject("Sawhorses").transform;
             horses.SetParent(parent, false);
+            horses.localPosition = baseCenter;
             foreach (float z in new[] { -0.6f, 0.6f })
             {
-                CreateBox("SawhorseBeam", horses, new Vector3(centerX, FloorTop + height - beamThickness / 2f, z),
+                CreateBox("SawhorseBeam", horses, new Vector3(centerX, height - beamThickness / 2f, z),
                     new Vector3(beamLength, beamThickness, beamWidth), wood);
                 float legHeight = height - beamThickness;
                 foreach (float dx in new[] { -beamLength / 2f + 0.06f, beamLength / 2f - 0.06f })
                 {
                     foreach (float dz in new[] { -0.12f, 0.12f })
                     {
-                        CreateBox("SawhorseLeg", horses, new Vector3(centerX + dx, FloorTop + legHeight / 2f, z + dz),
+                        CreateBox("SawhorseLeg", horses, new Vector3(centerX + dx, legHeight / 2f, z + dz),
                             new Vector3(legSize, legHeight, legSize), wood);
                     }
                 }
             }
 
             HandSawTool saw = Object.FindFirstObjectByType<HandSawTool>();
-            if (saw != null)
+            if (saw != null && setSawFloor)
             {
                 var serialized = new SerializedObject(saw);
                 serialized.FindProperty("floorY").floatValue = FloorTop;
@@ -509,9 +525,99 @@ namespace WoodcraftSimulator.Editor
             SetReference(sounds, "toolBelt", player.GetComponent<PlayerToolBelt>());
             SetReference(sounds, "economy", Object.FindFirstObjectByType<WorkshopEconomy>());
         }
+
+        /// <summary>
+        /// Outdoor terrace site (Phase 10, D-046) on the ground in front of the workshop door: an assembly station
+        /// for the terrace blueprint (origin = ground at the terrace centre), a thin site floor to aim at, a corner
+        /// stake to set out the outline (string line), six pier spots to dig and gravel, a delivery area for terrace
+        /// material and two sawhorses to cut it.
+        /// </summary>
+        private static void BuildTerraceSite(Transform environment, GreyboxMaterials materials)
+        {
+            var siteObject = new GameObject("TerraceSite");
+            siteObject.transform.SetParent(environment, false);
+            siteObject.transform.localPosition = new Vector3(0f, 0f, -6f);
+            Transform site = siteObject.transform;
+
+            // Thin site floor (child of the station): aiming at it offers the pier slots.
+            CreateBox("SiteFloor", site, new Vector3(0f, 0.005f, 0f), new Vector3(2.8f, 0.01f, 2.2f), materials.Concrete);
+
+            var preparation = siteObject.AddComponent<SitePreparation>();
+            var spots = new Object[6];
+            for (int i = 0; i < 6; i++)
+            {
+                Vector3 p = TerraceAssets.PierPosition(i);
+                GameObject spot = CreateBox($"PierSpot_{i + 1}", site, new Vector3(p.x, 0.02f, p.z),
+                    new Vector3(0.3f, 0.02f, 0.3f), materials.PencilMark);
+                GameObject stake = CreateBox("Stake", spot.transform, new Vector3(0f, 6f, 0f), new Vector3(0.1f, 12f, 0.1f),
+                    materials.PencilRed);
+                Object.DestroyImmediate(stake.GetComponent<BoxCollider>());
+                GameObject gravel = CreateBox("Gravel", spot.transform, new Vector3(0f, 0.5f, 0f), new Vector3(1.1f, 1f, 1.1f),
+                    materials.Steel);
+                Object.DestroyImmediate(gravel.GetComponent<BoxCollider>());
+                gravel.SetActive(false);
+                var siteSpot = spot.AddComponent<SiteSpot>();
+                spot.AddComponent<PersistentId>().Set($"PierSpot_{i + 1}");
+                var serializedSpot = new SerializedObject(siteSpot);
+                serializedSpot.FindProperty("site").objectReferenceValue = preparation;
+                serializedSpot.FindProperty("slotId").stringValue = $"pier-{i + 1}";
+                serializedSpot.FindProperty("stakeVisual").objectReferenceValue = stake;
+                serializedSpot.FindProperty("gravelVisual").objectReferenceValue = gravel;
+                serializedSpot.ApplyModifiedPropertiesWithoutUndo();
+                spots[i] = siteSpot;
+            }
+
+            // Corner stake and the string line around the outline (2.4 × 1.8 m).
+            GameObject marker = CreateBox("CornerStake", site, new Vector3(-1.25f, 0.25f, -0.95f), new Vector3(0.05f, 0.5f, 0.05f),
+                materials.PencilRed);
+            EnlargeGrabCollider(marker, marker.transform.localScale);
+            SetReference(marker.AddComponent<SiteMarker>(), "site", preparation);
+            var lineObject = new GameObject("StringLine");
+            lineObject.transform.SetParent(site, false);
+            var line = lineObject.AddComponent<LineRenderer>();
+            line.useWorldSpace = false;
+            line.loop = true;
+            line.positionCount = 4;
+            line.SetPositions(new[]
+            {
+                new Vector3(-1.2f, 0.3f, -0.9f), new Vector3(1.2f, 0.3f, -0.9f), new Vector3(1.2f, 0.3f, 0.9f),
+                new Vector3(-1.2f, 0.3f, 0.9f)
+            });
+            line.widthMultiplier = 0.006f;
+            line.sharedMaterial = materials.CutGuide;
+            line.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            line.enabled = false;
+            SetReferences(preparation, "spots", spots);
+            SetReference(preparation, "stringLine", line);
+
+            var station = siteObject.AddComponent<AssemblyStation>();
+            siteObject.AddComponent<PersistentId>().Set("TerraceSite");
+            SetReference(station, "blueprint", TerraceAssets.Terrace());
+            SetReference(station, "ghostMaterial", materials.BlueprintGhost);
+            SetReference(station, "pointMarkerMaterial", materials.CutGuide);
+            SetReference(station, "pilotPointMaterial", materials.PilotPoint);
+            SetReference(station, "screwHeadMaterial", materials.Steel);
+            SetReference(station, "holeMaterial", materials.PencilMark);
+            SetReference(station, "waste", Object.FindFirstObjectByType<WorkshopWaste>());
+            SetReferences(station, "knownBlueprints", new Object[] { TerraceAssets.Terrace() });
+            SetReferences(station, "fasteners", Fasteners());
+            var serializedStation = new SerializedObject(station);
+            serializedStation.FindProperty("snapDistance").floatValue = 0.15f;
+            serializedStation.ApplyModifiedPropertiesWithoutUndo();
+
+            // Delivery area for terrace material: on the ground right of the site, boards along Z.
+            var deliveryObject = new GameObject("OutdoorDelivery");
+            deliveryObject.transform.SetParent(environment, false);
+            deliveryObject.transform.localPosition = new Vector3(1.9f, 0f, -6f);
+            deliveryObject.AddComponent<StockDelivery>();
+
+            // Sawhorses left of the site, for cutting joists to length outside.
+            BuildSawhorses(environment, materials.Workbench, new Vector3(-2.4f, 0f, -6f), setSawFloor: false);
+        }
         private static Object[] Fasteners() => new Object[]
         {
-            BlueprintAssets.WoodScrew5x80(), BlueprintAssets.WoodScrew4x40(), BlueprintAssets.Nail2_8x50(), BlueprintAssets.Dowel8x40()
+            BlueprintAssets.WoodScrew5x80(), BlueprintAssets.WoodScrew4x40(), BlueprintAssets.Nail2_8x50(), BlueprintAssets.Dowel8x40(),
+            TerraceAssets.DeckScrew(), TerraceAssets.JoistHanger(), TerraceAssets.PostBase()
         };
 
         private static void SetReferences(Object target, string propertyName, IReadOnlyList<Object> values)
@@ -1015,14 +1121,14 @@ namespace WoodcraftSimulator.Editor
 
             var jobBoard = Object.FindFirstObjectByType<JobBoard>();
             SetReference(service, "jobBoard", jobBoard);
-            var delivery = Object.FindFirstObjectByType<StockDelivery>();
-            if (delivery != null)
+            foreach (StockDelivery delivery in Object.FindObjectsByType<StockDelivery>(FindObjectsSortMode.None))
             {
                 SetReference(delivery, "boardFactory", factory);
             }
 
             SetReference(service, "economy", Object.FindFirstObjectByType<WorkshopEconomy>());
             SetReference(service, "upgrades", Object.FindFirstObjectByType<WorkshopUpgrades>());
+            SetReference(service, "site", Object.FindFirstObjectByType<SitePreparation>());
 
             return service;
         }

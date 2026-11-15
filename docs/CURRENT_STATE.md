@@ -13,7 +13,7 @@ first try: the saw works as before (D-030). In-game texts Turkish (D-041), red p
 **Phase 7 (material economy) started** (plan K1-K7 approved 2026-11-15, D-040): 7a domain rules done (money, ledger,
 catalog, consumable screws, priced bill of materials, job settlement, inventory summary, save format 2). 7b (scene)
 next. D-042 (recommended clutch on the drill, owner request) implemented, awaiting MT-022.
-**Batch to Phase 10 (D-043)**: owner tests 7b-10 at once. 7b done (MT-023). Phase 8 done (D-044, MT-024). Phase 9 done (nails, glue+dowels, sanding+oil, rip cut, tool tote job; D-045, MT-025). Next: Phase 10.
+**Batch to Phase 10 (D-043)**: owner tests 7b-10 at once. 7b done (MT-023). Phase 8 done (D-044, MT-024). Phase 9 done (D-045, MT-025). Phase 10 done (outdoor terrace, site preparation, several stocks, connectors, deposit; D-046, MT-026). **Batch complete: waiting for the owner's test (TESTING.md, MT-022..MT-026).**
 Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 
 ## Completed
@@ -77,6 +77,7 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 | D-041 Turkish texts + red pilot points: static compile + `dotnet test` | 0 errors, 0 warnings; 229/229 tests passed (Claude). Unity compile + play-test pending (MT-021) | 2026-11-15 |
 | Phase 6 + D-041 (owner) | Accepted: "her şey iyi çalışıyor devam edebiliriz"; `main` fast-forwarded to 86821c5 | 2026-11-15 |
 | D-042 recommended clutch: static compile + `dotnet test` | 0 errors, 0 warnings; 233/233 tests passed (Claude). Unity compile + play-test pending (MT-022) | 2026-11-15 |
+| Batch 7b-10 (D-040, D-043..D-046): static compile + `dotnet test` after every step | 0 errors, 0 warnings; 247/247 tests passed (Claude). Not compiled or played in Unity yet: batch test MT-023..MT-026 pending | 2026-11-15 |
 
 ## Known issues / limitations
 - **Carry feel not liked yet** (owner, 2026-11-13). Ideas for later: smooth follow (lerp/slerp) instead of rigid
@@ -106,4 +107,4 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 1. Done: Company Name `OezalAstudio` (owner, 2026-11-15).
 2. Done: MT-016, MT-017 passed.
 3. Done: Phase 6 + D-041 accepted, `main` fast-forwarded. Owner: MT-022 (recommended clutch) when convenient.
-4. Claude: batch D-043: Phase 8 (tool wall, upgrades, sawhorse, sounds), 9, 10; then the owner runs the batch test section of TESTING.md.
+4. Owner: batch test (TESTING.md: MT-022, then the "Batch test up to Phase 10" section MT-023..MT-026). Then Claude fixes what it finds, `main` is fast-forwarded, Phase 11 is planned.

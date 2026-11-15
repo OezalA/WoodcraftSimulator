@@ -24,6 +24,9 @@ namespace WoodcraftSimulator.Economy
             [Min(1f)] public float thicknessMillimeters = 18f;
             [Min(0.01f)] public float priceEuros = 8.5f;
 
+            [Tooltip("Delivered to the outdoor site instead of the workshop (terrace material, D-046).")]
+            public bool deliverOutdoors;
+
             public BoardDimensions Dimensions =>
                 BoardDimensions.FromMillimeters(lengthMillimeters, widthMillimeters, thicknessMillimeters);
         }
@@ -71,6 +74,20 @@ namespace WoodcraftSimulator.Economy
             }
 
             return new MaterialCatalog(items);
+        }
+
+        /// <summary>Whether this board item is delivered to the outdoor site.</summary>
+        public bool DeliversOutdoors(string boardItemId)
+        {
+            foreach (BoardEntry board in boards)
+            {
+                if (board != null && board.id == boardItemId)
+                {
+                    return board.deliverOutdoors;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>The species asset of a board item (to create the physical board), or null.</summary>

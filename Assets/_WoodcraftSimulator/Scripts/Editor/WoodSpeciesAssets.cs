@@ -45,6 +45,8 @@ namespace WoodcraftSimulator.Editor
             new SpeciesSeed("walnut", "Walnut", "Juglans regia", 640f, new Color(0.45f, 0.32f, 0.22f)),
             new SpeciesSeed("larch", "Larch", "Larix decidua", 590f, new Color(0.82f, 0.58f, 0.40f)),
             new SpeciesSeed("douglas-fir", "Douglas fir", "Pseudotsuga menziesii", 530f, new Color(0.84f, 0.60f, 0.42f)),
+            // Not wood (D-046): concrete pier blocks are sold and carried like boards but never sawn or sanded.
+            new SpeciesSeed("concrete", "Concrete", "Concrete (pier blocks)", 2200f, new Color(0.62f, 0.62f, 0.6f)),
         };
 
         /// <summary>Returns all default species by id, creating missing assets.</summary>
@@ -69,6 +71,7 @@ namespace WoodcraftSimulator.Editor
                     serialized.FindProperty("densityKgPerCubicMeter").floatValue = seed.Density;
                     serialized.FindProperty("greyboxColor").colorValue = seed.Color;
                     serialized.FindProperty("dataNotes").stringValue = DataNotes;
+                    serialized.FindProperty("isTimber").boolValue = seed.Id != "concrete";
                     serialized.ApplyModifiedPropertiesWithoutUndo();
                     AssetDatabase.SaveAssetIfDirty(definition);
                 }

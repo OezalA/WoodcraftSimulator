@@ -121,7 +121,7 @@ calculated correctly.
 - [x] 9c: Sanding and surface finish (quality goal)
 - [x] 9d: Wood glue and dowels (clamping, drying time)
 
-## Phase 10: Outdoor Construction (scope approved 2026-11-15, D-043)
-- [ ] 10a: Outdoor area next to the workshop, site preparation
-- [ ] 10b: Terrace 2.4 × 1.8 m blueprint: pier blocks, beams, joists with connectors, decking; stage validation
-- [ ] 10c: Terrace job (material, pay), batch test list
+## Phase 10: Outdoor Construction (scope approved 2026-11-15, D-043) - code done, awaiting batch test MT-026 (D-046)
+- [x] 10a: Outdoor area next to the workshop, site preparation
+- [x] 10b: Terrace 2.4 × 1.8 m blueprint: pier blocks, beams, joists with connectors, decking; stage validation
+- [x] 10c: Terrace job (material, pay, deposit), batch test list

@@ -246,7 +246,7 @@ namespace WoodcraftSimulator.Persistence
             WasteData waste = data.waste ?? new WasteData();
             JobData job = data.job ?? new JobData();
             if (!(job.elapsedSeconds >= 0.0) || double.IsInfinity(job.elapsedSeconds) || job.boardsDelivered < 0 ||
-                job.boardsOrderedExtra < 0 || job.boardsOrderedExtra > job.boardsDelivered ||
+                job.boardsOrderedExtra < 0 || job.boardsOrderedExtra > job.boardsDelivered || job.depositCents < 0 ||
                 !(job.sawdustAtStartCubicMeters >= 0.0) || double.IsInfinity(job.sawdustAtStartCubicMeters) ||
                 Array.Exists(job.completedJobIds ?? Array.Empty<string>(), string.IsNullOrWhiteSpace))
             {
