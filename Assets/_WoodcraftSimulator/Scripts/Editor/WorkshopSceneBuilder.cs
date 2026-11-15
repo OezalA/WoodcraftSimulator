@@ -116,6 +116,7 @@ namespace WoodcraftSimulator.Editor
             BuildHud(player.GetComponent<PlayerInteractor>(), player.GetComponent<PlayerCarrier>(), hudLayout, panelSettings);
             SaveGameService saveService = BuildSaveSystem(player, materials, WoodSpeciesAssets.EnsureDefaults());
             BuildPauseSystem(player, pauseMenuLayout, panelSettings, saveService);
+            TurkishNames.Apply();
 
             // Intentionally does not touch Build Settings (ProjectSettings): add the scene there manually when needed.
             EditorSceneManager.SaveScene(scene, ScenePath);
@@ -378,6 +379,7 @@ namespace WoodcraftSimulator.Editor
             SetReference(station, "blueprint", BlueprintAssets.Frame600x300());
             SetReference(station, "ghostMaterial", materials.BlueprintGhost);
             SetReference(station, "pointMarkerMaterial", materials.CutGuide);
+            SetReference(station, "pilotPointMaterial", materials.PilotPoint);
             SetReference(station, "screwHeadMaterial", materials.Steel);
             SetReference(station, "holeMaterial", materials.PencilMark);
             SetReference(station, "waste", Object.FindFirstObjectByType<WorkshopWaste>());
@@ -820,6 +822,7 @@ namespace WoodcraftSimulator.Editor
             public Material PencilMark { get; } = GetOrCreateUnlit("PencilMark", new Color(0.12f, 0.12f, 0.13f));
             public Material CutGuide { get; } = GetOrCreateUnlit("CutGuide", new Color(1f, 0.45f, 0.1f));
             public Material MarkPreview { get; } = GetOrCreateUnlit("MarkPreview", new Color(0.2f, 0.5f, 1f));
+            public Material PilotPoint { get; } = GetOrCreateUnlit("PilotPoint", new Color(0.9f, 0.1f, 0.15f));
             public Material DrillTeal { get; } = GetOrCreate("DrillTeal", new Color(0.1f, 0.55f, 0.5f));
             public Material Paper { get; } = GetOrCreate("Paper", new Color(0.93f, 0.93f, 0.90f));
 

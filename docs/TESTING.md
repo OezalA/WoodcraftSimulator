@@ -385,6 +385,19 @@ Precondition: MT-019. Esc → New workshop (empty assembly table).
 | Accept the practice frame | Works the same with 95 × 45 stock; its corner screws need pilot holes |
 | Ruin a part, E on the active sheet | One more board is delivered; the result shows `1 ordered extra` |
 
+### MT-021: Turkish texts and red pilot-hole points (D-041)
+Precondition: stop Play, let Unity compile, rebuild the scene (this also fills the Turkish names of the assets),
+Esc → New workshop.
+| Step | Expected |
+|---|---|
+| Play | All texts in Turkish: prompts (`[E]  Metre al`), tool readouts, job board, job sheet, pause menu. Turkish letters (ç, ğ, ı, İ, ö, ş, ü) render correctly, no empty boxes |
+| Esc | Menu: `Duraklatıldı`, `Devam et`, `Kaydet`, `Fare hassasiyeti`, `Language: English`, `Yeni atölye`, `Çıkış` |
+| Accept the shelf job, install the left side, the bottom and the middle shelf | Bottom joint: both points **red** (9 mm from the side's end); middle joint: orange |
+| Drill (driver bit) aimed at a red point | Extra line: `Kırmızı nokta: tahta ucuna yakın, önce pilot delik aç ([Q] matkap ucu), yoksa tahta çatlar` |
+| Q, drill the red point | `Pilot delik açıldı: vida ucuna geç [Q]`; the point turns orange |
+| Esc → `Language: English` | The workshop is saved and reloaded in English (job, boards and screws unchanged); the button now reads `Dil: Türkçe` |
+| `Dil: Türkçe` | Back to Turkish |
+
 ## Game view setup (corrects the earlier tip)
 A fixed resolution such as *Full HD (1920x1080)* at `Scale 1x` **crops** the image when the Game view window is
 smaller than 1920×1080: the bottom (tool belt bar) and the lower right (tool in hand) are cut off.

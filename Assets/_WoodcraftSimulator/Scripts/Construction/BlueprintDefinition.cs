@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using WoodcraftSimulator.Localization;
 using WoodcraftSimulator.Materials;
 using WoodcraftSimulator.Measurement;
 
@@ -20,6 +21,10 @@ namespace WoodcraftSimulator.Construction
         {
             public string id = "part";
             public string displayName = "Part";
+
+            [Tooltip("Turkish name (D-041); empty = the English name is shown.")]
+            public string displayNameTurkish = string.Empty;
+
             [Min(1f)] public float lengthMillimeters = 600f;
             [Min(1f)] public float widthMillimeters = 95f;
             [Min(1f)] public float thicknessMillimeters = 45f;
@@ -56,6 +61,9 @@ namespace WoodcraftSimulator.Construction
         [SerializeField] private string id = "blueprint";
         [SerializeField] private string displayName = "Blueprint";
 
+        [Tooltip("Turkish name (D-041); empty = the English name is shown.")]
+        [SerializeField] private string displayNameTurkish = string.Empty;
+
         [Tooltip("Deviation (mm) within which a part counts as accurate.")]
         [SerializeField, Min(0f)] private float accuracyMillimeters = 1f;
 
@@ -67,7 +75,7 @@ namespace WoodcraftSimulator.Construction
 
         public string Id => id;
 
-        public string DisplayName => displayName;
+        public string DisplayName => Loc.Pick(displayName, displayNameTurkish);
 
         public IReadOnlyList<Slot> Slots => slots;
 
@@ -78,7 +86,7 @@ namespace WoodcraftSimulator.Construction
             var domainSlots = new List<PartSlot>();
             foreach (Slot slot in slots)
             {
-                domainSlots.Add(new PartSlot(slot.id, slot.displayName,
+                domainSlots.Add(new PartSlot(slot.id, Loc.Pick(slot.displayName, slot.displayNameTurkish),
                     BoardDimensions.FromMillimeters(slot.lengthMillimeters, slot.widthMillimeters, slot.thicknessMillimeters),
                     slot.prerequisites));
             }
@@ -90,7 +98,7 @@ namespace WoodcraftSimulator.Construction
                     connection.fastenerId, connection.points.Length, EndDistances(connection)));
             }
 
-            return new Blueprint(id, displayName, domainSlots, domainConnections,
+            return new Blueprint(id, DisplayName, domainSlots, domainConnections,
                 new Tolerance(Length.FromMillimeters((double)accuracyMillimeters)),
                 new Tolerance(Length.FromMillimeters((double)fitMillimeters)));
         }

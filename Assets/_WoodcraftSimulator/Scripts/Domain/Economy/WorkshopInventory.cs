@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using WoodcraftSimulator.Localization;
 using WoodcraftSimulator.Materials;
 using WoodcraftSimulator.Measurement;
 
@@ -121,14 +122,14 @@ namespace WoodcraftSimulator.Economy
             if (groups == null) throw new ArgumentNullException(nameof(groups));
 
             var text = new StringBuilder();
-            text.Append("WORKSHOP INVENTORY\n");
-            text.Append("Money: ").Append(ledger.Balance).Append("   (job income ").Append(ledger.TotalJobIncome)
-                .Append(", purchases ").Append(ledger.TotalPurchases).Append(")\n");
+            text.Append(Loc.T("WORKSHOP INVENTORY\n", "ATÖLYE ENVANTERİ\n"));
+            text.Append(Loc.T("Money: ", "Para: ")).Append(ledger.Balance).Append(Loc.T("   (job income ", "   (iş geliri ")).Append(ledger.TotalJobIncome)
+                .Append(Loc.T(", purchases ", ", alımlar ")).Append(ledger.TotalPurchases).Append(")\n");
 
-            text.Append("Timber:\n");
+            text.Append(Loc.T("Timber:\n", "Ahşap:\n"));
             if (groups.Count == 0)
             {
-                text.Append("  none\n");
+                text.Append(Loc.T("  none\n", "  yok\n"));
             }
 
             foreach (InventoryGroup group in groups)
@@ -137,25 +138,25 @@ namespace WoodcraftSimulator.Economy
                     .Append(" × ").Append(group.Thickness).Append(':');
                 if (group.Value.HasValue)
                 {
-                    text.Append("   value ").Append(group.Value.Value);
+                    text.Append(Loc.T("   value ", "   değer ")).Append(group.Value.Value);
                 }
 
                 text.Append('\n');
                 if (group.StockBoards.Count > 0)
                 {
-                    text.Append("    boards: ").Append(Lengths(group.StockBoards)).Append('\n');
+                    text.Append(Loc.T("    boards: ", "    tahtalar: ")).Append(Lengths(group.StockBoards)).Append('\n');
                 }
 
                 if (group.CutPieces.Count > 0)
                 {
-                    text.Append("    cut pieces: ").Append(Lengths(group.CutPieces)).Append('\n');
+                    text.Append(Loc.T("    cut pieces: ", "    kesik parçalar: ")).Append(Lengths(group.CutPieces)).Append('\n');
                 }
             }
 
-            text.Append("Fasteners:\n");
+            text.Append(Loc.T("Fasteners:\n", "Vidalar:\n"));
             if (fasteners == null || fasteners.All.Count == 0)
             {
-                text.Append("  none\n");
+                text.Append(Loc.T("  none\n", "  yok\n"));
             }
             else
             {

@@ -5,6 +5,7 @@ using WoodcraftSimulator.Construction;
 using WoodcraftSimulator.Cutting;
 using WoodcraftSimulator.Handling;
 using WoodcraftSimulator.Materials;
+using WoodcraftSimulator.Localization;
 using WoodcraftSimulator.Measurement;
 using WoodcraftSimulator.Persistence;
 using WoodcraftSimulator.Tools;
@@ -209,22 +210,24 @@ namespace WoodcraftSimulator.Jobs
             {
                 if (!plans[index].IsFeasible)
                 {
-                    return $"{jobName}: can't be made from the stock (see Console)";
+                    return Loc.T($"{jobName}: can't be made from the stock (see Console)", $"{jobName}: bu malzemeden yapılamaz (Console'a bak)");
                 }
 
                 return station.IsEmpty
-                    ? $"Accept job: {jobName}   ({BoardsToDeliver(index)} board(s) delivered)"
-                    : $"Accept job: {jobName}   (clear the {station.DisplayName} first)";
+                    ? Loc.T($"Accept job: {jobName}   ({BoardsToDeliver(index)} board(s) delivered)",
+                        $"İşi kabul et: {jobName}   ({BoardsToDeliver(index)} tahta teslim edilir)")
+                    : Loc.T($"Accept job: {jobName}   (clear the {station.DisplayName} first)",
+                        $"İşi kabul et: {jobName}   (önce {station.DisplayName} boşaltılmalı)");
             }
 
             if (index != activeIndex)
             {
-                return $"Job in progress: {jobs[activeIndex].DisplayName}";
+                return Loc.T($"Job in progress: {jobs[activeIndex].DisplayName}", $"Devam eden iş: {jobs[activeIndex].DisplayName}");
             }
 
             return IsComplete
-                ? $"Deliver the {jobName} (finish the job)"
-                : $"Order 1 more board   ({ActiveJob.Stock})";
+                ? Loc.T($"Deliver the {jobName} (finish the job)", $"{jobName} teslim et (işi bitir)")
+                : Loc.T($"Order 1 more board   ({ActiveJob.Stock})", $"1 tahta daha sipariş et   ({ActiveJob.Stock})");
         }
 
         public void Interact(int index)

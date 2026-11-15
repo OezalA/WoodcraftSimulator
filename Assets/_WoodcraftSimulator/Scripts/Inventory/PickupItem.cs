@@ -31,7 +31,7 @@ namespace WoodcraftSimulator.Inventory
 
         public string Description => Item != null ? Item.DisplayName : name;
 
-        public string InteractionPrompt => $"Take {Description}";
+        public string InteractionPrompt => Localization.Loc.T($"Take {Description}", $"{Description} al");
 
         private void Awake()
         {

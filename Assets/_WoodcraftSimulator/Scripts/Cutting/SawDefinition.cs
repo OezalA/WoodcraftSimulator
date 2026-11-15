@@ -15,6 +15,9 @@ namespace WoodcraftSimulator.Cutting
 
         [SerializeField] private string displayName = "Hand saw";
 
+        [Tooltip("Turkish name (D-041); empty = the English name is shown.")]
+        [SerializeField] private string displayNameTurkish = string.Empty;
+
         [Tooltip("Width of material turned into sawdust per cut, in millimeters.")]
         [SerializeField, Min(0.1f)] private float kerfMillimeters = 2f;
 
@@ -26,9 +29,9 @@ namespace WoodcraftSimulator.Cutting
 
         public string Id => id;
 
-        public string DisplayName => displayName;
+        public string DisplayName => Localization.Loc.Pick(displayName, displayNameTurkish);
 
-        public Saw ToDomain() => new Saw(id, displayName, Length.FromMillimeters((double)kerfMillimeters));
+        public Saw ToDomain() => new Saw(id, DisplayName, Length.FromMillimeters((double)kerfMillimeters));
 
         /// <summary>Time to saw through a cross-section of the given area (gameplay value, not physics).</summary>
         public float SawingSeconds(double crossSectionSquareCentimeters) =>

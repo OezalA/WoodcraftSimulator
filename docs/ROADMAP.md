@@ -103,6 +103,7 @@ calculated correctly.
   prorated values, purchase), `FastenerStock` (consumable screws), `ShoppingList` (priced bill of materials),
   `JobSettlement` (70 % pay + goal bonus, timber and screws used, profit), `WorkshopInventory` (loose timber by
   species / section, cut pieces, value), save format 2 with migration; 225 tests. Domain only, nothing to play-test
+- [x] D-041 (inserted): in-game texts Turkish by default (English in the pause menu), red pilot-hole points; 229 tests, awaiting MT-021
 - [ ] 7b: Scene: catalog assets and order board at the delivery area, starting funds €100 + one box of screws, job
   sheet buys the material instead of free delivery, drill uses screws from the stock, money in the HUD, inventory
-  screen (Tab), result with pay / cost / profit, economy saved. Then MT-021+
+  screen (Tab), result with pay / cost / profit, economy saved. Then MT-022+

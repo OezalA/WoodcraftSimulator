@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using WoodcraftSimulator.Localization;
 using WoodcraftSimulator.Interaction;
 using WoodcraftSimulator.Measurement;
 
@@ -32,13 +33,13 @@ namespace WoodcraftSimulator.Tools
                 ? jobLengths[Index]
                 : Length.FromMillimeters((long)targetsMillimeters[Index]);
 
-        public string Description => $"Cut list: target {Target}";
+        public string Description => Loc.T($"Cut list: target {Target}", $"Kesim listesi: hedef {Target}");
 
         // The HUD shows only this line for interactables, so it states the CURRENT target (showing the next one
         // was misread as the current one, D-028).
         public string InteractionPrompt => HasJob
-            ? $"Next cut list line   (now: {Target}, {jobLabels[Index]})"
-            : $"Change target   (now: {Target})";
+            ? Loc.T($"Next cut list line   (now: {Target}, {jobLabels[Index]})", $"Sonraki kesim satırı   (şu an: {Target}, {jobLabels[Index]})")
+            : Loc.T($"Change target   (now: {Target})", $"Hedefi değiştir   (şu an: {Target})");
 
         /// <summary>Raised after the target changed.</summary>
         public event Action TargetChanged;

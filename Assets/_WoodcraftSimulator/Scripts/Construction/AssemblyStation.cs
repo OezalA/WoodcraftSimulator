@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using WoodcraftSimulator.Core;
 using WoodcraftSimulator.Handling;
+using WoodcraftSimulator.Localization;
 using WoodcraftSimulator.Materials;
 using WoodcraftSimulator.Measurement;
 using WoodcraftSimulator.Persistence;
@@ -47,6 +48,9 @@ namespace WoodcraftSimulator.Construction
         [Header("Fastening points")]
         [Tooltip("Marker of a fastening point that can be screwed now (both parts installed).")]
         [SerializeField] private Material pointMarkerMaterial;
+
+        [Tooltip("Marker of a fastening point that needs a pilot hole first (near a board end, D-041).")]
+        [SerializeField] private Material pilotPointMaterial;
 
         [Tooltip("Material of the visible screw heads.")]
         [SerializeField] private Material screwHeadMaterial;
@@ -491,12 +495,24 @@ namespace WoodcraftSimulator.Construction
             return Build.GetPiece(spec.partA) != null && Build.GetPiece(spec.partB) != null;
         }
 
+        /// <summary>
+        /// True if a screw here would split the board: the point needs a pilot hole (near a board end) and has none yet.
+        /// </summary>
+        public bool NeedsPilotHere(int connection, int point)
+        {
+            string id = active.Connections[connection].id;
+            FastenerSpec spec = Fastener(FastenerIdAt(connection));
+            return spec != null && !Build.IsFastened(id, point) && !Build.HasPilotHole(id, point) &&
+                   Build.NeedsPilotHole(id, point, spec);
+        }
+
         public PilotResult DrillPilot(int connection, int point)
         {
             PilotResult result = Build.TryDrillPilot(active.Connections[connection].id, point);
             if (result == PilotResult.Drilled)
             {
                 AddHole(connection, point);
+                UpdatePointMarkers();
                 Changed?.Invoke();
             }
 
@@ -640,6 +656,12 @@ namespace WoodcraftSimulator.Construction
                 {
                     bool open = PartsInstalled(c) && !Build.IsFastened(active.Connections[c].id, p);
                     pointMarkers[c][p].SetActive(open);
+                    if (open && pilotPointMaterial != null)
+                    {
+                        // Red = drill a pilot hole first; orange = ready for a screw.
+                        pointMarkers[c][p].GetComponent<MeshRenderer>().sharedMaterial =
+                            NeedsPilotHere(c, p) ? pilotPointMaterial : pointMarkerMaterial;
+                    }
                 }
             }
         }
@@ -777,7 +799,9 @@ namespace WoodcraftSimulator.Construction
         {
             int index = Array.IndexOf(installed, carryable);
             RemoveResult result = index < 0 ? RemoveResult.SlotEmpty : Build.CanRemove(active.Slots[index].id);
-            reason = result == RemoveResult.Fastened ? $"Screwed into the {DisplayName}" : null;
+            reason = result == RemoveResult.Fastened
+                ? Loc.T($"Screwed into the {DisplayName}", $"{DisplayName} içine vidalı")
+                : null;
             return result == RemoveResult.Removed;
         }
 
@@ -801,19 +825,28 @@ namespace WoodcraftSimulator.Construction
         {
             BlueprintDefinition.Slot slot = active.Slots[index];
             Build.Blueprint.TryGetSlot(slot.id, out PartSlot partSlot);
+            string name = partSlot.DisplayName;
             switch (result)
             {
                 case PlaceResult.Placed:
                     SlotFit fit = Build.CheckFit(partSlot, piece);
                     return fit.IsAccurate
-                        ? $"{slot.displayName}: fits"
-                        : $"{slot.displayName}: fits, but {DeviationText(fit)} (inaccurate)";
+                        ? Loc.T($"{name}: fits", $"{name}: uyuyor")
+                        : Loc.T($"{name}: fits, but {DeviationText(fit)} (inaccurate)", $"{name}: uyuyor ama {DeviationText(fit)} (ölçü dışı)");
                 case PlaceResult.DoesNotFit:
-                    return $"Doesn't fit {slot.displayName}: needs {partSlot.Dimensions}, this one {piece.Dimensions}";
+                    return Loc.T($"Doesn't fit {name}: needs {partSlot.Dimensions}, this one {piece.Dimensions}",
+                        $"{name} yerine uymuyor: {partSlot.Dimensions} gerekli, bu {piece.Dimensions}");
                 case PlaceResult.PrerequisiteMissing:
-                    return $"{slot.displayName}: place {string.Join(", ", slot.prerequisites)} first";
+                    var first = new List<string>();
+                    foreach (string prerequisite in slot.prerequisites)
+                    {
+                        first.Add(Build.Blueprint.TryGetSlot(prerequisite, out PartSlot other) ? other.DisplayName : prerequisite);
+                    }
+
+                    return Loc.T($"{name}: place {string.Join(", ", first)} first",
+                        $"{name}: önce {string.Join(", ", first)} takılmalı");
                 default:
-                    return $"{slot.displayName}: {result}";
+                    return $"{name}: {result}";
             }
         }
 
@@ -821,23 +854,23 @@ namespace WoodcraftSimulator.Construction
         private static string DeviationText(SlotFit fit)
         {
             ToleranceCheck worst = fit.Length;
-            string what = "long";
+            int what = 0;
             if (fit.Width.Deviation.Abs() > worst.Deviation.Abs())
             {
                 worst = fit.Width;
-                what = "wide";
+                what = 1;
             }
 
             if (fit.Thickness.Deviation.Abs() > worst.Deviation.Abs())
             {
                 worst = fit.Thickness;
-                what = "thick";
+                what = 2;
             }
 
             bool tooMuch = worst.Deviation > Length.Zero;
-            string adjective = what == "long" ? (tooMuch ? "too long" : "too short")
-                : what == "wide" ? (tooMuch ? "too wide" : "too narrow")
-                : (tooMuch ? "too thick" : "too thin");
+            string adjective = what == 0 ? (tooMuch ? Loc.T("too long", "fazla uzun") : Loc.T("too short", "fazla kısa"))
+                : what == 1 ? (tooMuch ? Loc.T("too wide", "fazla geniş") : Loc.T("too narrow", "fazla dar"))
+                : (tooMuch ? Loc.T("too thick", "fazla kalın") : Loc.T("too thin", "fazla ince"));
             return $"{worst.Deviation.Abs()} {adjective}";
         }
 

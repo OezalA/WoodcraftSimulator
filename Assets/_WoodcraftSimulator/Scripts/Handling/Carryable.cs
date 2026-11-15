@@ -55,11 +55,12 @@ namespace WoodcraftSimulator.Handling
             {
                 if (InstalledIn == null)
                 {
-                    return $"Pick up {Description}";
+                    return Localization.Loc.T($"Pick up {Description}", $"{Description} al");
                 }
 
                 return InstalledIn.CanRelease(this, out string reason)
-                    ? $"Take {Description} out of {InstalledIn.DisplayName}"
+                    ? Localization.Loc.T($"Take {Description} out of {InstalledIn.DisplayName}",
+                        $"{Description} parçasını {InstalledIn.DisplayName} içinden çıkar")
                     : reason;
             }
         }

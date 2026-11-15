@@ -15,6 +15,9 @@ namespace WoodcraftSimulator.Materials
 
         [SerializeField] private string displayName = "Species";
 
+        [Tooltip("Turkish name (D-041); empty = the English name is shown.")]
+        [SerializeField] private string displayNameTurkish = string.Empty;
+
         [SerializeField] private string scientificName = "";
 
         [Tooltip("Typical density at ~12 % moisture content (air-dry), kg/m³. Approximate reference value.")]
@@ -28,7 +31,7 @@ namespace WoodcraftSimulator.Materials
 
         public string Id => id;
 
-        public string DisplayName => displayName;
+        public string DisplayName => Localization.Loc.Pick(displayName, displayNameTurkish);
 
         public string ScientificName => scientificName;
 
@@ -36,6 +39,6 @@ namespace WoodcraftSimulator.Materials
 
         public string DataNotes => dataNotes;
 
-        public WoodSpecies ToDomain() => new WoodSpecies(id, displayName, densityKgPerCubicMeter);
+        public WoodSpecies ToDomain() => new WoodSpecies(id, DisplayName, densityKgPerCubicMeter);
     }
 }

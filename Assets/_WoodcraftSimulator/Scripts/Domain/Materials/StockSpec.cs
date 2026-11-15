@@ -27,6 +27,7 @@ namespace WoodcraftSimulator.Materials
         public bool Matches(string speciesId, BoardDimensions dimensions) =>
             SpeciesId == speciesId && Dimensions == dimensions;
 
-        public override string ToString() => $"{SpeciesName} board {Dimensions}";
+        public override string ToString() =>
+            Localization.Loc.T($"{SpeciesName} board {Dimensions}", $"{SpeciesName} tahta {Dimensions}");
     }
 }

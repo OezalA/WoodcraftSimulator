@@ -5,6 +5,7 @@ using WoodcraftSimulator.Construction;
 using WoodcraftSimulator.Handling;
 using WoodcraftSimulator.Interaction;
 using WoodcraftSimulator.Inventory;
+using WoodcraftSimulator.Localization;
 using WoodcraftSimulator.Tools;
 
 namespace WoodcraftSimulator.UI
@@ -56,9 +57,9 @@ namespace WoodcraftSimulator.UI
         {
             // Show the actually bound keys (e.g. "E", "LMB") so prompts stay correct if bindings change.
             interactKeyLabel = KeyLabel("Player/Interact");
-            carryHint = $"[{KeyLabel("Player/Place")}]  Place      " +
-                        $"[{KeyLabel("Player/Rotate")}]  Rotate      " +
-                        $"[{KeyLabel("Player/Tilt")}]  Tilt";
+            carryHint = $"[{KeyLabel("Player/Place")}]  {Loc.T("Place", "Bırak")}      " +
+                        $"[{KeyLabel("Player/Rotate")}]  {Loc.T("Rotate", "Döndür")}      " +
+                        $"[{KeyLabel("Player/Tilt")}]  {Loc.T("Tilt", "Eğ")}";
         }
 
         private void OnEnable()
@@ -285,18 +286,22 @@ namespace WoodcraftSimulator.UI
             switch (carrier.Status)
             {
                 case PlacementStatus.NoSurface:
-                    return "Aim at a free, level surface within reach";
+                    return Loc.T("Aim at a free, level surface within reach", "Yakında boş, düz bir yüzeye nişan al");
                 case PlacementStatus.Blocked:
                     Collider blocker = carrier.Blocker;
                     if (blocker == null)
                     {
-                        return "Blocked";
+                        return Loc.T("Blocked", "Engellendi");
                     }
 
                     // The carrier lives on the player, so a blocker inside the player hierarchy is the player itself.
-                    return blocker.transform.IsChildOf(carrier.transform)
-                        ? "Blocked: too close to you"
-                        : $"Blocked by {blocker.name}";
+                    if (blocker.transform.IsChildOf(carrier.transform))
+                    {
+                        return Loc.T("Blocked: too close to you", "Engellendi: sana çok yakın");
+                    }
+
+                    string what = blocker.GetComponentInParent<IDescribable>()?.Description ?? blocker.name;
+                    return Loc.T($"Blocked by {what}", $"Engel: {what}");
                 default:
                     return null;
             }

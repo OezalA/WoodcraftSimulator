@@ -12,14 +12,17 @@ namespace WoodcraftSimulator.Construction
     {
         [SerializeField] private string id = "wood-screw-5x80";
         [SerializeField] private string displayName = "Wood screw 5 × 80 mm";
+
+        [Tooltip("Turkish name (D-041); empty = the English name is shown.")]
+        [SerializeField] private string displayNameTurkish = string.Empty;
         [SerializeField, Min(0.1f)] private float diameterMillimeters = 5f;
         [SerializeField, Min(1f)] private float lengthMillimeters = 80f;
 
         public string Id => id;
 
-        public string DisplayName => displayName;
+        public string DisplayName => Localization.Loc.Pick(displayName, displayNameTurkish);
 
-        public FastenerSpec ToDomain() => new FastenerSpec(id, displayName,
+        public FastenerSpec ToDomain() => new FastenerSpec(id, DisplayName,
             Length.FromMillimeters((double)diameterMillimeters), Length.FromMillimeters((double)lengthMillimeters));
     }
 }

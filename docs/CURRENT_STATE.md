@@ -7,12 +7,12 @@ _Last updated: 2026-11-15_
 `main` fast-forwarded to `develop`.
 **Save & load done** (D-036): S1–S3 accepted by the owner on 2026-11-15 ("save başarılı") after MT-016/MT-017;
 `main` fast-forwarded to `develop`.
-**Phase 6 (first complete job) implemented, NOT yet tested in Unity** (plan approved 2026-11-15: small shelf, frame
+**Phase 6 (first complete job): MT-020 played through by the owner** (plan approved 2026-11-15: small shelf, frame
 stays as practice job, realistic drill M1/M2, D-038, D-039). Stroke sawing (T1/T2) was reverted by the owner after the
-first try: the saw works as before (D-030). Manual tests MT-019, MT-020 pending.
+first try: the saw works as before (D-030). Acceptance pending: MT-020 delivery step, MT-019, MT-021.
 **Phase 7 (material economy) started** (plan K1-K7 approved 2026-11-15, D-040): 7a domain rules done (money, ledger,
 catalog, consumable screws, priced bill of materials, job settlement, inventory summary, save format 2). 7b (scene)
-next.
+next. In-game texts are Turkish now, with red pilot-hole points (D-041, after MT-020).
 Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 
 ## Completed
@@ -72,6 +72,8 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 | Saw revert: static compile + `dotnet test` | 0 errors, 0 warnings; 209/209 tests passed (Claude); Unity compile and play-test pending | 2026-11-15 |
 | Saw revert in Unity: compilation | `Tundra build success`, no `error CS` (Editor.log, observed by Claude); owner rebuilt the scene and played. MT-019/MT-020 results not reported yet | 2026-11-15 |
 | 7a economy domain: static compile + `dotnet test` | 0 errors, 0 warnings; 225/225 tests passed (Claude). Domain only, nothing to play-test | 2026-11-15 |
+| MT-020 shelf job (owner) | Completed end to end without help: 5/5 parts within ±1 mm, 12 screws (10 flush, 2 too deep), **8 splits** (pilot-hole rule not noticed), 1 extra board; save, quit and reload kept everything. Delivery step not reported yet | 2026-11-15 |
+| D-041 Turkish texts + red pilot points: static compile + `dotnet test` | 0 errors, 0 warnings; 229/229 tests passed (Claude). Unity compile + play-test pending (MT-021) | 2026-11-15 |
 
 ## Known issues / limitations
 - **Carry feel not liked yet** (owner, 2026-11-13). Ideas for later: smooth follow (lerp/slerp) instead of rigid
@@ -82,7 +84,7 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 - Species densities are approximate, unverified placeholders (D-017).
 - Build Settings: `Workshop` enabled; deleted `SampleScene` still listed (disabled, harmless).
 - Mouse look tuned for mouse only; gamepad right stick would be far too slow.
-- In-game text is English only.
+- In-game texts: Turkish by default, English selectable in the pause menu (D-041). Docs and code stay English.
 - Tool and board visuals are placeholders until the visual pass with purchased assets (D-037).
 - Screwing tuning values (clutch window, drive speed) are first guesses (D-038): expect tuning after play-testing.
 - Deferred realism (D-038): squareness of hand cuts, clamping, screw angle, free screw positions (Phase 9); ask the owner first, playability comes before difficulty.
@@ -100,5 +102,5 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 ## Next recommended action
 1. Done: Company Name `OezalAstudio` (owner, 2026-11-15).
 2. Done: MT-016, MT-017 passed.
-3. Owner: report MT-019 (drill), MT-020 (shelf job) results (saw as in MT-011). After acceptance: fast-forward `main`.
-4. Claude: Phase 7b (scene side of the economy, D-040), then MT-021+.
+3. Owner: rebuild the scene, run MT-021 (Turkish texts, red pilot points); confirm the MT-020 delivery step and MT-019. Then Phase 6 is accepted and `main` is fast-forwarded.
+4. Claude: Phase 7b (scene side of the economy, D-040), then MT-022+.

@@ -1,21 +1,26 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
 using WoodcraftSimulator.Core;
+using WoodcraftSimulator.Localization;
 using WoodcraftSimulator.Persistence;
 using WoodcraftSimulator.Player;
 
 namespace WoodcraftSimulator.UI
 {
     /// <summary>
-    /// Pause menu (UI Toolkit): resume, save, mouse sensitivity, new workshop (asks for confirmation), quit.
+    /// Pause menu (UI Toolkit): resume, save, mouse sensitivity, language, new workshop (asks for confirmation), quit.
     /// Visibility follows <see cref="PauseController.PausedChanged"/>; layout in UI/PauseMenu.uxml.
+    /// Texts are set here in the current language (D-041); the UXML only holds English placeholders.
     /// </summary>
     [RequireComponent(typeof(UIDocument))]
     public sealed class PauseMenu : MonoBehaviour
     {
         private const string HiddenClass = "hidden";
-        private const string NewWorkshopText = "New workshop";
-        private const string ConfirmNewWorkshopText = "Really start over? Click again";
+
+        private static string NewWorkshopText => Loc.T("New workshop", "Yeni atölye");
+
+        private static string ConfirmNewWorkshopText => Loc.T("Really start over? Click again", "Gerçekten baştan başlansın mı? Tekrar tıkla");
 
         [SerializeField] private PauseController pauseController;
         [SerializeField] private PlayerController playerController;
@@ -28,6 +33,7 @@ namespace WoodcraftSimulator.UI
         private Button saveButton;
         private Button newButton;
         private Button quitButton;
+        private Button languageButton;
         private Label saveStatus;
         private Slider sensitivitySlider;
         private bool confirmingNewWorkshop;
@@ -40,11 +46,13 @@ namespace WoodcraftSimulator.UI
             saveButton = root.Q<Button>("save-button");
             newButton = root.Q<Button>("new-button");
             quitButton = root.Q<Button>("quit-button");
+            languageButton = root.Q<Button>("language-button");
             saveStatus = root.Q<Label>("save-status");
             sensitivitySlider = root.Q<Slider>("sensitivity-slider");
+            Label title = root.Q<Label>("pause-title");
 
             if (menuRoot == null || resumeButton == null || quitButton == null || sensitivitySlider == null ||
-                saveButton == null || newButton == null || saveStatus == null)
+                saveButton == null || newButton == null || saveStatus == null || languageButton == null || title == null)
             {
                 Debug.LogError($"{nameof(PauseMenu)}: expected elements are missing from the UXML.", this);
                 enabled = false;
@@ -63,6 +71,15 @@ namespace WoodcraftSimulator.UI
             sensitivitySlider.showInputField = true;
             sensitivitySlider.SetValueWithoutNotify(UserPreferences.MouseSensitivity);
 
+            title.text = Loc.T("Paused", "Duraklatıldı");
+            resumeButton.text = Loc.T("Resume", "Devam et");
+            saveButton.text = Loc.T("Save", "Kaydet");
+            sensitivitySlider.label = Loc.T("Mouse sensitivity", "Fare hassasiyeti");
+            quitButton.text = Loc.T("Quit", "Çıkış");
+            // The button names the language it switches to, in that language.
+            languageButton.text = Loc.IsTurkish ? "Language: English" : "Dil: Türkçe";
+            newButton.text = NewWorkshopText;
+
             bool canSave = saveService != null;
             saveButton.EnableInClassList(HiddenClass, !canSave);
             newButton.EnableInClassList(HiddenClass, !canSave);
@@ -72,6 +89,7 @@ namespace WoodcraftSimulator.UI
             saveButton.clicked += OnSaveClicked;
             newButton.clicked += OnNewClicked;
             quitButton.clicked += OnQuitClicked;
+            languageButton.clicked += OnLanguageClicked;
             sensitivitySlider.RegisterValueChangedCallback(OnSensitivityChanged);
             pauseController.PausedChanged += OnPausedChanged;
             if (canSave)
@@ -103,6 +121,11 @@ namespace WoodcraftSimulator.UI
             if (quitButton != null)
             {
                 quitButton.clicked -= OnQuitClicked;
+            }
+
+            if (languageButton != null)
+            {
+                languageButton.clicked -= OnLanguageClicked;
             }
 
             sensitivitySlider?.UnregisterValueChangedCallback(OnSensitivityChanged);
@@ -167,6 +190,25 @@ namespace WoodcraftSimulator.UI
             {
                 saveStatus.text = saveService.LastStatus;
             }
+        }
+
+        /// <summary>
+        /// Switches the language. Names of species, parts and jobs are built when the scene loads, so the workshop is
+        /// saved and the scene reloaded (nothing is lost).
+        /// </summary>
+        private void OnLanguageClicked()
+        {
+            UserPreferences.Language = Loc.IsTurkish ? Language.English : Language.Turkish;
+            UserPreferences.Save();
+            Loc.Current = UserPreferences.Language;
+            if (saveService != null)
+            {
+                saveService.SaveAndReload();
+                return;
+            }
+
+            Time.timeScale = 1f;
+            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
         }
 
         private void OnSensitivityChanged(ChangeEvent<float> change)

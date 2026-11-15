@@ -258,6 +258,21 @@ namespace WoodcraftSimulator.Tests.Jobs
         }
 
         [Test]
+        public void Result_InTurkish()
+        {
+            WoodcraftSimulator.Localization.Loc.With(WoodcraftSimulator.Localization.Language.Turkish, () =>
+            {
+                JobResult good = JobResult.Create(PaidShelfJob(), CompletedShelf(careful: true).CreateReport(), ShelfUsage(2, 0), 600);
+                string text = JobText.Result(good, "Ahşap vidası 4 × 40 mm", JobSettlement.Calculate(good, Catalog()));
+
+                StringAssert.Contains("İŞ TAMAMLANDI: Wall shelf   (10:00)", text);
+                StringAssert.Contains("[x] Her vida başı hizada (12/12 hizada)", text);
+                StringAssert.Contains("Kâr: €48.58", text);
+                StringAssert.EndsWith("Yalnızca bu yapıyı anlatır; yapısal güvenlik kontrolü değildir.", text);
+            });
+        }
+
+        [Test]
         public void Settlement_MissedGoals_LowerThePay()
         {
             Job job = PaidShelfJob();

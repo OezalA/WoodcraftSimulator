@@ -107,12 +107,15 @@ namespace WoodcraftSimulator.Jobs
 
                 if (slot.Dimensions.Width != stockSize.Width || slot.Dimensions.Thickness != stockSize.Thickness)
                 {
-                    problems.Add($"{slot.DisplayName}: needs {slot.Dimensions.Width} × {slot.Dimensions.Thickness}, " +
-                                 $"the stock is {stockSize.Width} × {stockSize.Thickness} (no rip cuts yet).");
+                    problems.Add(Localization.Loc.T(
+                        $"{slot.DisplayName}: needs {slot.Dimensions.Width} × {slot.Dimensions.Thickness}, the stock is {stockSize.Width} × {stockSize.Thickness} (no rip cuts yet).",
+                        $"{slot.DisplayName}: {slot.Dimensions.Width} × {slot.Dimensions.Thickness} gerekli, malzeme {stockSize.Width} × {stockSize.Thickness} (boyuna kesim henüz yok)."));
                 }
                 else if (slot.Dimensions.Length > stockSize.Length)
                 {
-                    problems.Add($"{slot.DisplayName}: {slot.Dimensions.Length} is longer than the stock ({stockSize.Length}).");
+                    problems.Add(Localization.Loc.T(
+                        $"{slot.DisplayName}: {slot.Dimensions.Length} is longer than the stock ({stockSize.Length}).",
+                        $"{slot.DisplayName}: {slot.Dimensions.Length} malzemeden ({stockSize.Length}) uzun."));
                 }
                 else
                 {

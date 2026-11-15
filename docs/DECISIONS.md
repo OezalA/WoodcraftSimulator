@@ -460,3 +460,23 @@ Owner approved the proposal (K1-K7). 7a = domain rules and tests (done); 7b = sc
   "not started", so an old save gets the starting funds on load. Validation: known kinds, balance not negative,
   fastener ids unique, counts not negative.
 - `StockSpec` moved from `Jobs` to `Materials` so that `Economy` depends only on `Materials` (Jobs → Economy).
+
+## D-041: In-game texts in Turkish (default) with English as an option; red pilot-hole points (Accepted, 2026-11-15)
+Owner, after MT-020: the 8 splits happened because the pilot-hole rule was not noticed ("bilmiyordum"), and in-game
+instructions should be Turkish. Owner chose: in-game texts (not the docs) Turkish, English stays selectable.
+- **`Localization.Loc`** (domain): two languages, so each player-facing text is an English/Turkish pair where it is
+  used, `Loc.T("Pilot hole drilled", "Pilot delik açıldı")`: nothing can be left untranslated, the code stays
+  readable, no package. If a third language is ever needed, this becomes a key-based string table.
+- **Data names** (species, items, saw, fasteners, blueprints and their parts, jobs with description and tips) get a
+  Turkish field next to the English one; `Loc.Pick` falls back to English when it is empty. The scene builder fills
+  empty Turkish fields by id (`Editor/TurkishNames.cs`, also menu *WoodcraftSimulator > Apply Turkish Names*); an
+  edited name is kept.
+- **Language setting**: `UserPreferences.Language` (PlayerPrefs, default Turkish), applied before the scene loads.
+  Pause menu button "Language: English" / "Dil: Türkçe": saves the workshop and reloads the scene, because names are
+  built when objects wake up. Domain default is English, so tests stay English (`TestLanguage` set-up fixture).
+- Numbers keep the "." decimal point and "mm" in both languages (tape readings must look the same).
+- Turkish letters (ğ, ş, ı, İ) are outside Latin-1 (D-028 text rule): MT-021 checks that the default UI font shows them.
+- **Red pilot-hole points**: a fastening point that would split the board (near a board end, no pilot hole yet) is
+  drawn red instead of orange; aiming at it with the driver bit adds the line "Red point: ... drill a pilot hole
+  first ([Q] drill bit), or the board splits". The rule is shown before it can be broken; it stays a choice (no
+  block), in line with the owner's playability rule.

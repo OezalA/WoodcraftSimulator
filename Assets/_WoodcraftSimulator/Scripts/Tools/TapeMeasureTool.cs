@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using WoodcraftSimulator.Localization;
 using WoodcraftSimulator.Measurement;
 
 namespace WoodcraftSimulator.Tools
@@ -74,7 +75,8 @@ namespace WoodcraftSimulator.Tools
             lastReading = reading;
             lastBoardLength = boardLength;
             hasReading = true;
-            Readout = $"{reading.FormatMillimeters()} mm   (board {boardLength.FormatMillimeters()} mm)";
+            Readout = Loc.T($"{reading.FormatMillimeters()} mm   (board {boardLength.FormatMillimeters()} mm)",
+                $"{reading.FormatMillimeters()} mm   (tahta {boardLength.FormatMillimeters()} mm)");
             ReadoutChanged?.Invoke();
         }
 

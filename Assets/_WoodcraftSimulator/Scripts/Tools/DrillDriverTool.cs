@@ -5,6 +5,7 @@ using UnityEngine.InputSystem;
 using WoodcraftSimulator.Construction;
 using WoodcraftSimulator.Core;
 using WoodcraftSimulator.Inventory;
+using WoodcraftSimulator.Localization;
 using WoodcraftSimulator.Measurement;
 
 namespace WoodcraftSimulator.Tools
@@ -126,7 +127,7 @@ namespace WoodcraftSimulator.Tools
             if (bitChangeLeft > 0f)
             {
                 bitChangeLeft -= Time.deltaTime;
-                SetLines($"Changing to the {BitName(bit)}...", resultLine);
+                SetLines(Loc.T($"Changing to the {BitName(bit)}...", $"{BitName(bit)} takılıyor..."), resultLine);
                 return;
             }
 
@@ -177,8 +178,17 @@ namespace WoodcraftSimulator.Tools
             if (!pressed)
             {
                 pickup.HandOffset = Vector3.zero;
-                string action = bit == Bit.Drill ? "drill a pilot hole" : DriveActionText(station, connection, point);
-                SetLines($"{ToolLine()}\nHold {useKeyLabel} to {action}", resultLine);
+                string action = bit == Bit.Drill
+                    ? Loc.T($"Hold {useKeyLabel} to drill a pilot hole", $"Pilot delik açmak için {useKeyLabel} basılı tut")
+                    : DriveActionText(station, connection, point);
+                if (bit == Bit.Driver && station.NeedsPilotHere(connection, point))
+                {
+                    // Red point (D-041): the rule is shown before the player can break it.
+                    action += "\n" + Loc.T($"Red point: near the board end, drill a pilot hole first ([{modeKeyLabel}] drill bit), or the board splits",
+                        $"Kırmızı nokta: tahta ucuna yakın, önce pilot delik aç ([{modeKeyLabel}] matkap ucu), yoksa tahta çatlar");
+                }
+
+                SetLines($"{ToolLine()}\n{action}", resultLine);
                 return;
             }
 
@@ -217,13 +227,16 @@ namespace WoodcraftSimulator.Tools
             pickup.HandOffset = Vector3.forward * (pushLength * Mathf.Clamp01(pilotProgress));
             if (pilotProgress < 1f)
             {
-                SetLines($"{ToolLine()}\nDrilling  {Mathf.FloorToInt(pilotProgress * 100f)}%", resultLine);
+                int percent = Mathf.FloorToInt(pilotProgress * 100f);
+                SetLines($"{ToolLine()}\n{Loc.T($"Drilling  {percent}%", $"Deliniyor  %{percent}")}", resultLine);
                 return;
             }
 
             PilotResult result = targetStation.DrillPilot(targetConnection, targetPoint);
             ClearTarget();
-            resultLine = result == PilotResult.Drilled ? "Pilot hole drilled" : $"Not drilled: {result}";
+            resultLine = result == PilotResult.Drilled
+                ? Loc.T($"Pilot hole drilled: switch to the driver bit [{modeKeyLabel}]", $"Pilot delik açıldı: vida ucuna geç [{modeKeyLabel}]")
+                : Loc.T($"Not drilled: {result}", $"Delinmedi: {result}");
             SetLines(ToolLine(), resultLine);
         }
 
@@ -233,7 +246,8 @@ namespace WoodcraftSimulator.Tools
             driveFastener = FastenerFor(targetStation.FastenerIdAt(targetConnection));
             if (driveFastener == null)
             {
-                SetLines($"{ToolLine()}\nNo {targetStation.FastenerIdAt(targetConnection)} screws in the box", resultLine);
+                string missing = targetStation.FastenerIdAt(targetConnection);
+                SetLines($"{ToolLine()}\n{Loc.T($"No {missing} screws in the box", $"Kutuda {missing} vida yok")}", resultLine);
                 return;
             }
 
@@ -257,7 +271,7 @@ namespace WoodcraftSimulator.Tools
             targetStation.ShowDrivingHead(targetConnection, targetPoint, drive.HeadHeight);
             pickup.HandOffset = Vector3.forward * (pushLength * (float)Math.Min(1.0, drive.Depth.Millimeters / driveFastener.Length.Millimeters));
 
-            string state = drive.IsSlipping ? "Clutch slipping" : "Driving";
+            string state = drive.IsSlipping ? Loc.T("Clutch slipping", "Tork kaydırıyor") : Loc.T("Driving", "Vidalanıyor");
             SetLines($"{ToolLine()}\n{state}: {HeadText(drive.HeadHeight)}", resultLine);
         }
 
@@ -283,7 +297,7 @@ namespace WoodcraftSimulator.Tools
             if (driveIsNewScrew && finished.Depth.Millimeters < minimumSetDepthMillimeters)
             {
                 station.HideDrivingHead();
-                resultLine = "Screw not set: hold the trigger longer";
+                resultLine = Loc.T("Screw not set: hold the trigger longer", "Vida tutmadı: tetiği daha uzun basılı tut");
                 SetLines(ToolLine(), resultLine);
                 return;
             }
@@ -295,11 +309,12 @@ namespace WoodcraftSimulator.Tools
 
             if (result == FastenResult.NotProud)
             {
-                resultLine = $"Released without driving further: {HeadText(station.Build.HeadHeight(station.ConnectionId(connection), point) ?? Length.Zero)}";
+                string head = HeadText(station.Build.HeadHeight(station.ConnectionId(connection), point) ?? Length.Zero);
+                resultLine = Loc.T($"Released without driving further: {head}", $"Daha fazla girmeden bırakıldı: {head}");
             }
             else if (result != FastenResult.Fastened)
             {
-                resultLine = $"Not fastened: {result}";
+                resultLine = Loc.T($"Not fastened: {result}", $"Vidalanmadı: {result}");
             }
             else
             {
@@ -307,12 +322,13 @@ namespace WoodcraftSimulator.Tools
                 resultLine = SeatText(finished.Seat, finished.HeadHeight);
                 if (station.Build.IsSplit(connectionId, point))
                 {
-                    resultLine += "\nThe board split! Near the end of a board, drill a pilot hole first";
+                    resultLine += "\n" + Loc.T("The board split! Near the end of a board (red point), drill a pilot hole first",
+                        "Tahta çatladı! Tahta ucuna yakın yerde (kırmızı nokta) önce pilot delik aç");
                 }
 
                 if (station.Build.IsComplete)
                 {
-                    resultLine += $"\n{station.DisplayName} complete";
+                    resultLine += "\n" + Loc.T($"{station.DisplayName} complete", $"{station.DisplayName} tamamlandı");
                 }
             }
 
@@ -337,60 +353,74 @@ namespace WoodcraftSimulator.Tools
             Length? head = station.Build.HeadHeight(station.ConnectionId(connection), point);
             if (head.HasValue)
             {
-                return $"drive this screw further ({HeadText(head.Value)})";
+                return Loc.T($"Hold {useKeyLabel} to drive this screw further ({HeadText(head.Value)})",
+                    $"Bu vidayı daha fazla sıkmak için {useKeyLabel} basılı tut ({HeadText(head.Value)})");
             }
 
             FastenerSpec spec = FastenerFor(station.FastenerIdAt(connection));
-            return spec != null ? $"drive a {spec.DisplayName}" : "drive a screw";
+            string screw = spec != null ? spec.DisplayName : Loc.T("a screw", "vida");
+            return Loc.T($"Hold {useKeyLabel} to drive {screw}", $"{screw} vidalamak için {useKeyLabel} basılı tut");
         }
 
         private string AimHint(AssemblyStation station, PointQuery query)
         {
             if (station.Build.IsComplete && !station.HasPoint(PointQuery.ForScrew))
             {
-                return $"{station.DisplayName} is complete";
+                return Loc.T($"{station.DisplayName} is complete", $"{station.DisplayName} tamamlandı");
             }
 
             if (station.HasPoint(query))
             {
-                return "Aim at an orange screw point";
+                return Loc.T("Aim at a screw point (orange: screw, red: pilot hole first)",
+                    "Bir vida noktasına nişan al (turuncu: vida, kırmızı: önce pilot delik)");
             }
 
             return query == PointQuery.ForPilotHole
-                ? "No point to pre-drill: install both parts of a joint"
-                : "Install both parts of a joint, then aim at an orange screw point";
+                ? Loc.T("No point to pre-drill: install both parts of a joint", "Delinecek nokta yok: bir bağlantının iki parçasını da tak")
+                : Loc.T("Install both parts of a joint, then aim at a screw point", "Bir bağlantının iki parçasını tak, sonra vida noktasına nişan al");
         }
 
         private string ToolLine()
         {
-            string clutchText = clutch == ScrewDrive.DrillMode ? "drill (no clutch)" : $"clutch {clutch}";
-            return $"{BitName(bit)}, {clutchText}   [Wheel] clutch   [{modeKeyLabel}] {BitName(bit == Bit.Driver ? Bit.Drill : Bit.Driver)}";
+            string clutchText = clutch == ScrewDrive.DrillMode
+                ? Loc.T("drill (no clutch)", "delme (tork yok)")
+                : Loc.T($"clutch {clutch}", $"tork {clutch}");
+            string other = BitName(bit == Bit.Driver ? Bit.Drill : Bit.Driver);
+            return Loc.T($"{BitName(bit)}, {clutchText}   [Wheel] clutch   [{modeKeyLabel}] {other}",
+                $"{BitName(bit)}, {clutchText}   [Tekerlek] tork   [{modeKeyLabel}] {other}");
         }
 
-        private static string BitName(Bit value) => value == Bit.Drill ? "Drill bit 3 mm" : "Driver bit";
+        private static string BitName(Bit value) => value == Bit.Drill
+            ? Loc.T("Drill bit 3 mm", "Matkap ucu 3 mm")
+            : Loc.T("Driver bit", "Vida ucu");
 
         private static string HeadText(Length headHeight)
         {
             double mm = headHeight.Millimeters;
             if (Math.Abs(mm) < 0.05)
             {
-                return "head flush";
+                return Loc.T("head flush", "baş hizada");
             }
 
             string amount = Math.Abs(mm).ToString("0.0", CultureInfo.InvariantCulture);
-            return mm > 0.0 ? $"head {amount} mm out" : $"head {amount} mm deep";
+            return mm > 0.0
+                ? Loc.T($"head {amount} mm out", $"baş {amount} mm dışarıda")
+                : Loc.T($"head {amount} mm deep", $"baş {amount} mm gömülü");
         }
 
         private static string SeatText(ScrewSeat seat, Length headHeight)
         {
+            string head = HeadText(headHeight);
             switch (seat)
             {
                 case ScrewSeat.Flush:
-                    return $"Screw in: {HeadText(headHeight)}";
+                    return Loc.T($"Screw in: {head}", $"Vida takıldı: {head}");
                 case ScrewSeat.Proud:
-                    return $"Screw in, but {HeadText(headHeight)}: drive it further (or raise the clutch)";
+                    return Loc.T($"Screw in, but {head}: drive it further (or raise the clutch)",
+                        $"Vida takıldı ama {head}: biraz daha sık (ya da torku artır)");
                 default:
-                    return $"Screw driven too deep ({HeadText(headHeight)}): lower the clutch";
+                    return Loc.T($"Screw driven too deep ({head}): lower the clutch",
+                        $"Vida fazla gömüldü ({head}): torku düşür");
             }
         }
 

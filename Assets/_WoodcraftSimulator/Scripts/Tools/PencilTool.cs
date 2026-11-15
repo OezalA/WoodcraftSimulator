@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using WoodcraftSimulator.Localization;
 using WoodcraftSimulator.Materials;
 using WoodcraftSimulator.Measurement;
 
@@ -40,7 +41,7 @@ namespace WoodcraftSimulator.Tools
         [SerializeField] private BoardAim aim = new BoardAim();
 
         private const float PreviewSurfaceOffset = 0.0012f;
-        private const string AdjustHint = "Wheel: ±1 mm   Shift + wheel: ±10 mm";
+        private static string AdjustHint => Loc.T("Wheel: ±1 mm   Shift + wheel: ±10 mm", "Tekerlek: ±1 mm   Shift + tekerlek: ±10 mm");
 
         private InputAction useAction;
         private InputAction adjustAction;
@@ -111,7 +112,7 @@ namespace WoodcraftSimulator.Tools
                 HideLines();
                 adjusted = false;
                 shownHasReading = false;
-                SetLines("Take a tape measure to measure where to mark", resultLine);
+                SetLines(Loc.T("Take a tape measure to measure where to mark", "İşaretlenecek yeri ölçmek için metreyi al"), resultLine);
                 return;
             }
 
@@ -183,7 +184,7 @@ namespace WoodcraftSimulator.Tools
             // The sticky hook keeps reading past the board's end; a line needs the pencil on the board.
             if (!adjusted && !point.IsOnBoard)
             {
-                SetLines(liveLine, "Aim at the board to draw a line");
+                SetLines(liveLine, Loc.T("Aim at the board to draw a line", "Çizgi çekmek için tahtaya nişan al"));
                 return;
             }
 
@@ -194,15 +195,16 @@ namespace WoodcraftSimulator.Tools
             Length distance = mark.DistanceFromReference(point.BoardLength);
             SetLines(liveLine, cutList != null
                 ? FormatResult(tolerance.Check(cutList.Target, distance))
-                : $"Marked at {distance}");
+                : Loc.T($"Marked at {distance}", $"{distance} noktası işaretlendi"));
         }
 
         private string FormatResult(ToleranceCheck check)
         {
             Length deviation = check.Deviation;
             string signed = (deviation > Length.Zero ? "+" : string.Empty) + deviation;
-            string verdict = check.IsWithin ? "OK" : "OUT OF TOLERANCE";
-            return $"Marked at {check.Actual}  ({signed})  {verdict} {tolerance}";
+            string verdict = check.IsWithin ? Loc.T("OK", "TAMAM") : Loc.T("OUT OF TOLERANCE", "TOLERANS DIŞI");
+            return Loc.T($"Marked at {check.Actual}  ({signed})  {verdict} {tolerance}",
+                $"{check.Actual} işaretlendi  ({signed})  {verdict} {tolerance}");
         }
 
         private void ShowPreview(BoardAimPoint point, float lineZ)
@@ -244,10 +246,10 @@ namespace WoodcraftSimulator.Tools
             shownReading = reading;
             shownTarget = target;
             shownAdjusted = adjusted;
-            string line = $"{reading.FormatMillimeters()} mm{(adjusted ? " (wheel)" : string.Empty)}";
+            string line = $"{reading.FormatMillimeters()} mm{(adjusted ? Loc.T(" (wheel)", " (tekerlek)") : string.Empty)}";
             if (cutList != null)
             {
-                line += $"   target {target.FormatMillimeters()} mm";
+                line += Loc.T($"   target {target.FormatMillimeters()} mm", $"   hedef {target.FormatMillimeters()} mm");
             }
 
             SetLines(line, resultLine);

@@ -9,6 +9,7 @@ using WoodcraftSimulator.Cutting;
 using WoodcraftSimulator.Handling;
 using WoodcraftSimulator.Inventory;
 using WoodcraftSimulator.Jobs;
+using WoodcraftSimulator.Localization;
 using WoodcraftSimulator.Materials;
 using WoodcraftSimulator.Measurement;
 using WoodcraftSimulator.Player;
@@ -44,7 +45,7 @@ namespace WoodcraftSimulator.Persistence
         public string SavePath => Path.Combine(Application.persistentDataPath, FileName);
 
         /// <summary>Short human-readable result of the last load/save (for the pause menu).</summary>
-        public string LastStatus { get; private set; } = "Not saved yet";
+        public string LastStatus { get; private set; } = Loc.T("Not saved yet", "Henüz kaydedilmedi");
 
         /// <summary>Raised after <see cref="LastStatus"/> changed.</summary>
         public event Action StatusChanged;
@@ -77,13 +78,13 @@ namespace WoodcraftSimulator.Persistence
                 SaveGameData data = Capture();
                 string json = JsonUtility.ToJson(data, prettyPrint: true);
                 WriteAtomically(SavePath, json);
-                SetStatus($"Saved {DateTime.Now:HH:mm}");
+                SetStatus(Loc.T($"Saved {DateTime.Now:HH:mm}", $"Kaydedildi {DateTime.Now:HH:mm}"));
                 return true;
             }
             catch (Exception exception)
             {
                 Debug.LogError($"[{nameof(SaveGameService)}] Saving failed: {exception}", this);
-                SetStatus("Saving failed (see Console)");
+                SetStatus(Loc.T("Saving failed (see Console)", "Kayıt başarısız (Console'a bak)"));
                 return false;
             }
         }
@@ -117,12 +118,32 @@ namespace WoodcraftSimulator.Persistence
             SceneManager.LoadScene(buildIndex);
         }
 
+        /// <summary>Saves, then reloads the scene from that save (e.g. after a language change).</summary>
+        public void SaveAndReload()
+        {
+            if (!Save())
+            {
+                return;
+            }
+
+            int buildIndex = SceneManager.GetActiveScene().buildIndex;
+            if (buildIndex < 0)
+            {
+                Debug.LogError($"[{nameof(SaveGameService)}] The scene is not in Build Settings, so it can't be reloaded.", this);
+                return;
+            }
+
+            restarting = true;
+            Time.timeScale = 1f;
+            SceneManager.LoadScene(buildIndex);
+        }
+
         private void Load()
         {
             string path = SavePath;
             if (!File.Exists(path))
             {
-                SetStatus("New workshop (no save yet)");
+                SetStatus(Loc.T("New workshop (no save yet)", "Yeni atölye (henüz kayıt yok)"));
                 return;
             }
 
@@ -151,7 +172,7 @@ namespace WoodcraftSimulator.Persistence
             }
 
             Apply(data);
-            SetStatus($"Loaded save from {FormatSavedAt(data.savedAtUtc)}");
+            SetStatus(Loc.T($"Loaded save from {FormatSavedAt(data.savedAtUtc)}", $"Kayıt yüklendi: {FormatSavedAt(data.savedAtUtc)}"));
         }
 
         private SaveGameData Capture()
@@ -394,7 +415,7 @@ namespace WoodcraftSimulator.Persistence
             }
 
             Debug.LogWarning($"[{nameof(SaveGameService)}] Save not loaded, kept as '{aside}':\n- {string.Join("\n- ", errors)}", this);
-            SetStatus("Save could not be loaded (kept aside, see Console); new workshop");
+            SetStatus(Loc.T("Save could not be loaded (kept aside, see Console); new workshop", "Kayıt yüklenemedi (kenara alındı, Console'a bak); yeni atölye"));
         }
 
         private void SetStatus(string status)
@@ -422,7 +443,7 @@ namespace WoodcraftSimulator.Persistence
         private static string FormatSavedAt(string savedAtUtc) =>
             DateTime.TryParse(savedAtUtc, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out DateTime time)
                 ? time.ToLocalTime().ToString("dd.MM. HH:mm", CultureInfo.InvariantCulture)
-                : "an unknown time";
+                : Loc.T("an unknown time", "bilinmeyen zaman");
 
         private static PoseData ToPose(Transform target)
         {

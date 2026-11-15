@@ -12,7 +12,9 @@ namespace WoodcraftSimulator.Workshop
         [Tooltip("Used in the prompt: \"Turn on <name>\".")]
         [SerializeField] private string lightName = "lamp";
 
-        public string InteractionPrompt => isOn ? $"Turn off {lightName}" : $"Turn on {lightName}";
+        public string InteractionPrompt => isOn
+            ? Localization.Loc.T($"Turn off {lightName}", "Lambayı kapat")
+            : Localization.Loc.T($"Turn on {lightName}", "Lambayı aç");
 
         public bool IsOn => isOn;
 

@@ -4,13 +4,14 @@ using System.Globalization;
 using System.Text;
 using WoodcraftSimulator.Construction;
 using WoodcraftSimulator.Economy;
+using WoodcraftSimulator.Localization;
 using WoodcraftSimulator.Measurement;
 
 namespace WoodcraftSimulator.Jobs
 {
     /// <summary>
     /// Plain-text forms of jobs for the HUD: the job sheet (description, bill of materials, cut list with progress)
-    /// and the results. ASCII/Latin-1 only (the runtime font may lack other symbols).
+    /// and the results. Avoid symbols outside Latin-1 / Turkish letters (D-028, D-041).
     /// </summary>
     public static class JobText
     {
@@ -22,14 +23,15 @@ namespace WoodcraftSimulator.Jobs
             if (plan == null) throw new ArgumentNullException(nameof(plan));
 
             var text = new StringBuilder();
-            text.Append("JOB: ").Append(job.DisplayName).Append("   (").Append(FormatTime(seconds)).Append(")\n");
+            text.Append(Loc.T("JOB: ", "İŞ: ")).Append(job.DisplayName).Append("   (").Append(FormatTime(seconds)).Append(")\n");
             if (job.Description.Length > 0)
             {
                 text.Append(job.Description).Append('\n');
             }
 
-            text.Append("Stock: ").Append(boardsDelivered).Append(" x ").Append(plan.Stock).Append(" delivered\n");
-            text.Append("Cut list:\n");
+            text.Append(Loc.T($"Stock: {boardsDelivered} x {plan.Stock} delivered\n",
+                $"Malzeme: {boardsDelivered} x {plan.Stock} teslim edildi\n"));
+            text.Append(Loc.T("Cut list:\n", "Kesim listesi:\n"));
             for (int i = 0; i < plan.Lines.Count; i++)
             {
                 CutListLine line = plan.Lines[i];
@@ -38,21 +40,18 @@ namespace WoodcraftSimulator.Jobs
                 if (progress != null && i < progress.Count)
                 {
                     CutListLineProgress state = progress[i];
-                    text.Append(state.IsDone ? "  - done" : $"  - {state.Installed} in, {state.Ready} ready");
+                    text.Append(state.IsDone
+                        ? Loc.T("  - done", "  - bitti")
+                        : Loc.T($"  - {state.Installed} in, {state.Ready} ready", $"  - {state.Installed} takılı, {state.Ready} hazır"));
                 }
 
                 text.Append('\n');
             }
 
-            foreach (KeyValuePair<string, int> fastener in plan.Fasteners)
-            {
-                text.Append("Fasteners: ").Append(fastener.Value).Append(" x ")
-                    .Append(fastenerName?.Invoke(fastener.Key) ?? fastener.Key).Append('\n');
-            }
-
+            AppendFasteners(text, plan, fastenerName);
             foreach (string tip in job.Tips)
             {
-                text.Append("Tip: ").Append(tip).Append('\n');
+                text.Append(Loc.T("Tip: ", "İpucu: ")).Append(tip).Append('\n');
             }
 
             return text.ToString().TrimEnd('\n');
@@ -69,7 +68,7 @@ namespace WoodcraftSimulator.Jobs
             text.Append(job.DisplayName);
             if (job.Pay > Money.Zero)
             {
-                text.Append("   Pay ").Append(job.Pay);
+                text.Append(Loc.T("   Pay ", "   Ücret ")).Append(job.Pay);
             }
 
             text.Append('\n');
@@ -80,14 +79,14 @@ namespace WoodcraftSimulator.Jobs
 
             if (!plan.IsFeasible)
             {
-                text.Append("Can't be made from the stock: ").Append(string.Join(" ", plan.Problems));
+                text.Append(Loc.T("Can't be made from the stock: ", "Bu malzemeden yapılamaz: ")).Append(string.Join(" ", plan.Problems));
                 return text.ToString();
             }
 
-            text.Append("Material: ").Append(plan.BoardsNeeded).Append(" x ").Append(plan.Stock);
+            text.Append(Loc.T("Material: ", "Malzeme: ")).Append(plan.BoardsNeeded).Append(" x ").Append(plan.Stock);
             if (job.SpareBoards > 0)
             {
-                text.Append(" + ").Append(job.SpareBoards).Append(" spare");
+                text.Append(" + ").Append(job.SpareBoards).Append(Loc.T(" spare", " yedek"));
             }
 
             text.Append('\n');
@@ -100,17 +99,12 @@ namespace WoodcraftSimulator.Jobs
                     parts.Add(part.FormatMillimeters());
                 }
 
-                text.Append("  Board ").Append(i + 1).Append(": ").Append(string.Join(" + ", parts))
-                    .Append(" mm, offcut ").Append(board.Offcut).Append('\n');
+                text.Append(Loc.T("  Board ", "  Tahta ")).Append(i + 1).Append(": ").Append(string.Join(" + ", parts))
+                    .Append(Loc.T(" mm, offcut ", " mm, artık ")).Append(board.Offcut).Append('\n');
             }
 
-            foreach (KeyValuePair<string, int> fastener in plan.Fasteners)
-            {
-                text.Append("Fasteners: ").Append(fastener.Value).Append(" x ")
-                    .Append(fastenerName?.Invoke(fastener.Key) ?? fastener.Key).Append('\n');
-            }
-
-            text.Append("(kerf ").Append(plan.Kerf).Append(" per cut)");
+            AppendFasteners(text, plan, fastenerName);
+            text.Append(Loc.T($"(kerf {plan.Kerf} per cut)", $"(her kesimde {plan.Kerf} testere payı)"));
             if (shopping != null)
             {
                 text.Append('\n').Append(Shopping(shopping));
@@ -125,29 +119,31 @@ namespace WoodcraftSimulator.Jobs
             if (shopping == null) throw new ArgumentNullException(nameof(shopping));
 
             var text = new StringBuilder();
-            text.Append("In the workshop / to buy:\n");
+            text.Append(Loc.T("In the workshop / to buy:\n", "Atölyede / alınacak:\n"));
             foreach (ShoppingLine line in shopping.Lines)
             {
                 text.Append("  ").Append(line.Needed).Append(" x ").Append(line.Description)
-                    .Append(": have ").Append(line.Available);
+                    .Append(Loc.T(": have ", ": var ")).Append(line.Available);
                 if (!line.IsSold)
                 {
-                    text.Append(line.Available >= line.Needed ? ", enough" : ", not sold by the merchant");
+                    text.Append(line.Available >= line.Needed
+                        ? Loc.T(", enough", ", yeterli")
+                        : Loc.T(", not sold by the merchant", ", satıcıda yok"));
                 }
                 else if (line.UnitsToBuy == 0)
                 {
-                    text.Append(", enough");
+                    text.Append(Loc.T(", enough", ", yeterli"));
                 }
                 else
                 {
-                    text.Append(", buy ").Append(line.UnitsToBuy).Append(" x ").Append(line.Item.DisplayName)
+                    text.Append(Loc.T(", buy ", ", al: ")).Append(line.UnitsToBuy).Append(" x ").Append(line.Item.DisplayName)
                         .Append(" = ").Append(line.Cost);
                 }
 
                 text.Append('\n');
             }
 
-            text.Append("Total to buy: ").Append(shopping.TotalCost);
+            text.Append(Loc.T("Total to buy: ", "Alınacakların toplamı: ")).Append(shopping.TotalCost);
             return text.ToString();
         }
 
@@ -157,22 +153,28 @@ namespace WoodcraftSimulator.Jobs
 
             AssemblyQualityReport report = result.Report;
             var text = new StringBuilder();
-            text.Append("JOB COMPLETE: ").Append(result.Job.DisplayName).Append("   (").Append(FormatTime(result.Seconds)).Append(")\n");
+            text.Append(Loc.T("JOB COMPLETE: ", "İŞ TAMAMLANDI: ")).Append(result.Job.DisplayName)
+                .Append("   (").Append(FormatTime(result.Seconds)).Append(")\n");
             text.Append(AssemblyReportText.Format(result.Job.Blueprint, report, fastenerName, null,
                 includeSafetyNote: false)).Append('\n');
 
             MaterialUsage material = result.Material;
-            text.Append($"Material: {material.BoardsDelivered} board(s) delivered");
+            text.Append(Loc.T($"Material: {material.BoardsDelivered} board(s) delivered",
+                $"Malzeme: {material.BoardsDelivered} tahta teslim edildi"));
             if (material.BoardsOrderedExtra > 0)
             {
-                text.Append($" ({material.BoardsOrderedExtra} ordered extra)");
+                text.Append(Loc.T($" ({material.BoardsOrderedExtra} ordered extra)",
+                    $" ({material.BoardsOrderedExtra} ek sipariş)"));
             }
 
-            text.Append($", {Percent(material.Utilization)} in the {result.Job.Blueprint.DisplayName}\n");
-            text.Append($"  in the structure {Cm3(material.InstalledCubicMeters)} cm³, sawdust {Cm3(material.SawdustCubicMeters)} cm³, " +
-                        $"offcuts {Cm3(material.OffcutCubicMeters)} cm³\n");
+            text.Append(Loc.T($", {Percent(material.Utilization)} in the {result.Job.Blueprint.DisplayName}\n",
+                $", {Percent(material.Utilization)} yapıda kullanıldı\n"));
+            text.Append(Loc.T(
+                $"  in the structure {Cm3(material.InstalledCubicMeters)} cm³, sawdust {Cm3(material.SawdustCubicMeters)} cm³, offcuts {Cm3(material.OffcutCubicMeters)} cm³\n",
+                $"  yapıda {Cm3(material.InstalledCubicMeters)} cm³, talaş {Cm3(material.SawdustCubicMeters)} cm³, artık {Cm3(material.OffcutCubicMeters)} cm³\n"));
 
-            text.Append($"Quality goals {result.GoalsMet}/{result.Goals.Count}:\n");
+            text.Append(Loc.T("Quality goals ", "Kalite hedefleri ")).Append(result.GoalsMet).Append('/')
+                .Append(result.Goals.Count).Append(":\n");
             foreach (QualityGoal goal in result.Goals)
             {
                 text.Append(goal.Met ? "  [x] " : "  [ ] ").Append(goal.Name).Append(" (").Append(goal.Detail).Append(")\n");
@@ -193,17 +195,19 @@ namespace WoodcraftSimulator.Jobs
             if (settlement == null) throw new ArgumentNullException(nameof(settlement));
 
             var text = new StringBuilder();
-            text.Append("Pay: ").Append(settlement.Earned).Append(" of ").Append(settlement.Pay)
-                .Append(" (delivery ").Append(settlement.BasePay).Append(" + goals ").Append(goalsMet).Append('/')
-                .Append(goalCount).Append(' ').Append(settlement.Bonus).Append(")\n");
-            text.Append("Material used: timber ").Append(settlement.TimberCost).Append(", fasteners ")
-                .Append(settlement.FastenerCost).Append('\n');
+            text.Append(Loc.T(
+                $"Pay: {settlement.Earned} of {settlement.Pay} (delivery {settlement.BasePay} + goals {goalsMet}/{goalCount} {settlement.Bonus})\n",
+                $"Ücret: {settlement.Earned} / {settlement.Pay} (teslim {settlement.BasePay} + hedefler {goalsMet}/{goalCount} {settlement.Bonus})\n"));
+            text.Append(Loc.T(
+                $"Material used: timber {settlement.TimberCost}, fasteners {settlement.FastenerCost}\n",
+                $"Kullanılan malzeme: ahşap {settlement.TimberCost}, vida {settlement.FastenerCost}\n"));
             if (settlement.Unpriced.Count > 0)
             {
-                text.Append("  (no price for: ").Append(string.Join(", ", settlement.Unpriced)).Append(")\n");
+                text.Append(Loc.T("  (no price for: ", "  (fiyatı yok: ")).Append(string.Join(", ", settlement.Unpriced)).Append(")\n");
             }
 
-            text.Append("Profit: ").Append(settlement.Profit).Append("   (offcuts stay in the workshop)");
+            text.Append(Loc.T($"Profit: {settlement.Profit}   (offcuts stay in the workshop)",
+                $"Kâr: {settlement.Profit}   (artıklar atölyede kalır)"));
             return text.ToString();
         }
 
@@ -211,6 +215,15 @@ namespace WoodcraftSimulator.Jobs
         {
             int total = (int)Math.Max(0.0, Math.Floor(seconds));
             return $"{total / 60}:{total % 60:00}";
+        }
+
+        private static void AppendFasteners(StringBuilder text, MaterialPlan plan, Func<string, string> fastenerName)
+        {
+            foreach (KeyValuePair<string, int> fastener in plan.Fasteners)
+            {
+                text.Append(Loc.T("Fasteners: ", "Vidalar: ")).Append(fastener.Value).Append(" x ")
+                    .Append(fastenerName?.Invoke(fastener.Key) ?? fastener.Key).Append('\n');
+            }
         }
 
         private static string SlotNames(CutListLine line)
@@ -229,6 +242,8 @@ namespace WoodcraftSimulator.Jobs
 
         private static string Cm3(double cubicMeters) => (cubicMeters * 1e6).ToString("0", CultureInfo.InvariantCulture);
 
-        private static string Percent(double share) => (share * 100.0).ToString("0", CultureInfo.InvariantCulture) + " %";
+        private static string Percent(double share) =>
+            Loc.T((share * 100.0).ToString("0", CultureInfo.InvariantCulture) + " %",
+                "%" + (share * 100.0).ToString("0", CultureInfo.InvariantCulture));
     }
 }

@@ -2,6 +2,7 @@ using System;
 using System.Globalization;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using WoodcraftSimulator.Localization;
 using WoodcraftSimulator.Cutting;
 using WoodcraftSimulator.Handling;
 using WoodcraftSimulator.Inventory;
@@ -114,7 +115,7 @@ namespace WoodcraftSimulator.Tools
                 bool onBoard = point.Board != null;
                 ClearTarget();
                 SetGuideVisible(false);
-                SetLines(onBoard ? "No pencil line here: mark the cut first" : null, resultLine);
+                SetLines(onBoard ? Loc.T("No pencil line here: mark the cut first", "Burada kalem çizgisi yok: önce kesim yerini işaretle") : null, resultLine);
                 return;
             }
 
@@ -134,7 +135,8 @@ namespace WoodcraftSimulator.Tools
             // A part installed in an assembly would leave its slot holding a piece that no longer exists.
             if (point.Board.TryGetComponent(out Carryable carryable) && carryable.InstalledIn != null)
             {
-                SetLines($"Take it out of the {carryable.InstalledIn.DisplayName} to cut it", resultLine);
+                string assembly = carryable.InstalledIn.DisplayName;
+                SetLines(Loc.T($"Take it out of the {assembly} to cut it", $"Kesmek için önce {assembly} içinden çıkar"), resultLine);
                 return;
             }
 
@@ -144,9 +146,10 @@ namespace WoodcraftSimulator.Tools
             {
                 pickup.HandOffset = Vector3.zero;
                 shownPercent = -1;
+                int done = Mathf.FloorToInt(progress * 100f);
                 SetLines(progress > 0f
-                    ? $"Hold {useKeyLabel} to continue sawing  ({Mathf.FloorToInt(progress * 100f)}%)"
-                    : $"Hold {useKeyLabel} to saw at {atDistance}", resultLine);
+                    ? Loc.T($"Hold {useKeyLabel} to continue sawing  ({done}%)", $"Kesmeye devam etmek için {useKeyLabel} basılı tut  (%{done})")
+                    : Loc.T($"Hold {useKeyLabel} to saw at {atDistance}", $"{atDistance} noktasından kesmek için {useKeyLabel} basılı tut"), resultLine);
                 return;
             }
 
@@ -166,7 +169,7 @@ namespace WoodcraftSimulator.Tools
             if (percent != shownPercent)
             {
                 shownPercent = percent;
-                SetLines($"Sawing  {percent}%", resultLine);
+                SetLines(Loc.T($"Sawing  {percent}%", $"Kesiliyor  %{percent}"), resultLine);
             }
         }
 
@@ -276,14 +279,19 @@ namespace WoodcraftSimulator.Tools
                 // The cut piece against the job's target: this is what counts, not the pencil line (D-031).
                 var tolerance = new Tolerance(Length.FromMillimeters((double)toleranceMillimeters));
                 ToleranceCheck check = tolerance.Check(cutList.Target, measured);
-                measuredText += $" (target {cutList.Target}, {(check.IsWithin ? "OK" : "OUT OF TOLERANCE")} {tolerance})";
+                string verdict = check.IsWithin ? Loc.T("OK", "TAMAM") : Loc.T("OUT OF TOLERANCE", "TOLERANS DIŞI");
+                measuredText += Loc.T($" (target {cutList.Target}, {verdict} {tolerance})", $" (hedef {cutList.Target}, {verdict} {tolerance})");
             }
 
-            string text = $"Cut: {measuredText} + {result.OtherPiece.Dimensions.Length}" +
-                          $"   (kerf {result.Waste.Kerf}, sawdust {CubicCentimeters(result.Waste.VolumeCubicMeters)} cm³)";
+            string other = result.OtherPiece.Dimensions.Length.ToString();
+            string dust = CubicCentimeters(result.Waste.VolumeCubicMeters);
+            string text = Loc.T($"Cut: {measuredText} + {other}   (kerf {result.Waste.Kerf}, sawdust {dust} cm³)",
+                $"Kesildi: {measuredText} + {other}   (testere payı {result.Waste.Kerf}, talaş {dust} cm³)");
             if (waste != null && waste.Log.CutCount > 1)
             {
-                text += $"\nTotal sawdust {CubicCentimeters(waste.Log.TotalVolumeCubicMeters)} cm³ in {waste.Log.CutCount} cuts";
+                string total = CubicCentimeters(waste.Log.TotalVolumeCubicMeters);
+                text += "\n" + Loc.T($"Total sawdust {total} cm³ in {waste.Log.CutCount} cuts",
+                    $"Toplam talaş {total} cm³, {waste.Log.CutCount} kesim");
             }
 
             return text;
@@ -297,9 +305,10 @@ namespace WoodcraftSimulator.Tools
             switch (refusal)
             {
                 case CrosscutRefusal.PieceTooShort:
-                    return $"Too close to the end: pieces must be at least {Crosscut.DefaultMinimumPieceLength}";
+                    return Loc.T($"Too close to the end: pieces must be at least {Crosscut.DefaultMinimumPieceLength}",
+                        $"Uca çok yakın: parçalar en az {Crosscut.DefaultMinimumPieceLength} olmalı");
                 case CrosscutRefusal.MarkNotOnPiece:
-                    return "This line is not on the board";
+                    return Loc.T("This line is not on the board", "Bu çizgi tahtanın üzerinde değil");
                 default:
                     return refusal.ToString();
             }

@@ -15,14 +15,17 @@ namespace WoodcraftSimulator.Inventory
 
         [SerializeField] private string displayName = "Item";
 
+        [Tooltip("Turkish name (D-041); empty = the English name is shown.")]
+        [SerializeField] private string displayNameTurkish = string.Empty;
+
         [SerializeField] private ItemSizeClass sizeClass = ItemSizeClass.Small;
 
         public string Id => id;
 
-        public string DisplayName => displayName;
+        public string DisplayName => Localization.Loc.Pick(displayName, displayNameTurkish);
 
         public ItemSizeClass SizeClass => sizeClass;
 
-        public InventoryItem CreateInstance() => new InventoryItem(id, displayName, sizeClass);
+        public InventoryItem CreateInstance() => new InventoryItem(id, DisplayName, sizeClass);
     }
 }

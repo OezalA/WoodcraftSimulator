@@ -54,7 +54,7 @@ namespace WoodcraftSimulator.Economy
             if (IsStarted) throw new InvalidOperationException("The ledger has already been started.");
             if (funds.IsNegative) throw new ArgumentOutOfRangeException(nameof(funds), "Starting funds must not be negative.");
 
-            Book(new Transaction(TransactionKind.StartingFunds, funds, "Starting funds"));
+            Book(new Transaction(TransactionKind.StartingFunds, funds, Localization.Loc.T("Starting funds", "Başlangıç parası")));
         }
 
         public bool CanAfford(Money price) => !price.IsNegative && price <= Balance;

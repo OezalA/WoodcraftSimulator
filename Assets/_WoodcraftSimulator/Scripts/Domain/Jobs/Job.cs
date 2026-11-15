@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using WoodcraftSimulator.Construction;
 using WoodcraftSimulator.Economy;
+using WoodcraftSimulator.Localization;
 using WoodcraftSimulator.Materials;
 using WoodcraftSimulator.Measurement;
 
@@ -231,18 +232,21 @@ namespace WoodcraftSimulator.Jobs
 
             var goals = new List<QualityGoal>
             {
-                new QualityGoal($"Every part within {job.Blueprint.AccuracyTolerance}",
+                new QualityGoal(
+                    Loc.T($"Every part within {job.Blueprint.AccuracyTolerance}", $"Her parça {job.Blueprint.AccuracyTolerance} içinde"),
                     report.AccurateParts == report.PartsRequired,
-                    $"{report.AccurateParts}/{report.PartsRequired} parts"),
-                new QualityGoal("Every screw head flush",
+                    Loc.T($"{report.AccurateParts}/{report.PartsRequired} parts", $"{report.AccurateParts}/{report.PartsRequired} parça")),
+                new QualityGoal(Loc.T("Every screw head flush", "Her vida başı hizada"),
                     report.FlushFasteners == report.FastenersRequired,
-                    $"{report.FlushFasteners}/{report.FastenersRequired} flush"),
-                new QualityGoal("No split boards",
+                    Loc.T($"{report.FlushFasteners}/{report.FastenersRequired} flush", $"{report.FlushFasteners}/{report.FastenersRequired} hizada")),
+                new QualityGoal(Loc.T("No split boards", "Çatlak tahta yok"),
                     report.Splits == 0,
-                    report.Splits == 0 ? "none" : $"{report.Splits} split"),
-                new QualityGoal("No extra stock ordered",
+                    report.Splits == 0 ? Loc.T("none", "yok") : Loc.T($"{report.Splits} split", $"{report.Splits} çatlak")),
+                new QualityGoal(Loc.T("No extra stock ordered", "Ek tahta sipariş edilmedi"),
                     material.BoardsOrderedExtra == 0,
-                    material.BoardsOrderedExtra == 0 ? "none" : $"{material.BoardsOrderedExtra} extra board(s)")
+                    material.BoardsOrderedExtra == 0
+                        ? Loc.T("none", "yok")
+                        : Loc.T($"{material.BoardsOrderedExtra} extra board(s)", $"{material.BoardsOrderedExtra} ek tahta"))
             };
 
             return new JobResult(job, report, material, seconds, goals.AsReadOnly());
