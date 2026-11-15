@@ -40,6 +40,9 @@ namespace WoodcraftSimulator.Persistence
         [Tooltip("Optional: the job board (active job, delivered stock, completed jobs).")]
         [SerializeField] private JobBoard jobBoard;
 
+        [Tooltip("Optional: money and fastener stock (D-040).")]
+        [SerializeField] private Economy.WorkshopEconomy economy;
+
         private bool restarting;
 
         public string SavePath => Path.Combine(Application.persistentDataPath, FileName);
@@ -240,6 +243,11 @@ namespace WoodcraftSimulator.Persistence
                 data.job = jobBoard.Capture();
             }
 
+            if (economy != null)
+            {
+                data.economy = economy.Capture();
+            }
+
             return data;
         }
 
@@ -295,6 +303,12 @@ namespace WoodcraftSimulator.Persistence
                 var carryable = board.GetComponent<Carryable>();
                 carryable.RequestSupportCheck();
                 boards[boardData.id] = carryable;
+            }
+
+            // Money and fasteners first: the job board's prompts read them. A save from before the economy starts it.
+            if (economy != null)
+            {
+                economy.Restore(data.economy);
             }
 
             // The job sets the station's blueprint and the cut list before the assembly is restored.

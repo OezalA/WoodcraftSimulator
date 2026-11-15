@@ -8,6 +8,7 @@ using UnityEngine.UIElements;
 using WoodcraftSimulator.Construction;
 using WoodcraftSimulator.Core;
 using WoodcraftSimulator.Cutting;
+using WoodcraftSimulator.Economy;
 using WoodcraftSimulator.Handling;
 using WoodcraftSimulator.Interaction;
 using WoodcraftSimulator.Inventory;
@@ -105,6 +106,7 @@ namespace WoodcraftSimulator.Editor
             EnsureFolder(BlueprintAssets.Folder);
             EnsureFolder(BlueprintAssets.FastenerFolder);
             EnsureFolder(JobAssets.Folder);
+            EnsureFolder(EconomyAssets.Folder);
 
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
             ConfigureDefaultObjects(scene);
@@ -206,18 +208,81 @@ namespace WoodcraftSimulator.Editor
                 serializedSheet.ApplyModifiedPropertiesWithoutUndo();
             }
 
+            EconomyAssets.EnsurePay(jobs[0], 35f);
+            EconomyAssets.EnsurePay(jobs[1], 60f);
+
             // Stock delivery: on the floor in front of the timber rack, boards along Z, side by side towards +X.
-            var delivery = new GameObject("StockDelivery").transform;
-            delivery.SetParent(parent, false);
-            delivery.localPosition = new Vector3(RackFrontOfUprightsX + RackDepth + 0.25f, FloorTop, 0f);
+            // Its board factory is assigned later (it lives on the save system).
+            var deliveryObject = new GameObject("StockDelivery");
+            deliveryObject.transform.SetParent(parent, false);
+            deliveryObject.transform.localPosition = new Vector3(RackFrontOfUprightsX + RackDepth + 0.25f, FloorTop, 0f);
+            var delivery = deliveryObject.AddComponent<StockDelivery>();
+
+            WorkshopEconomy economy = BuildEconomy(parent, materials, species, delivery);
 
             SetReferences(jobBoard, "jobs", jobs);
             SetReference(jobBoard, "station", Object.FindFirstObjectByType<AssemblyStation>());
             SetReference(jobBoard, "cutList", Object.FindFirstObjectByType<CutList>());
             SetReference(jobBoard, "waste", Object.FindFirstObjectByType<WorkshopWaste>());
+            SetReference(jobBoard, "economy", economy);
             SetReference(jobBoard, "saw", SawAssets.HandSaw());
-            SetReference(jobBoard, "deliveryPoint", delivery);
             SetReferences(jobBoard, "fasteners", Fasteners());
+        }
+
+        /// <summary>
+        /// Money, fastener stock and the order board (D-040): the board hangs on the back wall right of the workbench,
+        /// one A4 sheet per catalog item; E on a sheet buys one. A new workshop starts with €100, 200 screws 4 × 40
+        /// and 50 screws 5 × 80.
+        /// </summary>
+        private static WorkshopEconomy BuildEconomy(Transform parent, GreyboxMaterials materials,
+            IReadOnlyDictionary<string, WoodSpeciesDefinition> species, StockDelivery delivery)
+        {
+            MaterialCatalogDefinition catalog = EconomyAssets.Catalog(species);
+            var economyObject = new GameObject("Economy");
+            economyObject.transform.SetParent(parent, false);
+            var economy = economyObject.AddComponent<WorkshopEconomy>();
+            SetReference(economy, "catalog", catalog);
+            SetReference(economy, "delivery", delivery);
+            SetReferences(economy, "fasteners", Fasteners());
+            var serializedEconomy = new SerializedObject(economy);
+            serializedEconomy.FindProperty("startingFundsEuros").floatValue = 100f;
+            SerializedProperty starting = serializedEconomy.FindProperty("startingFasteners");
+            starting.arraySize = 2;
+            starting.GetArrayElementAtIndex(0).FindPropertyRelative("fastener").objectReferenceValue = BlueprintAssets.WoodScrew4x40();
+            starting.GetArrayElementAtIndex(0).FindPropertyRelative("count").intValue = 200;
+            starting.GetArrayElementAtIndex(1).FindPropertyRelative("fastener").objectReferenceValue = BlueprintAssets.WoodScrew5x80();
+            starting.GetArrayElementAtIndex(1).FindPropertyRelative("count").intValue = 50;
+            serializedEconomy.ApplyModifiedPropertiesWithoutUndo();
+
+            float wallZ = InteriorDepth / 2f;
+            float centerY = FloorTop + 1.5f;
+            const float centerX = 1.9f;
+            int count = catalog.Boards.Count + catalog.FastenerBoxes.Count;
+            GameObject board = CreateBox("OrderBoard", parent, new Vector3(centerX, centerY, wallZ - 0.01f),
+                new Vector3(0.3f * count + 0.1f, 0.5f, 0.02f), materials.Workbench);
+            Object.DestroyImmediate(board.GetComponent<BoxCollider>());
+            var sheetSize = new Vector3(0.21f, 0.297f, 0.002f);
+            for (int i = 0; i < count; i++)
+            {
+                float x = centerX + (i - (count - 1) / 2f) * 0.3f;
+                GameObject sheet = CreateBox($"OrderSheet_{i}", parent, new Vector3(x, centerY, wallZ - 0.021f),
+                    sheetSize, materials.Paper);
+                EnlargeGrabCollider(sheet, sheetSize);
+                var orderSheet = sheet.AddComponent<OrderSheet>();
+                SetReference(orderSheet, "economy", economy);
+                var serializedSheet = new SerializedObject(orderSheet);
+                serializedSheet.FindProperty("itemIndex").intValue = i;
+                serializedSheet.ApplyModifiedPropertiesWithoutUndo();
+            }
+
+            // The drill takes its screws from the stock.
+            DrillDriverTool drill = Object.FindFirstObjectByType<DrillDriverTool>();
+            if (drill != null)
+            {
+                SetReference(drill, "economy", economy);
+            }
+
+            return economy;
         }
 
         private static Object[] Fasteners() => new Object[] { BlueprintAssets.WoodScrew5x80(), BlueprintAssets.WoodScrew4x40() };
@@ -680,6 +745,14 @@ namespace WoodcraftSimulator.Editor
                 SetReference(jobPanel, "jobBoard", jobBoard);
                 SetReference(jobPanel, "interactor", interactor);
             }
+
+            // Money and inventory (D-040).
+            var economy = Object.FindFirstObjectByType<WorkshopEconomy>();
+            if (economy != null)
+            {
+                var economyPanel = hudObject.AddComponent<EconomyPanel>();
+                SetReference(economyPanel, "economy", economy);
+            }
         }
 
         /// <summary>
@@ -715,10 +788,13 @@ namespace WoodcraftSimulator.Editor
 
             var jobBoard = Object.FindFirstObjectByType<JobBoard>();
             SetReference(service, "jobBoard", jobBoard);
-            if (jobBoard != null)
+            var delivery = Object.FindFirstObjectByType<StockDelivery>();
+            if (delivery != null)
             {
-                SetReference(jobBoard, "boardFactory", factory);
+                SetReference(delivery, "boardFactory", factory);
             }
+
+            SetReference(service, "economy", Object.FindFirstObjectByType<WorkshopEconomy>());
 
             return service;
         }

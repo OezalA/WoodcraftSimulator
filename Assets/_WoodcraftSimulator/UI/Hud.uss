@@ -134,6 +134,40 @@
     -unity-text-align: upper-left;
 }
 
+.money-anchor {
+    position: absolute;
+    right: 24px;
+    top: 20px;
+}
+
+.money {
+    font-size: 17px;
+    color: rgb(255, 255, 255);
+    background-color: rgba(0, 0, 0, 0.55);
+    padding: 6px 12px;
+    border-radius: 6px;
+    border-left-width: 4px;
+    border-left-color: rgb(120, 180, 230);
+}
+
+.inventory-anchor {
+    position: absolute;
+    left: 30%;
+    top: 12%;
+    width: 560px;
+}
+
+.inventory {
+    font-size: 16px;
+    color: rgb(255, 255, 255);
+    background-color: rgba(0, 0, 0, 0.78);
+    padding: 12px 16px;
+    border-radius: 6px;
+    border-left-width: 4px;
+    border-left-color: rgb(120, 180, 230);
+    white-space: normal;
+}
+
 .hidden {
     display: none;
 }

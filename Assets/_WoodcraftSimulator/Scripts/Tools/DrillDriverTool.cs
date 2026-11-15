@@ -28,6 +28,9 @@ namespace WoodcraftSimulator.Tools
         [Tooltip("Screw types in the box (the joint's blueprint names the one it needs).")]
         [SerializeField] private FastenerDefinition[] fasteners = Array.Empty<FastenerDefinition>();
 
+        [Tooltip("Optional: the workshop's fastener stock (screws are used up, D-040). Without it screws are unlimited.")]
+        [SerializeField] private Economy.WorkshopEconomy economy;
+
         [SerializeField, Min(0.1f)] private float range = 2f;
 
         [Tooltip("The tool snaps to a fastening point within this distance (m) of the aimed point.")]
@@ -261,6 +264,16 @@ namespace WoodcraftSimulator.Tools
 
             Length? head = targetStation.Build.HeadHeight(connectionId, targetPoint);
             driveIsNewScrew = !head.HasValue;
+
+            // Screws are used up (D-040 K4): a new screw needs one in the workshop's stock.
+            if (driveIsNewScrew && economy != null && economy.Fasteners.Count(driveFastener.Id) == 0)
+            {
+                SetLines($"{ToolLine()}\n" + Loc.T($"No {driveFastener.DisplayName} left: buy a box at the order board",
+                    $"{driveFastener.DisplayName} kalmadı: sipariş panosundan bir kutu al"), resultLine);
+                driveFastener = null;
+                return;
+            }
+
             Length startDepth = head.HasValue ? driveFastener.Length - head.Value : Length.Zero;
             drive = new ScrewDrive(driveFastener, targetStation.Build.SeatingTorque(connectionId, driveFastener), startDepth);
             resultLine = null;
@@ -314,6 +327,10 @@ namespace WoodcraftSimulator.Tools
                 ? station.Fasten(connection, point, driveFastener, finished.HeadHeight)
                 : station.DriveFurther(connection, point, finished.HeadHeight);
             station.HideDrivingHead();
+            if (result == FastenResult.Fastened && driveIsNewScrew && economy != null)
+            {
+                economy.TryUseFastener(driveFastener.Id);
+            }
 
             if (result == FastenResult.NotProud)
             {

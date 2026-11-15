@@ -490,3 +490,16 @@ Owner, after MT-021: "tahta türüne göre tork ayarı ... vidalarken yazsın, b
   12, fazla, baş gömülür" (az / uygun / fazla). The wood is the denser part of the joint (same rule as the torque).
   On a red point the pilot-hole warning is shown instead (drill first, then the advice appears).
 - Information, not a hurdle: the clutch is still the player's setting.
+
+## D-043: Batch plan up to Phase 10, tested at once by the owner (Accepted, 2026-11-15)
+Owner: "faz 10 kadar yaz sonra hepsini test ederim toplu halde". Phases 7b-10 are implemented in sequence without
+play-tests in between; each step is committed on `develop` with static build + `dotnet test`; one combined manual
+test list (TESTING.md, batch section) follows. `main` stays at the last owner-tested state until the batch passes.
+Risk accepted by the owner: errors found late may touch several phases. Scope chosen by the owner:
+- **Phase 8**: tool wall (each tool has a hook, E hangs it back), equipment upgrades bought with money (faster /
+  thinner saw, stronger drill, better lamp), sawhorse cutting station, placeholder sounds generated in code.
+- **Phase 9**: rip cut (lengthwise, narrower parts), hammer + nails (new fastener type, allowed per joint), sanding
+  + surface finish (separate quality goal, better pay), wood glue + dowels (with clamping and drying time).
+- **Phase 10**: outdoor area and a small terrace 2.4 × 1.8 m: site preparation, concrete pier blocks, beams,
+  joists with connectors, decking; construction-stage validation.
+- The owner's playability rule applies throughout: rules and decisions, no motor-skill hurdles.

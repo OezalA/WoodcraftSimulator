@@ -408,6 +408,26 @@ Precondition: let Unity compile (no scene rebuild needed). Shelf job accepted, a
 | Red point | Only the pilot-hole warning; after drilling, the clutch advice appears |
 | Practice frame (5 × 80 mm) | Recommended `9-14` |
 
+## Batch test up to Phase 10 (D-043)
+One session for everything built after the owner's last test (86821c5). Before starting: Unity *Preferences >
+General > Script Changes While Playing > Recompile After Finished Playing*; stop Play, let Unity compile (no red
+Console errors), **Build Test Workshop Scene**, Play, Esc → `Yeni atölye`. Report per test: OK, or what you saw.
+
+### MT-023: Money, buying, consumable screws, inventory (Phase 7b, D-040)
+| Step | Expected |
+|---|---|
+| Play | Top right: `Para €100.00   [Tab] envanter` |
+| Tab | Inventory panel: money, timber grouped by species and section (uncut boards / cut pieces, value), `200 x Ahşap vidası 4 × 40 mm`, `50 x Ahşap vidası 5 × 80 mm`; Tab closes it |
+| Order board (back wall, right of the bench), aim at a sheet | `Satın al: Ladin tahta 2000 × 145 × 18 mm   €8.50   (para €100.00)` |
+| E | Money €91.50; a board appears in the delivery area (floor in front of the rack); a second purchase lies next to it, not on top |
+| Job board: aim at the shelf sheet | Offer shows `Atölyede / alınacak:` lines; prompt `İşi kabul et: Küçük raf   (ücret €60.00; alınacak malzeme €8.50, ...)` (one board already lies there) |
+| E | One more board is bought and delivered; the job starts |
+| Build the shelf; each screw | The screw count in the inventory goes down by one per screw (`Vida tutmadı` = none used) |
+| Complete the shelf | Result ends with `Ücret: ... / €60.00 (teslim €42.00 + hedefler ...)`, `Kullanılan malzeme: ahşap ..., vida ...`, `Kâr: ...` |
+| E on the shelf sheet | `Teslim edildi: +€... (kâr €...)`; money goes up by the pay |
+| Buy screws until money is short / drive with 0 screws (optional) | `Para yetmiyor` / `... kalmadı: sipariş panosundan bir kutu al` |
+| Save, quit Play, Play | Money, screws and bought boards are the same |
+
 ## Game view setup (corrects the earlier tip)
 A fixed resolution such as *Full HD (1920x1080)* at `Scale 1x` **crops** the image when the Game view window is
 smaller than 1920×1080: the bottom (tool belt bar) and the lower right (tool in hand) are cut off.

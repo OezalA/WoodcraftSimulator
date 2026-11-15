@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using WoodcraftSimulator.Construction;
 using WoodcraftSimulator.Cutting;
-using WoodcraftSimulator.Handling;
-using WoodcraftSimulator.Materials;
+using WoodcraftSimulator.Economy;
 using WoodcraftSimulator.Localization;
+using WoodcraftSimulator.Materials;
 using WoodcraftSimulator.Measurement;
 using WoodcraftSimulator.Persistence;
 using WoodcraftSimulator.Tools;
@@ -13,30 +13,25 @@ using WoodcraftSimulator.Tools;
 namespace WoodcraftSimulator.Jobs
 {
     /// <summary>
-    /// The job board on the workshop wall (Phase 6, D-039): one sheet per job (<see cref="JobSheet"/>). Accepting a job
-    /// sets the assembly station's blueprint, delivers the calculated stock next to the timber rack and puts the job's
-    /// cut list on the bench note. When the structure is complete the result is shown; delivering it clears the
-    /// station. One job at a time; more stock can be ordered while it runs (it shows in the result).
+    /// The job board on the workshop wall (Phase 6, D-039; economy D-040): one sheet per job (<see cref="JobSheet"/>).
+    /// Accepting a job buys what the workshop lacks (stock boards beyond those lying around, fastener boxes), sets the
+    /// assembly station's blueprint and puts the job's cut list on the bench note. When the structure is complete the
+    /// result with pay, cost and profit is shown; delivering it pays the job and clears the station. One job at a
+    /// time; more stock can be bought while it runs (it shows in the result).
     /// </summary>
     public sealed class JobBoard : MonoBehaviour
     {
         [SerializeField] private JobDefinition[] jobs = Array.Empty<JobDefinition>();
         [SerializeField] private AssemblyStation station;
-        [SerializeField] private TimberBoardFactory boardFactory;
         [SerializeField] private CutList cutList;
         [SerializeField] private WorkshopWaste waste;
+        [SerializeField] private WorkshopEconomy economy;
 
         [Tooltip("The saw the material plan assumes (kerf per cut).")]
         [SerializeField] private SawDefinition saw;
 
-        [Tooltip("Stock is laid on the floor here: lengthwise along the forward axis, side by side along the right axis.")]
-        [SerializeField] private Transform deliveryPoint;
-
         [Tooltip("Fastener types (display names in the cut list).")]
         [SerializeField] private FastenerDefinition[] fasteners = Array.Empty<FastenerDefinition>();
-
-        private const int BoardsPerRow = 6;
-        private const float BoardGap = 0.03f;
 
         private readonly List<string> completedJobIds = new List<string>();
         private Job[] domainJobs;
@@ -46,6 +41,9 @@ namespace WoodcraftSimulator.Jobs
         private int boardsOrderedExtra;
         private double sawdustAtStart;
         private JobResult cachedResult;
+        private JobSettlement cachedSettlement;
+        private string lastMessage;
+        private float lastMessageUntil;
 
         public IReadOnlyList<JobDefinition> Jobs => jobs;
 
@@ -65,14 +63,14 @@ namespace WoodcraftSimulator.Jobs
         /// <summary>The structure of the active job is complete (waiting to be delivered).</summary>
         public bool IsComplete => HasActiveJob && station.Build.IsComplete;
 
-        /// <summary>Raised after a job was accepted, completed, delivered or more stock was ordered.</summary>
+        /// <summary>Raised after a job was accepted, completed, delivered or more stock was bought.</summary>
         public event Action Changed;
 
         private void Awake()
         {
-            if (station == null || boardFactory == null || saw == null || deliveryPoint == null)
+            if (station == null || saw == null || economy == null)
             {
-                Debug.LogError($"{nameof(JobBoard)}: Station, Board Factory, Saw and Delivery Point must be assigned.", this);
+                Debug.LogError($"{nameof(JobBoard)}: Station, Saw and Economy must be assigned.", this);
                 enabled = false;
                 return;
             }
@@ -119,13 +117,17 @@ namespace WoodcraftSimulator.Jobs
             }
         }
 
-        private void OnStationChanged() => cachedResult = null;
+        private void OnStationChanged()
+        {
+            cachedResult = null;
+            cachedSettlement = null;
+        }
 
         private void OnStationCompleted()
         {
             if (HasActiveJob)
             {
-                cachedResult = null;
+                OnStationChanged();
                 Changed?.Invoke();
             }
         }
@@ -159,6 +161,21 @@ namespace WoodcraftSimulator.Jobs
             }
         }
 
+        /// <summary>Pay, material cost and profit of the completed job; null before.</summary>
+        public JobSettlement Settlement
+        {
+            get
+            {
+                JobResult result = Result;
+                if (result == null)
+                {
+                    return null;
+                }
+
+                return cachedSettlement ??= JobSettlement.Calculate(result, economy.Catalog);
+            }
+        }
+
         public string FastenerName(string fastenerId)
         {
             foreach (FastenerDefinition definition in fasteners)
@@ -181,22 +198,21 @@ namespace WoodcraftSimulator.Jobs
             }
 
             // Loose pieces lying in the workshop count as "ready" for the cut list (installed ones are counted by slot).
-            var loose = new List<TimberPiece>();
-            foreach (TimberBoard board in FindObjectsByType<TimberBoard>(FindObjectsSortMode.None))
-            {
-                if (board.Piece != null && (!board.TryGetComponent(out Carryable carryable) || carryable.InstalledIn == null))
-                {
-                    loose.Add(board.Piece);
-                }
-            }
-
-            IReadOnlyList<CutListLineProgress> progress = CutListProgress.Evaluate(ActivePlan, station.Build, loose);
+            IReadOnlyList<CutListLineProgress> progress =
+                CutListProgress.Evaluate(ActivePlan, station.Build, WorkshopEconomy.LooseTimber());
             return JobText.Sheet(ActiveJob, ActivePlan, progress, FastenerName, boardsDelivered, ElapsedSeconds);
         }
 
-        /// <summary>What a job needs, before accepting it.</summary>
+        /// <summary>What a job needs, before accepting it: material plan and what has to be bought.</summary>
         public string OfferText(int index) =>
-            index >= 0 && index < jobs.Length ? JobText.Offer(domainJobs[index], plans[index], FastenerName) : null;
+            index >= 0 && index < jobs.Length
+                ? JobText.Offer(domainJobs[index], plans[index], FastenerName, Shopping(index))
+                : null;
+
+        /// <summary>The job's bill of materials against what the workshop has (stock boards lying around, fasteners).</summary>
+        public ShoppingList Shopping(int index) => ShoppingList.For(plans[index], economy.Catalog,
+            WorkshopInventory.CountStockBoards(WorkshopEconomy.LooseTimber(), domainJobs[index].Stock),
+            economy.Fasteners, FastenerName);
 
         public string PromptFor(int index)
         {
@@ -205,6 +221,17 @@ namespace WoodcraftSimulator.Jobs
                 return null;
             }
 
+            string prompt = BasePrompt(index);
+            if (lastMessage != null && Time.unscaledTime < lastMessageUntil)
+            {
+                prompt += "\n" + lastMessage;
+            }
+
+            return prompt;
+        }
+
+        private string BasePrompt(int index)
+        {
             string jobName = jobs[index].DisplayName;
             if (!HasActiveJob)
             {
@@ -213,11 +240,16 @@ namespace WoodcraftSimulator.Jobs
                     return Loc.T($"{jobName}: can't be made from the stock (see Console)", $"{jobName}: bu malzemeden yapılamaz (Console'a bak)");
                 }
 
-                return station.IsEmpty
-                    ? Loc.T($"Accept job: {jobName}   ({BoardsToDeliver(index)} board(s) delivered)",
-                        $"İşi kabul et: {jobName}   ({BoardsToDeliver(index)} tahta teslim edilir)")
-                    : Loc.T($"Accept job: {jobName}   (clear the {station.DisplayName} first)",
+                if (!station.IsEmpty)
+                {
+                    return Loc.T($"Accept job: {jobName}   (clear the {station.DisplayName} first)",
                         $"İşi kabul et: {jobName}   (önce {station.DisplayName} boşaltılmalı)");
+                }
+
+                Money pay = domainJobs[index].Pay;
+                Money cost = Shopping(index).TotalCost;
+                return Loc.T($"Accept job: {jobName}   (pay {pay}; material to buy {cost}, money {economy.Ledger.Balance})",
+                    $"İşi kabul et: {jobName}   (ücret {pay}; alınacak malzeme {cost}, para {economy.Ledger.Balance})");
             }
 
             if (index != activeIndex)
@@ -225,9 +257,17 @@ namespace WoodcraftSimulator.Jobs
                 return Loc.T($"Job in progress: {jobs[activeIndex].DisplayName}", $"Devam eden iş: {jobs[activeIndex].DisplayName}");
             }
 
-            return IsComplete
-                ? Loc.T($"Deliver the {jobName} (finish the job)", $"{jobName} teslim et (işi bitir)")
-                : Loc.T($"Order 1 more board   ({ActiveJob.Stock})", $"1 tahta daha sipariş et   ({ActiveJob.Stock})");
+            if (IsComplete)
+            {
+                JobSettlement settlement = Settlement;
+                return Loc.T($"Deliver the {jobName}: get paid {settlement.Earned}", $"{jobName} teslim et: {settlement.Earned} ödenir");
+            }
+
+            CatalogItem board = economy.Catalog.FindBoard(ActiveJob.Stock);
+            return board != null
+                ? Loc.T($"Buy 1 more board   ({ActiveJob.Stock}, {board.UnitPrice})",
+                    $"1 tahta daha satın al   ({ActiveJob.Stock}, {board.UnitPrice})")
+                : Loc.T("The merchant doesn't sell this stock", "Satıcıda bu malzeme yok");
         }
 
         public void Interact(int index)
@@ -249,47 +289,108 @@ namespace WoodcraftSimulator.Jobs
                 }
                 else
                 {
-                    DeliverStock(1);
-                    boardsOrderedExtra++;
-                    cachedResult = null;
-                    Changed?.Invoke();
+                    BuyExtraBoard();
                 }
             }
         }
 
-        private int BoardsToDeliver(int index) => plans[index].BoardsNeeded + domainJobs[index].SpareBoards;
-
         private void Accept(int index)
         {
-            if (!plans[index].IsFeasible || !station.IsEmpty || !station.TrySetBlueprint(jobs[index].Blueprint))
+            if (!plans[index].IsFeasible || !station.IsEmpty)
             {
                 return;
             }
 
+            // Buy what the workshop lacks first: a job is only taken on when its material can be had.
+            ShoppingList shopping = Shopping(index);
+            foreach (ShoppingLine line in shopping.Lines)
+            {
+                if (!line.IsSold && line.Available < line.Needed)
+                {
+                    ShowMessage(Loc.T($"Not sold by the merchant: {line.Description}", $"Satıcıda yok: {line.Description}"));
+                    return;
+                }
+            }
+
+            if (!economy.Ledger.CanAfford(shopping.TotalCost))
+            {
+                ShowMessage(Loc.T($"Not enough money for the material ({shopping.TotalCost})",
+                    $"Malzeme için para yetmiyor ({shopping.TotalCost})"));
+                return;
+            }
+
+            if (!station.TrySetBlueprint(jobs[index].Blueprint))
+            {
+                return;
+            }
+
+            foreach (ShoppingLine line in shopping.Lines)
+            {
+                if (line.UnitsToBuy > 0)
+                {
+                    economy.Buy(line.Item, line.UnitsToBuy);
+                }
+            }
+
             activeIndex = index;
             ElapsedSeconds = 0.0;
-            boardsDelivered = 0;
+            boardsDelivered = plans[index].BoardsNeeded; // the boards set aside for the job, bought or from stock
             boardsOrderedExtra = 0;
             sawdustAtStart = waste != null ? waste.Log.TotalVolumeCubicMeters : 0.0;
-            cachedResult = null;
-            DeliverStock(BoardsToDeliver(index));
+            OnStationChanged();
             ShowCutList();
+            ShowMessage(shopping.TotalCost > Money.Zero
+                ? Loc.T($"Material bought ({shopping.TotalCost}): see the delivery area", $"Malzeme alındı ({shopping.TotalCost}): teslim alanına bak")
+                : Loc.T("The workshop has all the material", "Atölyede tüm malzeme var"));
             Changed?.Invoke();
         }
 
-        /// <summary>The finished structure goes to the customer: the station is cleared, the job is done.</summary>
+        private void BuyExtraBoard()
+        {
+            CatalogItem board = economy.Catalog.FindBoard(ActiveJob.Stock);
+            if (board == null)
+            {
+                return;
+            }
+
+            PurchaseResult result = economy.Buy(board, 1);
+            if (result != PurchaseResult.Bought)
+            {
+                ShowMessage(WorkshopEconomy.PurchaseText(result));
+                return;
+            }
+
+            boardsDelivered++;
+            boardsOrderedExtra++;
+            OnStationChanged();
+            ShowMessage(Loc.T("Bought: see the delivery area", "Satın alındı: teslim alanına bak"));
+            Changed?.Invoke();
+        }
+
+        /// <summary>The finished structure goes to the customer: the job is paid, the station is cleared.</summary>
         private void Deliver()
         {
+            JobSettlement settlement = Settlement;
+            string jobName = jobs[activeIndex].DisplayName;
+            economy.Ledger.Earn(settlement.Earned, Loc.T($"Job: {jobName}", $"İş: {jobName}"));
             completedJobIds.Add(jobs[activeIndex].Id);
             station.ClearAll();
             activeIndex = -1;
-            cachedResult = null;
+            OnStationChanged();
             if (cutList != null)
             {
                 cutList.ClearJobLines();
             }
 
+            ShowMessage(Loc.T($"Delivered: +{settlement.Earned} (profit {settlement.Profit})",
+                $"Teslim edildi: +{settlement.Earned} (kâr {settlement.Profit})"));
             Changed?.Invoke();
+        }
+
+        private void ShowMessage(string message)
+        {
+            lastMessage = message;
+            lastMessageUntil = Time.unscaledTime + 4f;
         }
 
         private void ShowCutList()
@@ -316,31 +417,6 @@ namespace WoodcraftSimulator.Jobs
             cutList.SetJobLines(lengths, labels);
         }
 
-        /// <summary>Lays stock boards flat on the floor at the delivery point, next to any delivered before.</summary>
-        private void DeliverStock(int count)
-        {
-            JobDefinition definition = jobs[activeIndex];
-            BoardDimensions size = definition.StockDimensions;
-            var species = definition.StockSpecies.ToDomain();
-            float width = (float)size.Width.Meters;
-            float thickness = (float)size.Thickness.Meters;
-            for (int i = 0; i < count; i++)
-            {
-                int slot = boardsDelivered + i;
-                int column = slot % BoardsPerRow;
-                int layer = slot / BoardsPerRow;
-                Vector3 position = deliveryPoint.position +
-                                   deliveryPoint.right * (column * (width + BoardGap)) +
-                                   deliveryPoint.up * (thickness * (layer + 0.5f) + 0.002f * (layer + 1));
-                var piece = new TimberPiece(species, size);
-                TimberBoard board = boardFactory.Create(Guid.NewGuid().ToString("N"), definition.StockSpecies, piece,
-                    new BoardMarks(size.Length), position, deliveryPoint.rotation);
-                board.GetComponent<Carryable>().RequestSupportCheck();
-            }
-
-            boardsDelivered += count;
-        }
-
         /// <summary>Save state of the job system.</summary>
         public JobData Capture() => new JobData
         {
@@ -354,14 +430,14 @@ namespace WoodcraftSimulator.Jobs
 
         /// <summary>
         /// Loading a save (before the assemblies are restored): the active job, its blueprint on the station and its
-        /// cut list. The delivered boards come back with the saved boards, so nothing is delivered again.
+        /// cut list. The bought boards come back with the saved boards, so nothing is bought again.
         /// </summary>
         public void Restore(JobData data)
         {
             completedJobIds.Clear();
             completedJobIds.AddRange(data.completedJobIds ?? Array.Empty<string>());
             activeIndex = -1;
-            cachedResult = null;
+            OnStationChanged();
             if (!string.IsNullOrEmpty(data.activeJobId))
             {
                 activeIndex = Array.FindIndex(jobs, job => job != null && job.Id == data.activeJobId);

@@ -17,6 +17,13 @@
             <!-- Result of the active job once its structure is complete (stays until delivered). -->
             <ui:Label name="job-result" class="assembly-report hidden" picking-mode="Ignore" text="" />
         </ui:VisualElement>
+        <!-- Money (top right) and the workshop inventory (Tab), D-040. -->
+        <ui:VisualElement name="money-anchor" class="money-anchor" picking-mode="Ignore">
+            <ui:Label name="money" class="money" picking-mode="Ignore" text="" />
+        </ui:VisualElement>
+        <ui:VisualElement name="inventory-anchor" class="inventory-anchor" picking-mode="Ignore">
+            <ui:Label name="inventory" class="inventory hidden" picking-mode="Ignore" text="" />
+        </ui:VisualElement>
         <!-- Job sheet of the active job (cut list with progress), or the offer of the sheet being looked at. -->
         <ui:VisualElement name="job-anchor" class="job-anchor" picking-mode="Ignore">
             <ui:Label name="job-sheet" class="job-sheet hidden" picking-mode="Ignore" text="" />

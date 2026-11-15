@@ -13,6 +13,7 @@ first try: the saw works as before (D-030). In-game texts Turkish (D-041), red p
 **Phase 7 (material economy) started** (plan K1-K7 approved 2026-11-15, D-040): 7a domain rules done (money, ledger,
 catalog, consumable screws, priced bill of materials, job settlement, inventory summary, save format 2). 7b (scene)
 next. D-042 (recommended clutch on the drill, owner request) implemented, awaiting MT-022.
+**Batch to Phase 10 (D-043)**: owner tests 7b-10 at once. 7b done (order board, money, consumable screws, Tab inventory, paid jobs; MT-023). Next: Phase 8.
 Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 
 ## Completed
@@ -90,8 +91,8 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 - Tool and board visuals are placeholders until the visual pass with purchased assets (D-037).
 - Screwing tuning values (clutch window, drive speed) are first guesses (D-038): expect tuning after play-testing.
 - Deferred realism (D-038): squareness of hand cuts, clamping, screw angle, free screw positions (Phase 9); ask the owner first, playability comes before difficulty.
-- Jobs: money, purchases and consumable screws exist in the domain only (7a); in the scene the stock is still
-  delivered free and screws are unlimited until 7b.
+- Economy (7b): prices and pays are first guesses (catalog asset, job assets). Starting stock: €100, 200 screws 4 × 40,
+  50 screws 5 × 80; boards already lying in the workshop count as stock for a job.
 - The € sign is outside Latin-1 (D-028 text rule); check it renders in 7b, else `Money.Symbol` becomes "EUR ".
 - Prices and pay are first guesses (German DIY store level): spruce 2000 × 145 × 18 €8.50, 200 screws €6.
 - Save & load (D-036): one save slot; objects only move when the game moves them (no free drop of tools yet, so tools are on the belt or where the scene put them).
@@ -105,4 +106,4 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 1. Done: Company Name `OezalAstudio` (owner, 2026-11-15).
 2. Done: MT-016, MT-017 passed.
 3. Done: Phase 6 + D-041 accepted, `main` fast-forwarded. Owner: MT-022 (recommended clutch) when convenient.
-4. Claude: Phase 7b (scene side of the economy, D-040), then MT-022+.
+4. Claude: batch D-043: Phase 8 (tool wall, upgrades, sawhorse, sounds), 9, 10; then the owner runs the batch test section of TESTING.md.

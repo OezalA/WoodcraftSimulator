@@ -29,8 +29,8 @@ namespace WoodcraftSimulator.Jobs
                 text.Append(job.Description).Append('\n');
             }
 
-            text.Append(Loc.T($"Stock: {boardsDelivered} x {plan.Stock} delivered\n",
-                $"Malzeme: {boardsDelivered} x {plan.Stock} teslim edildi\n"));
+            text.Append(Loc.T($"Stock: {boardsDelivered} x {plan.Stock} for this job\n",
+                $"Malzeme: bu iş için {boardsDelivered} x {plan.Stock}\n"));
             text.Append(Loc.T("Cut list:\n", "Kesim listesi:\n"));
             for (int i = 0; i < plan.Lines.Count; i++)
             {

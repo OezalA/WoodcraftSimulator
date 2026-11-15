@@ -113,7 +113,17 @@ namespace WoodcraftSimulator.UI
                 reportHideTime = -1f;
                 reportLabel.EnableInClassList(HiddenClass, true);
             }
+
+            // Prompts can change while the target stays the same (money after a purchase, a job's state): re-read
+            // them a few times per second. ShowPrompt only touches the label when the text differs.
+            if (Time.unscaledTime >= nextPromptRefresh)
+            {
+                nextPromptRefresh = Time.unscaledTime + 0.2f;
+                Refresh();
+            }
         }
+
+        private float nextPromptRefresh;
 
         /// <summary>Shows the station's quality report for <see cref="reportSeconds"/> (on completion).</summary>
         private void ShowReport(AssemblyStation station)
@@ -309,7 +319,11 @@ namespace WoodcraftSimulator.UI
 
         private void ShowPrompt(string text)
         {
-            promptLabel.text = text;
+            if (promptLabel.text != text)
+            {
+                promptLabel.text = text;
+            }
+
             promptLabel.EnableInClassList(HiddenClass, false);
         }
 

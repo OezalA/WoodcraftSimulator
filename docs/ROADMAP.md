@@ -105,6 +105,23 @@ calculated correctly.
   species / section, cut pieces, value), save format 2 with migration; 225 tests. Domain only, nothing to play-test
 - [x] D-041 (inserted): in-game texts Turkish by default (English in the pause menu), red pilot-hole points; accepted (MT-021)
 - [x] D-042 (inserted): drill shows the recommended clutch for the wood and screw; 233 tests, awaiting MT-022
-- [ ] 7b: Scene: catalog assets and order board at the delivery area, starting funds €100 + one box of screws, job
+- [x] 7b: Scene: catalog assets and order board at the delivery area, starting funds €100 + one box of screws, job
   sheet buys the material instead of free delivery, drill uses screws from the stock, money in the HUD, inventory
-  screen (Tab), result with pay / cost / profit, economy saved. Then MT-022+
+  screen (Tab), result with pay / cost / profit, economy saved. Code done, awaiting batch test MT-023 (D-043)
+
+## Phase 8: Workshop Development (scope approved 2026-11-15, D-043)
+- [ ] 8a: Tool wall with a hook per tool (hang back with E)
+- [ ] 8b: Equipment upgrades bought with money (saw, drill, lamp)
+- [ ] 8c: Sawhorse cutting station
+- [ ] 8d: Placeholder sounds generated in code (saw, drill, screw, pick up / place, ambience)
+
+## Phase 9: Advanced Woodworking (scope approved 2026-11-15, D-043)
+- [ ] 9a: Rip cut (lengthwise)
+- [ ] 9b: Hammer and nails (fastener type per joint)
+- [ ] 9c: Sanding and surface finish (quality goal)
+- [ ] 9d: Wood glue and dowels (clamping, drying time)
+
+## Phase 10: Outdoor Construction (scope approved 2026-11-15, D-043)
+- [ ] 10a: Outdoor area next to the workshop, site preparation
+- [ ] 10b: Terrace 2.4 × 1.8 m blueprint: pier blocks, beams, joists with connectors, decking; stage validation
+- [ ] 10c: Terrace job (material, pay), batch test list

@@ -78,7 +78,7 @@ namespace WoodcraftSimulator.UI
             Show(sheetLabel, sheet);
 
             JobResult result = jobBoard.Result;
-            Show(resultLabel, result != null ? JobText.Result(result, FastenerNames(result)) : null);
+            Show(resultLabel, result != null ? JobText.Result(result, FastenerNames(result), jobBoard.Settlement) : null);
         }
 
         private string FastenerNames(JobResult result)
