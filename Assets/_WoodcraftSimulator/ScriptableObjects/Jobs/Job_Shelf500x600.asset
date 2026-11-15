@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 537f385b4d91875408760371ee5ea153, type: 3}
+  m_Name: Job_Shelf500x600
+  m_EditorClassIdentifier: WoodcraftSimulator::WoodcraftSimulator.Jobs.JobDefinition
+  id: shelf-500x600-job
+  displayName: Small shelf
+  description: "A standing shelf 500 wide, 600 high, 145 deep from 18 mm spruce boards:
+    two sides, three shelves between them, two 4 \xD7 40 mm screws per joint."
+  blueprint: {fileID: 11400000, guid: 5ca810a54cb10ea4e8ea967d79a3b2d2, type: 2}
+  stockSpecies: {fileID: 11400000, guid: dca24a1dc39899146a557f009cce814a, type: 2}
+  stockLengthMillimeters: 2000
+  stockWidthMillimeters: 145
+  stockThicknessMillimeters: 18
+  spareBoards: 0
+  tips:
+  - 'Top and bottom shelves are screwed 9 mm from the ends of the sides: pre-drill
+    those.'
+  - Start with a low clutch and raise it until the screw stops flush by itself.

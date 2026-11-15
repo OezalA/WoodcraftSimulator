@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 537f385b4d91875408760371ee5ea153, type: 3}
+  m_Name: Job_Frame600x300
+  m_EditorClassIdentifier: WoodcraftSimulator::WoodcraftSimulator.Jobs.JobDefinition
+  id: frame-600x300-job
+  displayName: Practice frame
+  description: "A 600 \xD7 300 mm frame from construction timber: two rails, two
+    sides between them, two 5 \xD7 80 mm screws per corner."
+  blueprint: {fileID: 11400000, guid: f91324e3345db924aac2f81c60067398, type: 2}
+  stockSpecies: {fileID: 11400000, guid: dca24a1dc39899146a557f009cce814a, type: 2}
+  stockLengthMillimeters: 2400
+  stockWidthMillimeters: 95
+  stockThicknessMillimeters: 45
+  spareBoards: 0
+  tips:
+  - Hook the tape on the end you measure from; keep the kerf on the waste side of
+    the line.
+  - 'The corner screws are close to the rail ends: pre-drill (Q switches to the drill
+    bit) or the rail splits.'

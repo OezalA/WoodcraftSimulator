@@ -87,11 +87,11 @@ Owner request 2026-11-15; plan approved ("tamam"). Company name for the save pat
 Goal (master prompt): one woodworking project from start to finish without developer intervention.
 - [ ] 6a: Domain job model: `Job`, `MaterialPlan` (cut list grouped by size, stock boards incl. kerf, offcuts,
   fasteners), `CutListProgress`, `JobResult` with separate quality goals, `JobText`; sawing and fastening rules
-  (`SawingProcess`, `Crosscut.TryCutAt`, `FasteningRules`, `ScrewDrive`, pilot holes / head heights / splits in
-  `AssemblyBuild`); 46 new tests (220 total) (D-038, D-039). Code done
+  (`FasteningRules`, `ScrewDrive`, pilot holes / head heights / splits in
+  `AssemblyBuild`); 209 tests (D-038, D-039). Code done (stroke sawing was built and reverted, D-038)
 - [ ] 6b: Shelf blueprint 500 × 600 × 145 (18 mm spruce, 12 × 4 × 40 mm screws), job board with two jobs (practice
   frame, small shelf), stock delivered in front of the rack, cut list note follows the job, job sheet in the HUD;
-  free saw placement + stroke sawing (T1, T2), drill bit / pilot holes, clutch and screw depth (M1, M2). Code done,
-  awaiting MT-018..MT-020
+  drill bit / pilot holes, clutch and screw depth (M1, M2). Code done,
+  awaiting MT-019, MT-020
 - [ ] 6c: Job result in the HUD (parts, screw heads, splits, material delivered / in the structure / sawdust /
   offcuts, time, quality goals), deliver to finish, order extra stock, job state saved. Code done, awaiting MT-020

@@ -342,7 +342,7 @@ Esc → New workshop for a clean start.
 | Console | No warnings from `SaveGameService` / `AssemblyStation` |
 | EditMode tests | 174 tests, all green |
 
-### MT-018: Free saw placement and stroke sawing (D-038 T1, T2)
+### MT-018: Free saw placement and stroke sawing (D-038 T1, T2) - OBSOLETE: reverted, the saw works as in MT-011 again
 Precondition: stop Play, rebuild the scene (new job board, drill bits, saw settings). Esc → New workshop.
 | Step | Expected |
 |---|---|
@@ -353,10 +353,10 @@ Precondition: stop Play, rebuild the scene (new job board, drill bits, saw setti
 | While starting, move the mouse sideways / make very fast strokes | `blade wandered X mm` / `The saw jumped!`; the kerf line moves |
 | Release LMB mid-cut, look around, aim back at the board | `Cut NN%: hold ... to continue`; continues in the same kerf |
 | Finish the cut | Two pieces; result line with the measured length vs target / line |
-| EditMode tests | 220 tests, all green |
+| EditMode tests | 209 tests, all green |
 
 ### MT-019: Pilot holes, clutch and screw depth (D-038 M1, M2)
-Precondition: MT-018. Parts installed on the assembly table (free play: the frame).
+Precondition: stop Play, rebuild the scene, Esc → New workshop. Parts installed on the assembly table (free play: the frame).
 | Step | Expected |
 |---|---|
 | Drill in hand | `Driver bit, clutch 12   [Wheel] clutch   [Q] Drill bit 3 mm` |
@@ -371,7 +371,7 @@ Precondition: MT-018. Parts installed on the assembly table (free play: the fram
 | Release very early (less than 3 mm in) | `Screw not set` |
 
 ### MT-020: First complete job: the small shelf (Phase 6)
-Precondition: MT-018, MT-019. Esc → New workshop (empty assembly table).
+Precondition: MT-019. Esc → New workshop (empty assembly table).
 | Step | Expected |
 |---|---|
 | Look at the right sheet on the job board (back wall, left of the bench) | Top left: offer `Small shelf`, `Material: 2 x Spruce board 2000 × 145 × 18 mm`, cut plan per board, 12 screws |

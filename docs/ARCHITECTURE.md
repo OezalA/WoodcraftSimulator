@@ -24,7 +24,7 @@ Assets/
         Measurement/Length.cs, TapeMeasure.cs, Tolerance.cs, PencilMark.cs, BoardMarks.cs
         Materials/BoardDimensions.cs, WoodSpecies.cs, TimberPiece.cs
         Inventory/InventoryItem.cs, ToolBelt.cs
-        Cutting/Saw.cs, Crosscut.cs (+ CrosscutResult, CutWaste, TryCutAt), MaterialWasteLog.cs, SawingProcess.cs (+ SawingSettings)
+        Cutting/Saw.cs, Crosscut.cs (+ CrosscutResult, CutWaste), MaterialWasteLog.cs
         Construction/Blueprint.cs (+ PartSlot, ConnectionSpec, FastenerSpec), AssemblyBuild.cs (+ SlotFit, quality report, pilot holes, head heights, splits), AssemblyReportText.cs, Fastening.cs (FasteningRules, ScrewSeat, ScrewDrive)
         Jobs/MaterialPlan.cs (+ StockSpec, CutListLine, StockBoardPlan), Job.cs (+ CutListProgress, MaterialUsage, QualityGoal, JobResult), JobText.cs
         Persistence/SaveGameData.cs (save file data classes), SaveFormat.cs (version, migration, validation)

@@ -381,7 +381,13 @@ Owner (2026-11-15): continue with the current visuals and buy Unity Asset Store 
   polycount/LODs, no real brand logos, prefer packs that are models + materials only (no extra scripts/dependencies).
 - The visual pass also covers wood-grain materials for boards, first-person hands and lighting / post-processing.
 
-## D-038: More realistic saw and drill-driver: free saw placement, stroke sawing, pilot holes, clutch (Accepted, 2026-11-15)
+## D-038: More realistic drill-driver: pilot holes, clutch (Accepted, 2026-11-15; saw part T1/T2 reverted the same day)
+**Amendment (2026-11-15, owner):** T1 and T2 were reverted after the first play-test: the measurement changing while
+sawing (blade drift) made the simulation "needlessly hard" ("çok saçma ... gereksiz yere çok zorlaştırıyor ... eski
+haline getir"). The hand saw is back to D-030 (snaps to the nearest pencil line, hold LMB, timed); `SawingProcess`,
+`Crosscut.TryCutAt` and `PlayerController.ControlsLocked` were removed. Lesson: realism must not cost playability;
+ask before adding difficulty the player has to fight. The T1/T2 description below is kept as history only.
+
 Owner approved the proposal (T1, T2, M1, M2; T3 squareness, T4 clamping, M3 screw angle, M4 free screw positions are
 deferred to Phase 9). Principle: real carpentry rules in the domain, outcome from the player's input, no randomness.
 - **T1 free saw placement** (replaces the snap to the pencil line of D-030): the blade is where you aim; the mouse

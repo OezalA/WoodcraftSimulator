@@ -8,7 +8,8 @@ _Last updated: 2026-11-15_
 **Save & load done** (D-036): S1–S3 accepted by the owner on 2026-11-15 ("save başarılı") after MT-016/MT-017;
 `main` fast-forwarded to `develop`.
 **Phase 6 (first complete job) implemented, NOT yet tested in Unity** (plan approved 2026-11-15: small shelf, frame
-stays as practice job, realistic saw T1/T2 and drill M1/M2, D-038, D-039). Manual tests MT-018..MT-020 pending.
+stays as practice job, realistic drill M1/M2, D-038, D-039). Stroke sawing (T1/T2) was reverted by the owner after the
+first try: the saw works as before (D-030). Manual tests MT-019, MT-020 pending.
 Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 
 ## Completed
@@ -64,6 +65,8 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 | S3 save service: static compile + `dotnet test` | 0 errors, 0 warnings; 174/174 tests passed (Claude). Unity compile + play-test pending (MT-017) | 2026-11-15 |
 | MT-016 + MT-017 save & load (owner) | Passed: "save başarılı" | 2026-11-15 |
 | Phase 6 (6a-6c, D-038, D-039): static compile + `dotnet test` | 0 errors, 0 warnings; 220/220 tests passed (Claude). Unity compile + play-test pending (MT-018..MT-020) | 2026-11-15 |
+| Stroke sawing (owner, 1st try) | Rejected: the measurement changing while sawing made it needlessly hard → saw reverted to D-030 | 2026-11-15 |
+| Saw revert: static compile + `dotnet test` | 0 errors, 0 warnings; 209/209 tests passed (Claude); Unity compile and play-test pending | 2026-11-15 |
 
 ## Known issues / limitations
 - **Carry feel not liked yet** (owner, 2026-11-13). Ideas for later: smooth follow (lerp/slerp) instead of rigid
@@ -76,8 +79,8 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 - Mouse look tuned for mouse only; gamepad right stick would be far too slow.
 - In-game text is English only.
 - Tool and board visuals are placeholders until the visual pass with purchased assets (D-037).
-- Sawing / screwing tuning values (strokes per cm², drift, clutch window) are first guesses (D-038): expect tuning after play-testing.
-- Deferred realism (D-038): squareness of hand cuts, clamping, screw angle, free screw positions (Phase 9).
+- Screwing tuning values (clutch window, drive speed) are first guesses (D-038): expect tuning after play-testing.
+- Deferred realism (D-038): squareness of hand cuts, clamping, screw angle, free screw positions (Phase 9); ask the owner first, playability comes before difficulty.
 - Jobs: no money, rewards or material purchase yet (Phase 7); spare boards 0, extra boards can be ordered from the job sheet.
 - Save & load (D-036): one save slot; objects only move when the game moves them (no free drop of tools yet, so tools are on the belt or where the scene put them).
 - Pencil marks: no eraser, only on the board's flat faces, no squared lines / angles (D-028).
@@ -89,5 +92,5 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 ## Next recommended action
 1. Done: Company Name `OezalAstudio` (owner, 2026-11-15).
 2. Done: MT-016, MT-017 passed.
-3. Owner: stop Play, let Unity compile (no red Console errors), rebuild the scene, run MT-018, MT-019, MT-020.
+3. Owner: stop Play, let Unity compile (no red Console errors), rebuild the scene, run MT-019, MT-020 (saw as in MT-011).
 4. After acceptance: fast-forward `main`; then Phase 7 (inventory and material economy) planning with the owner.

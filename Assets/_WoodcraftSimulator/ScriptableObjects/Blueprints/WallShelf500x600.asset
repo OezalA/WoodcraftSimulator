@@ -1,0 +1,117 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dc528ec7b8637c24085ef71205a28437, type: 3}
+  m_Name: WallShelf500x600
+  m_EditorClassIdentifier: WoodcraftSimulator::WoodcraftSimulator.Construction.BlueprintDefinition
+  id: wall-shelf-500x600
+  displayName: "Shelf 500 \xD7 600 mm"
+  accuracyMillimeters: 1
+  fitMillimeters: 5
+  slots:
+  - id: left
+    displayName: Left side
+    lengthMillimeters: 600
+    widthMillimeters: 145
+    thicknessMillimeters: 18
+    localPosition: {x: -0.241, y: 0.0735, z: 0}
+    localEulerAngles: {x: -0, y: 0, z: 270}
+    prerequisites: []
+  - id: right
+    displayName: Right side
+    lengthMillimeters: 600
+    widthMillimeters: 145
+    thicknessMillimeters: 18
+    localPosition: {x: 0.241, y: 0.0735, z: 0}
+    localEulerAngles: {x: -0, y: 0, z: 270}
+    prerequisites: []
+  - id: bottom
+    displayName: Bottom shelf
+    lengthMillimeters: 464
+    widthMillimeters: 145
+    thicknessMillimeters: 18
+    localPosition: {x: 0, y: 0.0735, z: -0.291}
+    localEulerAngles: {x: -0, y: 90, z: 90}
+    prerequisites:
+    - left
+  - id: middle
+    displayName: Middle shelf
+    lengthMillimeters: 464
+    widthMillimeters: 145
+    thicknessMillimeters: 18
+    localPosition: {x: 0, y: 0.0735, z: 0}
+    localEulerAngles: {x: -0, y: 90, z: 90}
+    prerequisites:
+    - left
+  - id: top
+    displayName: Top shelf
+    lengthMillimeters: 464
+    widthMillimeters: 145
+    thicknessMillimeters: 18
+    localPosition: {x: 0, y: 0.0735, z: 0.291}
+    localEulerAngles: {x: -0, y: 90, z: 90}
+    prerequisites:
+    - left
+  connections:
+  - id: left-bottom
+    partA: left
+    partB: bottom
+    fastenerId: wood-screw-4x40
+    points:
+    - localPosition: {x: -0.25, y: 0.1095, z: -0.291}
+      localDirection: {x: 1, y: 0, z: 0}
+    - localPosition: {x: -0.25, y: 0.0375, z: -0.291}
+      localDirection: {x: 1, y: 0, z: 0}
+  - id: left-middle
+    partA: left
+    partB: middle
+    fastenerId: wood-screw-4x40
+    points:
+    - localPosition: {x: -0.25, y: 0.1095, z: 0}
+      localDirection: {x: 1, y: 0, z: 0}
+    - localPosition: {x: -0.25, y: 0.0375, z: 0}
+      localDirection: {x: 1, y: 0, z: 0}
+  - id: left-top
+    partA: left
+    partB: top
+    fastenerId: wood-screw-4x40
+    points:
+    - localPosition: {x: -0.25, y: 0.1095, z: 0.291}
+      localDirection: {x: 1, y: 0, z: 0}
+    - localPosition: {x: -0.25, y: 0.0375, z: 0.291}
+      localDirection: {x: 1, y: 0, z: 0}
+  - id: right-bottom
+    partA: right
+    partB: bottom
+    fastenerId: wood-screw-4x40
+    points:
+    - localPosition: {x: 0.25, y: 0.1095, z: -0.291}
+      localDirection: {x: -1, y: 0, z: 0}
+    - localPosition: {x: 0.25, y: 0.0375, z: -0.291}
+      localDirection: {x: -1, y: 0, z: 0}
+  - id: right-middle
+    partA: right
+    partB: middle
+    fastenerId: wood-screw-4x40
+    points:
+    - localPosition: {x: 0.25, y: 0.1095, z: 0}
+      localDirection: {x: -1, y: 0, z: 0}
+    - localPosition: {x: 0.25, y: 0.0375, z: 0}
+      localDirection: {x: -1, y: 0, z: 0}
+  - id: right-top
+    partA: right
+    partB: top
+    fastenerId: wood-screw-4x40
+    points:
+    - localPosition: {x: 0.25, y: 0.1095, z: 0.291}
+      localDirection: {x: -1, y: 0, z: 0}
+    - localPosition: {x: 0.25, y: 0.0375, z: 0.291}
+      localDirection: {x: -1, y: 0, z: 0}
