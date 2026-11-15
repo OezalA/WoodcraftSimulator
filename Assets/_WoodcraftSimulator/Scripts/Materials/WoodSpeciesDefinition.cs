@@ -23,6 +23,9 @@ namespace WoodcraftSimulator.Materials
         [Tooltip("Typical density at ~12 % moisture content (air-dry), kg/m³. Approximate reference value.")]
         [SerializeField, Min(1f)] private float densityKgPerCubicMeter = 500f;
 
+        [Tooltip("False for non-wood building materials handled like boards, e.g. concrete pier blocks (D-046).")]
+        [SerializeField] private bool isTimber = true;
+
         [Tooltip("Flat color used until real wood textures exist.")]
         [SerializeField] private Color greyboxColor = new Color(0.85f, 0.72f, 0.52f);
 
@@ -39,6 +42,6 @@ namespace WoodcraftSimulator.Materials
 
         public string DataNotes => dataNotes;
 
-        public WoodSpecies ToDomain() => new WoodSpecies(id, DisplayName, densityKgPerCubicMeter);
+        public WoodSpecies ToDomain() => new WoodSpecies(id, DisplayName, densityKgPerCubicMeter, isTimber);
     }
 }

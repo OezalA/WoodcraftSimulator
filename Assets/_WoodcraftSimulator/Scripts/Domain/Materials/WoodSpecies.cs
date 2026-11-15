@@ -8,8 +8,11 @@ namespace WoodcraftSimulator.Materials
     /// </summary>
     public sealed class WoodSpecies
     {
-        public WoodSpecies(string id, string displayName, double densityKgPerCubicMeter)
+        /// <param name="isTimber">False for other building materials sold and handled like boards (concrete pier
+        /// blocks, D-046): they are not sawn, sanded or screwed into, and don't count for screw torque or splitting.</param>
+        public WoodSpecies(string id, string displayName, double densityKgPerCubicMeter, bool isTimber = true)
         {
+            IsTimber = isTimber;
             if (string.IsNullOrWhiteSpace(id))
             {
                 throw new ArgumentException("Species id must not be empty.", nameof(id));
@@ -33,6 +36,8 @@ namespace WoodcraftSimulator.Materials
 
         /// <summary>Typical density at ~12 % moisture content (air-dry), kg/m³.</summary>
         public double DensityKgPerCubicMeter { get; }
+
+        public bool IsTimber { get; }
 
         public override string ToString() => DisplayName;
     }

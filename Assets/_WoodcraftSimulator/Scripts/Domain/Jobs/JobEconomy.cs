@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using WoodcraftSimulator.Construction;
 using WoodcraftSimulator.Economy;
+using WoodcraftSimulator.Materials;
 
 namespace WoodcraftSimulator.Jobs
 {
@@ -64,20 +65,38 @@ namespace WoodcraftSimulator.Jobs
             }
         }
 
-        /// <param name="boardsAvailable">Full stock boards of the plan's stock lying in the workshop.</param>
+        /// <param name="boardsAvailable">Full stock boards of the plan's (main) stock lying in the workshop.</param>
         /// <param name="fastenerName">Fastener id → display name (unknown ids are shown as the id).</param>
         public static ShoppingList For(MaterialPlan plan, MaterialCatalog catalog, int boardsAvailable,
             FastenerStock fasteners, Func<string, string> fastenerName = null)
         {
-            if (plan == null) throw new ArgumentNullException(nameof(plan));
-            if (catalog == null) throw new ArgumentNullException(nameof(catalog));
             if (boardsAvailable < 0) throw new ArgumentOutOfRangeException(nameof(boardsAvailable), boardsAvailable, "Must not be negative.");
 
+            return For(plan, catalog, stock => plan != null && stock == plan.Stock ? boardsAvailable : 0, fasteners, fastenerName);
+        }
+
+        /// <param name="boardsAvailable">Stock → full boards of it lying in the workshop.</param>
+        public static ShoppingList For(MaterialPlan plan, MaterialCatalog catalog, Func<StockSpec, int> boardsAvailable,
+            FastenerStock fasteners, Func<string, string> fastenerName = null)
+        {
+            if (plan == null) throw new ArgumentNullException(nameof(plan));
+            if (catalog == null) throw new ArgumentNullException(nameof(catalog));
+            if (boardsAvailable == null) throw new ArgumentNullException(nameof(boardsAvailable));
+
             var lines = new List<ShoppingLine>();
-            CatalogItem board = catalog.FindBoard(plan.Stock);
-            int boardsToBuy = Math.Max(0, plan.BoardsNeeded - boardsAvailable);
-            lines.Add(new ShoppingLine(plan.Stock.ToString(), board, plan.BoardsNeeded, boardsAvailable,
-                board == null ? 0 : boardsToBuy));
+            foreach (StockSpec stock in plan.Stocks)
+            {
+                int needed = plan.BoardsNeededFor(stock);
+                if (needed == 0 && stock != plan.Stock)
+                {
+                    continue;
+                }
+
+                int available = Math.Max(0, boardsAvailable(stock));
+                CatalogItem board = catalog.FindBoard(stock);
+                int toBuy = Math.Max(0, needed - available);
+                lines.Add(new ShoppingLine(stock.ToString(), board, needed, available, board == null ? 0 : toBuy));
+            }
 
             foreach (KeyValuePair<string, int> needed in plan.Fasteners)
             {
@@ -149,17 +168,57 @@ namespace WoodcraftSimulator.Jobs
 
             var unpriced = new List<string>();
             Job job = result.Job;
-            CatalogItem board = catalog.FindBoard(job.Stock) ??
-                                catalog.FindBoardOfSection(job.Stock.SpeciesId, job.Stock.Dimensions);
-            double used = result.Material.InstalledCubicMeters + result.Material.SawdustCubicMeters;
-            Money timber = Money.Zero;
-            if (board != null)
+            // Volume used per catalog board (several stocks for one job, D-046), each part at the price of its section;
+            // the sawdust at the main stock's price. Valued once per item, so rounding happens once.
+            var volumes = new Dictionary<CatalogItem, double>();
+            var order = new List<CatalogItem>();
+            void Add(CatalogItem item, double volume)
             {
-                timber = board.ValueOfVolume(used);
+                if (!volumes.ContainsKey(item))
+                {
+                    volumes[item] = 0.0;
+                    order.Add(item);
+                }
+
+                volumes[item] += volume;
             }
-            else if (used > 0.0)
+
+            CatalogItem main = catalog.FindBoard(job.Stock) ??
+                               catalog.FindBoardOfSection(job.Stock.SpeciesId, job.Stock.Dimensions);
+            foreach (PartQuality part in result.Report.Parts)
             {
-                unpriced.Add(job.Stock.ToString());
+                if (part.Piece == null)
+                {
+                    continue;
+                }
+
+                CatalogItem item = catalog.FindBoardOfSection(part.Piece.Species.Id, part.Piece.Dimensions) ?? main;
+                double volume = part.Piece.Dimensions.VolumeCubicMeters;
+                if (item != null)
+                {
+                    Add(item, volume);
+                }
+                else
+                {
+                    // One entry per species and cross-section, not per part.
+                    BoardDimensions size = part.Piece.Dimensions;
+                    string section = $"{part.Piece.Species.DisplayName} {size.Width.FormatMillimeters()} × {size.Thickness}";
+                    if (!unpriced.Contains(section))
+                    {
+                        unpriced.Add(section);
+                    }
+                }
+            }
+
+            if (main != null)
+            {
+                Add(main, result.Material.SawdustCubicMeters);
+            }
+
+            Money timber = Money.Zero;
+            foreach (CatalogItem item in order)
+            {
+                timber += item.ValueOfVolume(volumes[item]);
             }
 
             var driven = new Dictionary<string, int>();

@@ -16,9 +16,17 @@ namespace WoodcraftSimulator.Jobs
     public sealed class Job
     {
         public Job(string id, string displayName, string description, Blueprint blueprint, StockSpec stock,
-            int spareBoards = 0, IEnumerable<string> tips = null, Money pay = default, bool requiresFinish = false)
+            int spareBoards = 0, IEnumerable<string> tips = null, Money pay = default, bool requiresFinish = false,
+            IEnumerable<StockSpec> extraStocks = null, double depositShare = 0.0)
         {
             RequiresFinish = requiresFinish;
+            if (!(depositShare >= 0.0) || depositShare > 0.7)
+            {
+                // At most the delivery share (D-040), so the deposit is never more than what delivery earns.
+                throw new ArgumentOutOfRangeException(nameof(depositShare), depositShare, "Deposit share must be 0..0.7.");
+            }
+
+            DepositShare = depositShare;
             if (pay.IsNegative)
             {
                 throw new ArgumentOutOfRangeException(nameof(pay), "Pay must not be negative.");
@@ -39,6 +47,16 @@ namespace WoodcraftSimulator.Jobs
             Description = description ?? string.Empty;
             Blueprint = blueprint ?? throw new ArgumentNullException(nameof(blueprint));
             Stock = stock ?? throw new ArgumentNullException(nameof(stock));
+            var stocks = new List<StockSpec> { stock };
+            foreach (StockSpec extra in extraStocks ?? Array.Empty<StockSpec>())
+            {
+                if (extra != null)
+                {
+                    stocks.Add(extra);
+                }
+            }
+
+            Stocks = stocks.AsReadOnly();
             SpareBoards = spareBoards;
             Tips = new List<string>(tips ?? Array.Empty<string>()).AsReadOnly();
             Pay = pay;
@@ -58,13 +76,22 @@ namespace WoodcraftSimulator.Jobs
 
         public Blueprint Blueprint { get; }
 
+        /// <summary>The main stock (the job board's "1 more board" buys this one).</summary>
         public StockSpec Stock { get; }
+
+        /// <summary>The main stock and any further stocks (e.g. beams, joists and decking for a terrace, D-046).</summary>
+        public IReadOnlyList<StockSpec> Stocks { get; }
+
+        /// <summary>Share of the full pay the customer pays when the job is accepted (material deposit, D-046).</summary>
+        public double DepositShare { get; }
+
+        public Money Deposit => Pay.Scale(DepositShare);
 
         public int SpareBoards { get; }
 
         public IReadOnlyList<string> Tips { get; }
 
-        public MaterialPlan Plan(Length kerf) => MaterialPlan.Calculate(Blueprint, Stock, kerf);
+        public MaterialPlan Plan(Length kerf) => MaterialPlan.Calculate(Blueprint, Stocks, kerf);
 
         /// <summary>Boards delivered when the job is accepted: what the plan needs plus the spares.</summary>
         public int BoardsToDeliver(Length kerf) => Plan(kerf).BoardsNeeded + SpareBoards;

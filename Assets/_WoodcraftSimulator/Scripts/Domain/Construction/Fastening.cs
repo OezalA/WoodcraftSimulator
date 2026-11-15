@@ -13,7 +13,10 @@ namespace WoodcraftSimulator.Construction
         Nail,
 
         /// <summary>Glued into a drilled hole; the joint holds once the glue has dried. Never splits.</summary>
-        Dowel
+        Dowel,
+
+        /// <summary>A steel connector (joist hanger, post base) screwed on with the drill-driver; never splits (D-046).</summary>
+        Connector
     }
 
     /// <summary>Wood glue (D-045): a doweled joint is clamped and must dry before it counts as finished.</summary>

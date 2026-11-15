@@ -317,15 +317,17 @@ namespace WoodcraftSimulator.Construction
         /// </summary>
         public bool NeedsPilotHole(string connectionId, int point, FastenerSpec fastener)
         {
-            if (!Blueprint.TryGetConnection(connectionId, out ConnectionSpec connection) ||
+            // Dowels go into drilled holes anyway; steel connectors spread the load (D-046): neither splits.
+            if (fastener == null || fastener.Kind == FastenerKind.Dowel || fastener.Kind == FastenerKind.Connector ||
+                !Blueprint.TryGetConnection(connectionId, out ConnectionSpec connection) ||
                 !installed.TryGetValue(connection.PartA, out TimberPiece a) ||
                 !installed.TryGetValue(connection.PartB, out TimberPiece b))
             {
                 return false;
             }
 
-            double density = Math.Max(a.Species.DensityKgPerCubicMeter, b.Species.DensityKgPerCubicMeter);
-            return FasteningRules.NeedsPilotHole(fastener, connection.EndDistance(point), density);
+            double density = TimberDensity(a, b);
+            return density > 0.0 && FasteningRules.NeedsPilotHole(fastener, connection.EndDistance(point), density);
         }
 
         /// <summary>Seating torque (clutch scale) for a screw at this point, from the denser installed piece.</summary>
@@ -334,12 +336,25 @@ namespace WoodcraftSimulator.Construction
             double density = 450.0;
             if (Blueprint.TryGetConnection(connectionId, out ConnectionSpec connection))
             {
-                TimberPiece a = GetPiece(connection.PartA);
-                TimberPiece b = GetPiece(connection.PartB);
-                density = Math.Max(a?.Species.DensityKgPerCubicMeter ?? 0.0, b?.Species.DensityKgPerCubicMeter ?? 0.0);
+                density = TimberDensity(GetPiece(connection.PartA), GetPiece(connection.PartB));
             }
 
             return FasteningRules.SeatingTorque(fastener, density > 0.0 ? density : 450.0);
+        }
+
+        /// <summary>The denser of the two pieces that are timber (concrete etc. is ignored); 0 if none is.</summary>
+        private static double TimberDensity(TimberPiece a, TimberPiece b)
+        {
+            double density = 0.0;
+            foreach (TimberPiece piece in new[] { a, b })
+            {
+                if (piece != null && piece.Species.IsTimber)
+                {
+                    density = Math.Max(density, piece.Species.DensityKgPerCubicMeter);
+                }
+            }
+
+            return density;
         }
 
         /// <summary>Compares a piece with a slot without placing it (e.g. for HUD feedback).</summary>
