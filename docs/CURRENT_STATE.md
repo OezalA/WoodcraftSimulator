@@ -5,10 +5,8 @@ _Last updated: 2026-11-15_
 ## Current milestone
 **Phase 5 (Basic Assembly) done**: accepted by the owner on 2026-11-15 ("hepsi süper") after MT-013 and MT-015;
 `main` fast-forwarded to `develop`.
-**Save & load in progress** (owner request 2026-11-15, plan approved, D-036): S1 (domain save model) done;
-**S2 (boards + player, pause menu Save / New workshop, auto-save) and S3 (tools/belt, assembly progress, waste,
-cut list, lamp) implemented, NOT yet play-tested** (MT-016, MT-017). Unity compiled S2 cleanly after an Editor
-restart (the first CS0246 was a missed import of the new `SaveGameService.cs`); S3 not yet compiled by Unity.
+**Save & load done** (D-036): S1–S3 accepted by the owner on 2026-11-15 ("save başarılı") after MT-016/MT-017;
+`main` fast-forwarded to `develop`. **Next: Phase 6 (first complete job), plan proposed, awaiting the owner.**
 Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 
 ## Completed
@@ -61,6 +59,7 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 | S2 save service: static compile + `dotnet test` | 0 errors, 0 warnings; 162/162 tests passed (Claude). Unity play-test pending (MT-016) | 2026-11-15 |
 | S2 in Unity: compilation after Editor restart | `Tundra build success`, no errors (Editor.log, observed by Claude). Play-test pending | 2026-11-15 |
 | S3 save service: static compile + `dotnet test` | 0 errors, 0 warnings; 174/174 tests passed (Claude). Unity compile + play-test pending (MT-017) | 2026-11-15 |
+| MT-016 + MT-017 save & load (owner) | Passed: "save başarılı" | 2026-11-15 |
 
 ## Known issues / limitations
 - **Carry feel not liked yet** (owner, 2026-11-13). Ideas for later: smooth follow (lerp/slerp) instead of rigid
@@ -73,8 +72,6 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 - Mouse look tuned for mouse only; gamepad right stick would be far too slow.
 - In-game text is English only.
 - Save & load (D-036): one save slot; objects only move when the game moves them (no free drop of tools yet, so tools are on the belt or where the scene put them).
-- Company Name still `DefaultCompany` in ProjectSettings (owner to set `OezalAstudio` in Player Settings and save the
-  project); the save path follows it.
 - Pencil marks: no eraser, only on the board's flat faces, no squared lines / angles (D-028).
 - Assist option "type the dimension, the line is drawn" (owner's option A, D-034) deferred to a settings menu.
 - Recompiling scripts while in Play Mode resets non-serialized state (seen once: `NullReferenceException` in
@@ -82,6 +79,6 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
   Recompile After Finished Playing* (an editor preference, not a project setting).
 
 ## Next recommended action
-1. Owner: Player Settings → Company Name = `OezalAstudio`, then File → Save Project (writes ProjectSettings).
-2. Owner: stop Play, rebuild the scene, run MT-016 and MT-017.
-3. After acceptance: fast-forward `main`, then plan Phase 6 (first complete job) with the owner.
+1. Done: Company Name `OezalAstudio` (owner, 2026-11-15).
+2. Done: MT-016, MT-017 passed.
+3. Phase 6 plan (proposed 2026-11-15, see chat / ROADMAP): 6a job + material calculation (domain), 6b shelf blueprint + job board + stock, 6c job completion + results + save. Awaiting approval.

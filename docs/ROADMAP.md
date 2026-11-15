@@ -79,6 +79,15 @@ spruce 95 × 45, butt joints, 2 screws 5 × 80 mm per corner).
 ## Save & Load (inserted before Phase 6, D-036)
 Owner request 2026-11-15; plan approved ("tamam"). Company name for the save path: OezalAstudio.
 - [x] S1: Versioned save model (`SaveGameData`), migration, validation, board round trip; 17 new tests (162 total)
-- [ ] S2: Boards with marks recreated from the save, player pose, pause menu Save / New workshop, auto-save on quit,
-  auto-continue on start (code done, awaiting MT-016)
-- [ ] S3: Tools and belt, assembly progress, waste, cut list, light switch (code done, awaiting MT-016 + MT-017)
+- [x] S2: Boards with marks recreated from the save, player pose, pause menu Save / New workshop, auto-save on quit,
+  auto-continue on start (MT-016 passed, 2026-11-15)
+- [x] S3: Tools and belt, assembly progress, waste, cut list, light switch (MT-017 passed, 2026-11-15; 174 tests)
+
+## Phase 6: First Complete Crafting Job (plan proposed 2026-11-15, awaiting owner approval)
+Goal (master prompt): one woodworking project from start to finish without developer intervention.
+- [ ] 6a: Domain job model: job definition (objectives, stock, quality goals), material calculation from the blueprint
+  (cut list grouped by size, stock boards needed incl. kerf, expected offcuts), job progress and result; tests
+- [ ] 6b: Shelf blueprint (18 mm boards, screwed butt joints) + job board in the workshop (accept the job, read the
+  cut list, see what is done); the job's stock in the rack; the pencil/saw target follows the job's cut list
+- [ ] 6c: Job completion: results screen (accuracy per part, fasteners, material bought vs used, sawdust, offcuts,
+  time), finish the job; job state saved
