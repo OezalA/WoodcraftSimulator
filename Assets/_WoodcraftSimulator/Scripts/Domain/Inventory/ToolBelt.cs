@@ -10,7 +10,9 @@ namespace WoodcraftSimulator.Inventory
         /// <summary>Only small items fit on the belt.</summary>
         TooLarge,
         /// <summary>This exact item instance is already on the belt.</summary>
-        AlreadyStored
+        AlreadyStored,
+        /// <summary>The requested slot already holds an item (<see cref="ToolBelt.TryAddAt"/>).</summary>
+        SlotTaken
     }
 
     /// <summary>
@@ -94,6 +96,36 @@ namespace WoodcraftSimulator.Inventory
 
             slots[free] = item;
             slot = free;
+            Changed?.Invoke();
+            return BeltAddResult.Added;
+        }
+
+        /// <summary>Puts the item into a specific slot (e.g. restoring a saved belt). Same rules as <see cref="TryAdd"/>.</summary>
+        public BeltAddResult TryAddAt(InventoryItem item, int slot)
+        {
+            if (item == null)
+            {
+                throw new ArgumentNullException(nameof(item));
+            }
+
+            RequireValidSlot(slot);
+
+            if (item.SizeClass != ItemSizeClass.Small)
+            {
+                return BeltAddResult.TooLarge;
+            }
+
+            if (Array.IndexOf(slots, item) >= 0)
+            {
+                return BeltAddResult.AlreadyStored;
+            }
+
+            if (slots[slot] != null)
+            {
+                return BeltAddResult.SlotTaken;
+            }
+
+            slots[slot] = item;
             Changed?.Invoke();
             return BeltAddResult.Added;
         }

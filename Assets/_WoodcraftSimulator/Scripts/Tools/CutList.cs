@@ -28,6 +28,21 @@ namespace WoodcraftSimulator.Tools
         /// <summary>Raised after the target changed.</summary>
         public event Action TargetChanged;
 
+        /// <summary>Index of the current target in the preset list (saved with the game).</summary>
+        public int SelectedIndex => selectedIndex;
+
+        /// <summary>Sets the current target (loading a save). Out-of-range indices wrap around the list.</summary>
+        public void Restore(int index)
+        {
+            if (targetsMillimeters.Length == 0)
+            {
+                return;
+            }
+
+            selectedIndex = Mathf.Abs(index) % targetsMillimeters.Length;
+            TargetChanged?.Invoke();
+        }
+
         public void Interact(PlayerInteractor interactor)
         {
             if (targetsMillimeters.Length == 0)

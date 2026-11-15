@@ -264,5 +264,28 @@ namespace WoodcraftSimulator.Tests.Cutting
             Assert.That(log.TotalMassKg, Is.EqualTo(0.007695).Within(1e-12));
             Assert.That(changes, Is.EqualTo(2));
         }
+
+        [Test]
+        public void WasteLog_Restore_ReplacesTotals_LaterCutsAddOn()
+        {
+            var log = new MaterialWasteLog();
+            log.Record(new CutWaste(Mm(2), 1e-6, 0.001));
+
+            log.Restore(5, 4e-5, 0.018);
+            log.Record(new CutWaste(Mm(2), 1e-5, 0.0045));
+
+            Assert.That(log.CutCount, Is.EqualTo(6));
+            Assert.That(log.TotalVolumeCubicMeters, Is.EqualTo(5e-5).Within(1e-12));
+            Assert.That(log.TotalMassKg, Is.EqualTo(0.0225).Within(1e-12));
+        }
+
+        [TestCase(-1, 0.0, 0.0)]
+        [TestCase(0, -1e-6, 0.0)]
+        [TestCase(0, double.NaN, 0.0)]
+        [TestCase(0, 0.0, double.PositiveInfinity)]
+        public void WasteLog_Restore_InvalidTotals_Throw(int cuts, double volume, double mass)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => new MaterialWasteLog().Restore(cuts, volume, mass));
+        }
     }
 }

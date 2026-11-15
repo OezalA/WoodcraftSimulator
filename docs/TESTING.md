@@ -323,10 +323,24 @@ Precondition: stop Play, rebuild the scene (MT-001). Press Play. Save file: `%US
 | Esc → New workshop | Button asks `Really start over? Click again`; closing the menu cancels |
 | Click it again | The scene restarts as freshly built; status `New workshop (no save yet)` |
 | Corrupt the JSON file (e.g. delete half of it) while Play is stopped, then Play | Fresh workshop, status `Save could not be loaded (kept aside, see Console)`; Console warning lists the problems; the file was renamed to `workshop.invalid-<time>.json` |
-| EditMode tests | 162 tests, all green |
+| EditMode tests | 174 tests, all green |
 
-Not yet saved (S3): tools / belt contents, frame on the assembly table (its boards come back as loose boards), sawdust
-total, cut list target, lamp.
+### MT-017: Save and continue (S3: tools, belt, assembly, waste, cut list, lamp)
+Precondition: MT-016 works; rebuild the scene once more after S3 (the tools, table, switch and cut list need their ids).
+Esc → New workshop for a clean start.
+| Step | Expected |
+|---|---|
+| Take tape, pencil and saw (belt slots 1–3), select the pencil (key 2) | Pencil in hand |
+| E on the cut list until `now: 450 mm`; turn the lamp off at the switch | - |
+| Make one cut (note the sawdust value in the saw's result line) | - |
+| Install two or three frame parts on the assembly table, drive at least one screw | Screw head visible |
+| Esc → Save, stop Play, press Play | Belt shows the same three tools in the same slots, **pencil in hand**; the drill is still on the table; cut list `now: 450 mm`; lamp off |
+| Look at the assembly table | The installed parts are in their slots (no ghost there), the screw head is there, the orange squares only where still open; a screwed part can't be taken out, an unscrewed one can |
+| Finish the frame, check the report | The sawdust total includes the cut made before saving |
+| Save with the finished frame, stop, Play | Frame complete on the table; the report does **not** pop up again |
+| Carry a board with the saw in hand, Esc → Save, stop, Play | Board drops in front of you; **saw in hand** |
+| Console | No warnings from `SaveGameService` / `AssemblyStation` |
+| EditMode tests | 174 tests, all green |
 
 ## Game view setup (corrects the earlier tip)
 A fixed resolution such as *Full HD (1920x1080)* at `Scale 1x` **crops** the image when the Game view window is

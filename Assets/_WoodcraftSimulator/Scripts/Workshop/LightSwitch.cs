@@ -14,7 +14,16 @@ namespace WoodcraftSimulator.Workshop
 
         public string InteractionPrompt => isOn ? $"Turn off {lightName}" : $"Turn on {lightName}";
 
+        public bool IsOn => isOn;
+
         private void Start() => ApplyState();
+
+        /// <summary>Switches on or off without player interaction (loading a save).</summary>
+        public void SetOn(bool on)
+        {
+            isOn = on;
+            ApplyState();
+        }
 
         public void Interact(PlayerInteractor interactor)
         {

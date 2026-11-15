@@ -152,6 +152,7 @@ namespace WoodcraftSimulator.Persistence
             }
 
             var installedBoards = new HashSet<string>();
+            var stationIds = new HashSet<string>();
             foreach (AssemblyData assembly in data.assemblies ?? Array.Empty<AssemblyData>())
             {
                 if (assembly == null || string.IsNullOrWhiteSpace(assembly.stationId))
@@ -160,22 +161,78 @@ namespace WoodcraftSimulator.Persistence
                     continue;
                 }
 
+                string label = $"assembly '{assembly.stationId}'";
+                if (!stationIds.Add(assembly.stationId))
+                {
+                    errors.Add($"{label} is listed twice.");
+                }
+
+                if (string.IsNullOrWhiteSpace(assembly.blueprintId))
+                {
+                    errors.Add($"{label}: blueprint is missing.");
+                }
+
+                var slotIds = new HashSet<string>();
                 foreach (InstalledPartData part in assembly.parts ?? Array.Empty<InstalledPartData>())
                 {
                     if (part == null || string.IsNullOrWhiteSpace(part.slotId) || !boardIds.Contains(part.boardId ?? string.Empty))
                     {
-                        errors.Add($"assembly '{assembly.stationId}': an installed part refers to an unknown board.");
+                        errors.Add($"{label}: an installed part refers to an unknown board.");
                     }
                     else if (!installedBoards.Add(part.boardId))
                     {
                         errors.Add($"Board '{part.boardId}' is installed twice.");
                     }
+                    else if (!slotIds.Add(part.slotId))
+                    {
+                        errors.Add($"{label}: slot '{part.slotId}' holds two boards.");
+                    }
+                }
+
+                var connectionIds = new HashSet<string>();
+                foreach (FastenedConnectionData connection in assembly.fastened ?? Array.Empty<FastenedConnectionData>())
+                {
+                    if (connection == null || string.IsNullOrWhiteSpace(connection.connectionId) ||
+                        !connectionIds.Add(connection.connectionId))
+                    {
+                        errors.Add($"{label}: a fastened connection is empty or duplicated.");
+                        continue;
+                    }
+
+                    int[] points = connection.points ?? Array.Empty<int>();
+                    if (Array.Exists(points, point => point < 0) || new HashSet<int>(points).Count != points.Length)
+                    {
+                        errors.Add($"{label}: connection '{connection.connectionId}' has invalid fastening points.");
+                    }
+                }
+            }
+
+            var switchIds = new HashSet<string>();
+            foreach (SwitchData lightSwitch in data.switches ?? Array.Empty<SwitchData>())
+            {
+                if (lightSwitch == null || string.IsNullOrWhiteSpace(lightSwitch.id) || !switchIds.Add(lightSwitch.id))
+                {
+                    errors.Add($"Switch id '{lightSwitch?.id}' is empty or duplicated.");
+                }
+            }
+
+            var cutListIds = new HashSet<string>();
+            foreach (CutListData cutList in data.cutLists ?? Array.Empty<CutListData>())
+            {
+                if (cutList == null || string.IsNullOrWhiteSpace(cutList.id) || !cutListIds.Add(cutList.id))
+                {
+                    errors.Add($"Cut list id '{cutList?.id}' is empty or duplicated.");
+                }
+                else if (cutList.selectedIndex < 0)
+                {
+                    errors.Add($"cut list '{cutList.id}': selection {cutList.selectedIndex} is invalid.");
                 }
             }
 
             WasteData waste = data.waste ?? new WasteData();
-            if (waste.cutCount < 0 || waste.volumeCubicMeters < 0.0 || waste.massKg < 0.0 ||
-                double.IsNaN(waste.volumeCubicMeters) || double.IsNaN(waste.massKg))
+            // "!(x >= 0)" also catches NaN.
+            if (waste.cutCount < 0 || !(waste.volumeCubicMeters >= 0.0) || !(waste.massKg >= 0.0) ||
+                double.IsInfinity(waste.volumeCubicMeters) || double.IsInfinity(waste.massKg))
             {
                 errors.Add("Waste totals are invalid.");
             }

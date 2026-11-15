@@ -258,6 +258,18 @@ namespace WoodcraftSimulator.Construction
         {
             if (fastener == null) throw new ArgumentNullException(nameof(fastener));
 
+            return Fasten(connectionId, point, fastener.Id);
+        }
+
+        /// <summary>
+        /// Marks a point as fastened when loading a save: the same rules as <see cref="TryFasten"/> except the fastener
+        /// type, which was checked when the fastener was driven (the save stores only which points are done).
+        /// </summary>
+        public FastenResult RestoreFastened(string connectionId, int point) => Fasten(connectionId, point, null);
+
+        /// <param name="fastenerId">The driven fastener's type; null skips the type check (restoring a save).</param>
+        private FastenResult Fasten(string connectionId, int point, string fastenerId)
+        {
             if (!Blueprint.TryGetConnection(connectionId, out ConnectionSpec connection))
             {
                 return FastenResult.UnknownConnection;
@@ -279,7 +291,7 @@ namespace WoodcraftSimulator.Construction
                 return FastenResult.PartsMissing;
             }
 
-            if (fastener.Id != connection.FastenerId)
+            if (fastenerId != null && fastenerId != connection.FastenerId)
             {
                 return FastenResult.WrongFastener;
             }

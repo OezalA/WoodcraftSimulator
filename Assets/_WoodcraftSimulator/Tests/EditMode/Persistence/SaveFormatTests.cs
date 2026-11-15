@@ -158,6 +158,52 @@ namespace WoodcraftSimulator.Tests.Persistence
         }
 
         [Test]
+        public void Validate_InfiniteWaste()
+        {
+            SaveGameData save = ValidSave();
+            save.waste.massKg = double.PositiveInfinity;
+
+            Assert.That(SaveFormat.Validate(save).Any(e => e.Contains("Waste")), Is.True);
+        }
+
+        [Test]
+        public void Validate_AssemblyProblems()
+        {
+            SaveGameData save = ValidSave();
+            save.assemblies[0].blueprintId = "";
+            save.assemblies[0].fastened[0].points = new[] { 0, 0 };
+
+            var errors = SaveFormat.Validate(save);
+            Assert.That(errors.Any(e => e.Contains("blueprint is missing")), Is.True);
+            Assert.That(errors.Any(e => e.Contains("invalid fastening points")), Is.True);
+        }
+
+        [Test]
+        public void Validate_TwoBoardsInOneSlot()
+        {
+            SaveGameData save = ValidSave();
+            save.assemblies[0].parts = new[]
+            {
+                new InstalledPartData { slotId = "front", boardId = "b1" },
+                new InstalledPartData { slotId = "front", boardId = "b2" }
+            };
+
+            Assert.That(SaveFormat.Validate(save).Any(e => e.Contains("holds two boards")), Is.True);
+        }
+
+        [Test]
+        public void Validate_SwitchAndCutListIds()
+        {
+            SaveGameData save = ValidSave();
+            save.switches = new[] { new SwitchData { id = "LightSwitch" }, new SwitchData { id = "LightSwitch" } };
+            save.cutLists = new[] { new CutListData { id = "CutList", selectedIndex = -2 } };
+
+            var errors = SaveFormat.Validate(save);
+            Assert.That(errors.Any(e => e.StartsWith("Switch id")), Is.True);
+            Assert.That(errors.Any(e => e.Contains("cut list 'CutList'")), Is.True);
+        }
+
+        [Test]
         public void Board_RoundTrip_KeepsDimensionsAndMarksExactly()
         {
             var piece = new TimberPiece(Spruce, BoardDimensions.FromMillimeters(1498.3, 95, 45));

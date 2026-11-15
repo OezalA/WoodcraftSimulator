@@ -353,3 +353,18 @@ for a versioned save system (§6.16) without tying it to a phase. Plan approved 
   `TimberBoardFactory` (same setup as the builder's boards); all builder boards are replaced. Every board has a
   `PersistentId` (builder: its name; cut halves: a new GUID). Boards saved in the air settle (D-031). Player:
   position, yaw, pitch (`PlayerController.Teleport`). "New workshop" (two clicks) deletes the save and reloads the scene.
+- **S3 (2026-11-15):** the rest of the workshop state, same file, still format version 1 (S2 files load unchanged:
+  missing sections are empty). Fixed builder `PersistentId`s: items (`TapeMeasure`, `CarpenterPencil`, `HandSaw`,
+  `DrillDriver`), `AssemblyTable`, `LightSwitch`, `CutList`. Systems with more state capture/restore it themselves
+  (`AssemblyStation.CaptureState/RestoreState`, `PlayerToolBelt.Restore`, `CutList.Restore`, `LightSwitch.SetOn`,
+  `MaterialWasteLog.Restore`); the service applies in dependency order: boards → assemblies → items/belt → waste →
+  switches → cut lists → player.
+  - Belt: item ids per slot (gaps kept, domain `ToolBelt.TryAddAt`) and the tool in hand; saved while carrying, the
+    holstered tool counts (`SlotToSave`), so it is in hand after loading.
+  - Assembly: slot id → board id, and fastened point indices per connection. Restoring uses the normal rules (fit,
+    prerequisites in any saved order); only the fastener type is not re-checked (domain `RestoreFastened`: the save
+    doesn't store it, it was checked when driven). A complete frame loads complete **without** showing the report
+    again. Anything that no longer fits (changed blueprint) is skipped with a warning and stays a loose board.
+  - Unknown ids in the save (object no longer in the scene) are skipped with a warning; scene objects the save doesn't
+    know keep their built state. Validation extended (duplicate stations/switches/cut lists, two boards in a slot,
+    invalid fastening points, infinite waste).

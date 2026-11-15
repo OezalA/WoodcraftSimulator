@@ -29,5 +29,20 @@ namespace WoodcraftSimulator.Cutting
             TotalMassKg += waste.MassKg;
             Changed?.Invoke();
         }
+
+        /// <summary>Sets the totals (loading a save). Replaces whatever was recorded before.</summary>
+        public void Restore(int cutCount, double totalVolumeCubicMeters, double totalMassKg)
+        {
+            if (cutCount < 0 || !(totalVolumeCubicMeters >= 0.0) || !(totalMassKg >= 0.0) ||
+                double.IsInfinity(totalVolumeCubicMeters) || double.IsInfinity(totalMassKg))
+            {
+                throw new ArgumentOutOfRangeException(nameof(cutCount), "Waste totals must be finite and not negative.");
+            }
+
+            CutCount = cutCount;
+            TotalVolumeCubicMeters = totalVolumeCubicMeters;
+            TotalMassKg = totalMassKg;
+            Changed?.Invoke();
+        }
     }
 }

@@ -160,5 +160,29 @@ namespace WoodcraftSimulator.Tests.Inventory
             Assert.That(belt.Contains("tape-measure"), Is.True);
             Assert.That(belt.Contains("hand-saw"), Is.False);
         }
+
+        [Test]
+        public void TryAddAt_PutsItemIntoThatSlot_GapsStay()
+        {
+            var belt = new ToolBelt(4);
+
+            Assert.That(belt.TryAddAt(Pencil(), 2), Is.EqualTo(BeltAddResult.Added));
+            Assert.That(belt.GetItem(2).DefinitionId, Is.EqualTo("carpenter-pencil"));
+            Assert.That(belt.GetItem(0), Is.Null);
+            Assert.That(belt.SelectedSlot, Is.EqualTo(ToolBelt.NoSelection));
+        }
+
+        [Test]
+        public void TryAddAt_Refusals()
+        {
+            var belt = new ToolBelt(2);
+            InventoryItem tape = Tape();
+            belt.TryAddAt(tape, 0);
+
+            Assert.That(belt.TryAddAt(Pencil(), 0), Is.EqualTo(BeltAddResult.SlotTaken));
+            Assert.That(belt.TryAddAt(tape, 1), Is.EqualTo(BeltAddResult.AlreadyStored));
+            Assert.That(belt.TryAddAt(Board(), 1), Is.EqualTo(BeltAddResult.TooLarge));
+            Assert.Throws<ArgumentOutOfRangeException>(() => belt.TryAddAt(Pencil(), 2));
+        }
     }
 }

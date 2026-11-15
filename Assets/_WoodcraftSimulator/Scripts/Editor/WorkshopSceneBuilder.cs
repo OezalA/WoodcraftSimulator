@@ -197,6 +197,7 @@ namespace WoodcraftSimulator.Editor
                 new Vector3(0.148f, 0.002f, 0.21f), materials.Paper);
             EnlargeGrabCollider(note, note.transform.localScale);
             var cutList = note.AddComponent<CutList>();
+            note.AddComponent<PersistentId>().Set("CutList");
 
             // Carpenter's pencil ≈ 175 × 12 × 7 mm (flat), lying across the bench; held pointing forward.
             GameObject pencil = CreatePickupItem("CarpenterPencil", tools, ItemAssets.CarpenterPencil(),
@@ -266,6 +267,7 @@ namespace WoodcraftSimulator.Editor
             EnlargeGrabCollider(item, size);
 
             var pickup = item.AddComponent<PickupItem>();
+            item.AddComponent<PersistentId>().Set(name);
             var serialized = new SerializedObject(pickup);
             serialized.FindProperty("definition").objectReferenceValue = definition;
             serialized.FindProperty("handPosition").vector3Value = handPosition;
@@ -307,6 +309,7 @@ namespace WoodcraftSimulator.Editor
             }
 
             var station = table.gameObject.AddComponent<AssemblyStation>();
+            table.gameObject.AddComponent<PersistentId>().Set("AssemblyTable");
             SetReference(station, "blueprint", BlueprintAssets.Frame600x300());
             SetReference(station, "ghostMaterial", materials.BlueprintGhost);
             SetReference(station, "pointMarkerMaterial", materials.CutGuide);
@@ -345,6 +348,7 @@ namespace WoodcraftSimulator.Editor
                 new Vector3(0.08f, 0.12f, 0.03f), switchMaterial);
 
             var lightSwitch = switchObject.AddComponent<LightSwitch>();
+            switchObject.AddComponent<PersistentId>().Set("LightSwitch");
             var serializedSwitch = new SerializedObject(lightSwitch);
             SerializedProperty lightsProperty = serializedSwitch.FindProperty("lights");
             lightsProperty.arraySize = 1;
@@ -625,6 +629,8 @@ namespace WoodcraftSimulator.Editor
             var service = saveObject.AddComponent<SaveGameService>();
             SetReference(service, "boardFactory", factory);
             SetReference(service, "player", player.GetComponent<PlayerController>());
+            SetReference(service, "toolBelt", player.GetComponent<PlayerToolBelt>());
+            SetReference(service, "waste", Object.FindFirstObjectByType<WorkshopWaste>());
             return service;
         }
 

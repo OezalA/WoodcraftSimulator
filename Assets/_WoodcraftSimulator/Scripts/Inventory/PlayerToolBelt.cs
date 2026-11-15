@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using WoodcraftSimulator.Handling;
@@ -126,6 +127,47 @@ namespace WoodcraftSimulator.Inventory
             }
 
             return result;
+        }
+
+        /// <summary>The scene object in a slot, or null.</summary>
+        public PickupItem GetStored(int slot) => storedObjects[slot];
+
+        /// <summary>
+        /// The slot that should be in hand when the game is saved: while carrying, the tool was only holstered and
+        /// comes back afterwards, so that one counts.
+        /// </summary>
+        public int SlotToSave => carrier.IsCarrying ? slotBeforeCarry : Belt.SelectedSlot;
+
+        /// <summary>
+        /// Puts saved items back into their slots and takes the saved one in hand (loading a save). Expects an empty
+        /// belt (a freshly loaded scene); items that can't be stored stay where they are in the world.
+        /// </summary>
+        public void Restore(IReadOnlyList<PickupItem> slots, int selected)
+        {
+            for (int i = 0; i < slots.Count && i < storedObjects.Length; i++)
+            {
+                PickupItem pickup = slots[i];
+                if (pickup == null || pickup.Item == null)
+                {
+                    continue;
+                }
+
+                BeltAddResult result = Belt.TryAddAt(pickup.Item, i);
+                if (result != BeltAddResult.Added)
+                {
+                    Debug.LogWarning($"[{nameof(PlayerToolBelt)}] Could not restore '{pickup.name}' to slot {i}: {result}", this);
+                    continue;
+                }
+
+                storedObjects[i] = pickup;
+                pickup.SetStored(true);
+                pickup.gameObject.SetActive(false);
+            }
+
+            if (selected >= 0 && selected < storedObjects.Length && storedObjects[selected] != null)
+            {
+                Belt.Select(selected);
+            }
         }
 
         private void OnCarryingChanged(bool isCarrying)

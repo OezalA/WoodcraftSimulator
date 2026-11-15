@@ -6,6 +6,7 @@ using WoodcraftSimulator.Core;
 using WoodcraftSimulator.Handling;
 using WoodcraftSimulator.Materials;
 using WoodcraftSimulator.Measurement;
+using WoodcraftSimulator.Persistence;
 
 namespace WoodcraftSimulator.Construction
 {
@@ -46,6 +47,7 @@ namespace WoodcraftSimulator.Construction
         private GameObject[] ghosts;
         private Carryable[] installed;
         private Transform[] parentsBeforeInstall;
+        private bool restoring;
         private GameObject[][] pointMarkers;
 
         public AssemblyBuild Build { get; private set; }
@@ -92,8 +94,156 @@ namespace WoodcraftSimulator.Construction
                 }
             }
 
-            Build.Completed += () => Completed?.Invoke();
+            // A structure loaded complete from a save must not announce itself again.
+            Build.Completed += () =>
+            {
+                if (!restoring)
+                {
+                    Completed?.Invoke();
+                }
+            };
             UpdatePointMarkers();
+        }
+
+        /// <summary>Save state: which board (by <see cref="PersistentId"/>) is in which slot, and which points are fastened.</summary>
+        public AssemblyData CaptureState(string stationId)
+        {
+            var parts = new List<InstalledPartData>();
+            for (int i = 0; i < installed.Length; i++)
+            {
+                if (installed[i] != null && installed[i].TryGetComponent(out PersistentId boardId))
+                {
+                    parts.Add(new InstalledPartData { slotId = blueprint.Slots[i].id, boardId = boardId.Id });
+                }
+            }
+
+            var fastenedConnections = new List<FastenedConnectionData>();
+            foreach (BlueprintDefinition.Connection connection in blueprint.Connections)
+            {
+                var points = new List<int>();
+                for (int p = 0; p < connection.points.Length; p++)
+                {
+                    if (Build.IsFastened(connection.id, p))
+                    {
+                        points.Add(p);
+                    }
+                }
+
+                if (points.Count > 0)
+                {
+                    fastenedConnections.Add(new FastenedConnectionData { connectionId = connection.id, points = points.ToArray() });
+                }
+            }
+
+            return new AssemblyData
+            {
+                stationId = stationId,
+                blueprintId = Build.Blueprint.Id,
+                parts = parts.ToArray(),
+                fastened = fastenedConnections.ToArray()
+            };
+        }
+
+        /// <summary>
+        /// Rebuilds a saved state on this (empty) station: installs the boards, then the fasteners, with the same rules as
+        /// in play. Whatever no longer fits (e.g. the blueprint changed) is skipped with a warning and stays loose.
+        /// </summary>
+        public void RestoreState(AssemblyData data, Func<string, Carryable> findBoard)
+        {
+            if (data.blueprintId != Build.Blueprint.Id)
+            {
+                Debug.LogWarning($"[{nameof(AssemblyStation)}] '{name}': saved blueprint '{data.blueprintId}' is not " +
+                                 $"'{Build.Blueprint.Id}'; the saved assembly is not restored.", this);
+                return;
+            }
+
+            restoring = true;
+            try
+            {
+                RestoreParts(data.parts ?? Array.Empty<InstalledPartData>(), findBoard);
+                RestoreFasteners(data.fastened ?? Array.Empty<FastenedConnectionData>());
+            }
+            finally
+            {
+                restoring = false;
+            }
+        }
+
+        private void RestoreParts(InstalledPartData[] parts, Func<string, Carryable> findBoard)
+        {
+            // Prerequisites must be installed first; the saved order doesn't matter, so repeat until nothing changes.
+            var pending = new List<InstalledPartData>(parts);
+            bool progress = true;
+            while (pending.Count > 0 && progress)
+            {
+                progress = false;
+                for (int i = pending.Count - 1; i >= 0; i--)
+                {
+                    int index = SlotIndex(pending[i].slotId);
+                    Carryable board = findBoard(pending[i].boardId);
+                    if (index >= 0 && board != null && TryInstallAt(index, board))
+                    {
+                        pending.RemoveAt(i);
+                        progress = true;
+                    }
+                }
+            }
+
+            foreach (InstalledPartData part in pending)
+            {
+                Debug.LogWarning($"[{nameof(AssemblyStation)}] '{name}': board '{part.boardId}' could not be put back " +
+                                 $"into slot '{part.slotId}'; it stays loose.", this);
+            }
+        }
+
+        private void RestoreFasteners(FastenedConnectionData[] connections)
+        {
+            foreach (FastenedConnectionData connection in connections)
+            {
+                int c = ConnectionIndex(connection.connectionId);
+                foreach (int point in connection.points ?? Array.Empty<int>())
+                {
+                    FastenResult result = c >= 0 ? Build.RestoreFastened(connection.connectionId, point) : FastenResult.UnknownConnection;
+                    if (result == FastenResult.Fastened)
+                    {
+                        AddScrewHead(c, point);
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"[{nameof(AssemblyStation)}] '{name}': fastener {connection.connectionId}.{point} " +
+                                         $"not restored: {result}", this);
+                    }
+                }
+            }
+
+            UpdatePointMarkers();
+            Changed?.Invoke();
+        }
+
+        private int SlotIndex(string slotId)
+        {
+            for (int i = 0; i < blueprint.Slots.Count; i++)
+            {
+                if (blueprint.Slots[i].id == slotId)
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        private int ConnectionIndex(string connectionId)
+        {
+            for (int c = 0; c < blueprint.Connections.Count; c++)
+            {
+                if (blueprint.Connections[c].id == connectionId)
+                {
+                    return c;
+                }
+            }
+
+            return -1;
         }
 
         public Vector3 PointPosition(int connection, int point) =>
@@ -139,14 +289,17 @@ namespace WoodcraftSimulator.Construction
             FastenResult result = Build.TryFasten(blueprint.Connections[connection].id, point, fastener);
             if (result == FastenResult.Fastened)
             {
-                CreateFlatBox($"Screw {blueprint.Connections[connection].id}.{point}", connection, point,
-                    ScrewHeadSize, ScrewHeadHeight, screwHeadMaterial);
+                AddScrewHead(connection, point);
                 UpdatePointMarkers();
                 Changed?.Invoke();
             }
 
             return result;
         }
+
+        private void AddScrewHead(int connection, int point) =>
+            CreateFlatBox($"Screw {blueprint.Connections[connection].id}.{point}", connection, point,
+                ScrewHeadSize, ScrewHeadHeight, screwHeadMaterial);
 
         /// <summary>The quality report as text (every component on its own line).</summary>
         public string ReportText(string fastenerName)
@@ -260,13 +413,19 @@ namespace WoodcraftSimulator.Construction
 
         public void Install(Carryable carryable, SnapPlacement snap)
         {
-            int index = snap.SlotIndex;
-            if (!carryable.TryGetComponent(out TimberBoard board) ||
-                Build.TryPlace(blueprint.Slots[index].id, board.Piece) != PlaceResult.Placed)
+            if (!TryInstallAt(snap.SlotIndex, carryable))
             {
                 // The snap was checked a moment ago; if the state changed, the board just stays where it was put.
-                Debug.LogWarning($"[{nameof(AssemblyStation)}] Could not install '{carryable.name}' into slot {index}.", this);
-                return;
+                Debug.LogWarning($"[{nameof(AssemblyStation)}] Could not install '{carryable.name}' into slot {snap.SlotIndex}.", this);
+            }
+        }
+
+        private bool TryInstallAt(int index, Carryable carryable)
+        {
+            if (installed[index] != null || !carryable.TryGetComponent(out TimberBoard board) || board.Piece == null ||
+                Build.TryPlace(blueprint.Slots[index].id, board.Piece) != PlaceResult.Placed)
+            {
+                return false;
             }
 
             parentsBeforeInstall[index] = carryable.transform.parent;
@@ -277,6 +436,7 @@ namespace WoodcraftSimulator.Construction
             ghosts[index].SetActive(false);
             UpdatePointMarkers();
             Changed?.Invoke();
+            return true;
         }
 
         public bool CanRelease(Carryable carryable, out string reason)

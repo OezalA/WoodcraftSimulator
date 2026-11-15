@@ -81,4 +81,4 @@ Owner request 2026-11-15; plan approved ("tamam"). Company name for the save pat
 - [x] S1: Versioned save model (`SaveGameData`), migration, validation, board round trip; 17 new tests (162 total)
 - [ ] S2: Boards with marks recreated from the save, player pose, pause menu Save / New workshop, auto-save on quit,
   auto-continue on start (code done, awaiting MT-016)
-- [ ] S3: Tools and belt, assembly progress, waste, cut list, light switch
+- [ ] S3: Tools and belt, assembly progress, waste, cut list, light switch (code done, awaiting MT-016 + MT-017)

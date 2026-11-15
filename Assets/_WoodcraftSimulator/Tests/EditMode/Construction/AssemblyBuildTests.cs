@@ -157,6 +157,22 @@ namespace WoodcraftSimulator.Tests.Construction
         }
 
         [Test]
+        public void RestoreFastened_SameRulesWithoutFastenerType()
+        {
+            AssemblyBuild build = FullyPlaced();
+
+            Assert.That(build.RestoreFastened("bottom-left", 1), Is.EqualTo(FastenResult.Fastened));
+            Assert.That(build.IsFastened("bottom-left", 1), Is.True);
+            Assert.That(build.RestoreFastened("bottom-left", 1), Is.EqualTo(FastenResult.PointAlreadyFastened));
+            Assert.That(build.RestoreFastened("bottom-left", 5), Is.EqualTo(FastenResult.InvalidPoint));
+            Assert.That(build.RestoreFastened("middle", 0), Is.EqualTo(FastenResult.UnknownConnection));
+            Assert.That(build.CanRemove("bottom"), Is.EqualTo(RemoveResult.Fastened));
+
+            var empty = new AssemblyBuild(Frame());
+            Assert.That(empty.RestoreFastened("bottom-left", 0), Is.EqualTo(FastenResult.PartsMissing));
+        }
+
+        [Test]
         public void TryRemove_BeforeFastening_GivesThePieceBack()
         {
             var build = new AssemblyBuild(Frame());

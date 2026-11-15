@@ -4,10 +4,15 @@ using System.Globalization;
 using System.IO;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using WoodcraftSimulator.Construction;
+using WoodcraftSimulator.Cutting;
 using WoodcraftSimulator.Handling;
+using WoodcraftSimulator.Inventory;
 using WoodcraftSimulator.Materials;
 using WoodcraftSimulator.Measurement;
 using WoodcraftSimulator.Player;
+using WoodcraftSimulator.Tools;
+using WoodcraftSimulator.Workshop;
 
 namespace WoodcraftSimulator.Persistence
 {
@@ -15,7 +20,9 @@ namespace WoodcraftSimulator.Persistence
     /// Saves and loads the workshop (D-036): one JSON file in <see cref="Application.persistentDataPath"/>.
     /// On start the last save is loaded (migrated, validated, then applied); on quit the game is saved.
     /// An invalid file is never applied: it is moved aside and the generated workshop is used.
-    /// Capture/apply of each system lives here for now; it moves into the systems once there are more (S3+).
+    /// Systems with more state capture/restore it themselves (e.g. <see cref="AssemblyStation.CaptureState"/>); this
+    /// service finds them by <see cref="PersistentId"/> and applies them in dependency order: boards, assemblies
+    /// (need the boards), items and belt, waste, switches, cut lists, player.
     /// </summary>
     public sealed class SaveGameService : MonoBehaviour
     {
@@ -23,6 +30,10 @@ namespace WoodcraftSimulator.Persistence
 
         [SerializeField] private TimberBoardFactory boardFactory;
         [SerializeField] private PlayerController player;
+        [SerializeField] private PlayerToolBelt toolBelt;
+
+        [Tooltip("Optional: the workshop's sawdust total.")]
+        [SerializeField] private WorkshopWaste waste;
 
         private bool restarting;
 
@@ -36,9 +47,9 @@ namespace WoodcraftSimulator.Persistence
 
         private void Start()
         {
-            if (boardFactory == null || player == null)
+            if (boardFactory == null || player == null || toolBelt == null)
             {
-                Debug.LogError($"{nameof(SaveGameService)}: Board Factory and Player must be assigned.", this);
+                Debug.LogError($"{nameof(SaveGameService)}: Board Factory, Player and Tool Belt must be assigned.", this);
                 enabled = false;
                 return;
             }
@@ -162,7 +173,75 @@ namespace WoodcraftSimulator.Persistence
             }
 
             data.boards = boards.ToArray();
+            CaptureItemsAndBelt(data);
+
+            var assemblies = new List<AssemblyData>();
+            foreach (KeyValuePair<string, AssemblyStation> station in ById<AssemblyStation>())
+            {
+                if (station.Value.Build != null)
+                {
+                    assemblies.Add(station.Value.CaptureState(station.Key));
+                }
+            }
+
+            data.assemblies = assemblies.ToArray();
+
+            if (waste != null && data.waste != null)
+            {
+                MaterialWasteLog log = waste.Log;
+                data.waste = new WasteData
+                {
+                    cutCount = log.CutCount, volumeCubicMeters = log.TotalVolumeCubicMeters, massKg = log.TotalMassKg
+                };
+            }
+
+            var switches = new List<SwitchData>();
+            foreach (KeyValuePair<string, LightSwitch> lightSwitch in ById<LightSwitch>())
+            {
+                switches.Add(new SwitchData { id = lightSwitch.Key, on = lightSwitch.Value.IsOn });
+            }
+
+            data.switches = switches.ToArray();
+
+            var cutLists = new List<CutListData>();
+            foreach (KeyValuePair<string, CutList> cutList in ById<CutList>())
+            {
+                cutLists.Add(new CutListData { id = cutList.Key, selectedIndex = cutList.Value.SelectedIndex });
+            }
+
+            data.cutLists = cutLists.ToArray();
             return data;
+        }
+
+        private void CaptureItemsAndBelt(SaveGameData data)
+        {
+            var onBelt = new HashSet<PickupItem>();
+            var slots = new string[toolBelt.Belt.SlotCount];
+            for (int i = 0; i < slots.Length; i++)
+            {
+                PickupItem stored = toolBelt.GetStored(i);
+                slots[i] = stored != null && stored.TryGetComponent(out PersistentId id) ? id.Id : string.Empty;
+                if (stored != null)
+                {
+                    onBelt.Add(stored);
+                }
+            }
+
+            int selected = toolBelt.SlotToSave;
+            data.belt = new BeltData
+            {
+                slots = slots,
+                selected = selected >= 0 && !string.IsNullOrEmpty(slots[selected]) ? selected : -1
+            };
+
+            var items = new List<ItemData>();
+            foreach (KeyValuePair<string, PickupItem> item in ById<PickupItem>())
+            {
+                bool stored = onBelt.Contains(item.Value);
+                items.Add(new ItemData { id = item.Key, onBelt = stored, pose = ToPose(item.Value.transform) });
+            }
+
+            data.items = items.ToArray();
         }
 
         private void Apply(SaveGameData data)
@@ -173,7 +252,8 @@ namespace WoodcraftSimulator.Persistence
                 Destroy(existing.gameObject);
             }
 
-            foreach (BoardData boardData in data.boards)
+            var boards = new Dictionary<string, Carryable>();
+            foreach (BoardData boardData in data.boards ?? Array.Empty<BoardData>())
             {
                 boardFactory.TryGetSpecies(boardData.speciesId, out WoodSpeciesDefinition definition);
                 TimberPiece piece = SaveFormat.ToPiece(boardData, definition.ToDomain(), out BoardMarks marks);
@@ -181,12 +261,109 @@ namespace WoodcraftSimulator.Persistence
                     ToPosition(boardData.pose), ToRotation(boardData.pose));
 
                 // A board saved while carried was in the air: let it fall (supported ones don't move, D-031).
-                board.GetComponent<Carryable>().RequestSupportCheck();
+                // Installed boards are exempt: the station below takes them over.
+                var carryable = board.GetComponent<Carryable>();
+                carryable.RequestSupportCheck();
+                boards[boardData.id] = carryable;
+            }
+
+            Dictionary<string, AssemblyStation> stations = ById<AssemblyStation>();
+            foreach (AssemblyData assembly in data.assemblies ?? Array.Empty<AssemblyData>())
+            {
+                if (stations.TryGetValue(assembly.stationId, out AssemblyStation station) && station.Build != null)
+                {
+                    station.RestoreState(assembly, id => boards.TryGetValue(id, out Carryable board) ? board : null);
+                }
+                else
+                {
+                    Warn($"assembly station '{assembly.stationId}' is not in the scene; its saved assembly is skipped.");
+                }
+            }
+
+            ApplyItemsAndBelt(data);
+
+            if (waste != null && data.waste != null)
+            {
+                waste.Log.Restore(data.waste.cutCount, data.waste.volumeCubicMeters, data.waste.massKg);
+            }
+
+            Dictionary<string, LightSwitch> lightSwitches = ById<LightSwitch>();
+            foreach (SwitchData switchData in data.switches ?? Array.Empty<SwitchData>())
+            {
+                if (lightSwitches.TryGetValue(switchData.id, out LightSwitch lightSwitch))
+                {
+                    lightSwitch.SetOn(switchData.on);
+                }
+            }
+
+            Dictionary<string, CutList> cutLists = ById<CutList>();
+            foreach (CutListData cutListData in data.cutLists ?? Array.Empty<CutListData>())
+            {
+                if (cutLists.TryGetValue(cutListData.id, out CutList cutList))
+                {
+                    cutList.Restore(cutListData.selectedIndex);
+                }
             }
 
             Quaternion yaw = ToRotation(data.player.pose);
             player.Teleport(ToPosition(data.player.pose), yaw.eulerAngles.y, data.player.pitch);
         }
+
+        /// <summary>
+        /// Items lying in the world go back to their saved pose; belt items into their slots. Items the save doesn't
+        /// know (added in a later version of the workshop) stay where the scene has them.
+        /// </summary>
+        private void ApplyItemsAndBelt(SaveGameData data)
+        {
+            Dictionary<string, PickupItem> items = ById<PickupItem>();
+            foreach (ItemData itemData in data.items ?? Array.Empty<ItemData>())
+            {
+                if (!items.TryGetValue(itemData.id, out PickupItem item))
+                {
+                    Warn($"item '{itemData.id}' is not in the scene; skipped.");
+                }
+                else if (!itemData.onBelt)
+                {
+                    item.transform.SetPositionAndRotation(ToPosition(itemData.pose), ToRotation(itemData.pose));
+                }
+            }
+
+            BeltData belt = data.belt ?? new BeltData();
+            string[] slotIds = belt.slots ?? Array.Empty<string>();
+            var slots = new PickupItem[slotIds.Length];
+            for (int i = 0; i < slotIds.Length; i++)
+            {
+                if (!string.IsNullOrEmpty(slotIds[i]))
+                {
+                    items.TryGetValue(slotIds[i], out slots[i]);
+                }
+            }
+
+            toolBelt.Restore(slots, belt.selected);
+        }
+
+        /// <summary>All objects of a type that have a <see cref="PersistentId"/>, inactive ones included (belt items).</summary>
+        private static Dictionary<string, T> ById<T>() where T : Component
+        {
+            var result = new Dictionary<string, T>();
+            foreach (T component in FindObjectsByType<T>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                if (component.TryGetComponent(out PersistentId id) && !string.IsNullOrEmpty(id.Id))
+                {
+                    if (result.ContainsKey(id.Id))
+                    {
+                        Debug.LogWarning($"[{nameof(SaveGameService)}] Two {typeof(T).Name} objects share the id '{id.Id}'.", component);
+                        continue;
+                    }
+
+                    result.Add(id.Id, component);
+                }
+            }
+
+            return result;
+        }
+
+        private void Warn(string message) => Debug.LogWarning($"[{nameof(SaveGameService)}] {message}", this);
 
         private void Reject(string path, IReadOnlyList<string> errors)
         {
