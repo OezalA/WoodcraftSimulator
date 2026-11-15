@@ -250,16 +250,20 @@ namespace WoodcraftSimulator.Editor
             var serializedEconomy = new SerializedObject(economy);
             serializedEconomy.FindProperty("startingFundsEuros").floatValue = 100f;
             SerializedProperty starting = serializedEconomy.FindProperty("startingFasteners");
-            starting.arraySize = 2;
+            starting.arraySize = 4;
             starting.GetArrayElementAtIndex(0).FindPropertyRelative("fastener").objectReferenceValue = BlueprintAssets.WoodScrew4x40();
             starting.GetArrayElementAtIndex(0).FindPropertyRelative("count").intValue = 200;
             starting.GetArrayElementAtIndex(1).FindPropertyRelative("fastener").objectReferenceValue = BlueprintAssets.WoodScrew5x80();
             starting.GetArrayElementAtIndex(1).FindPropertyRelative("count").intValue = 50;
+            starting.GetArrayElementAtIndex(2).FindPropertyRelative("fastener").objectReferenceValue = BlueprintAssets.Nail2_8x50();
+            starting.GetArrayElementAtIndex(2).FindPropertyRelative("count").intValue = 100;
+            starting.GetArrayElementAtIndex(3).FindPropertyRelative("fastener").objectReferenceValue = BlueprintAssets.Dowel8x40();
+            starting.GetArrayElementAtIndex(3).FindPropertyRelative("count").intValue = 24;
             serializedEconomy.ApplyModifiedPropertiesWithoutUndo();
 
             float wallZ = InteriorDepth / 2f;
             float centerY = FloorTop + 1.5f;
-            const float centerX = 2.25f; // right of the light switch (x 1.4)
+            const float centerX = 2.6f; // right of the light switch (x 1.4), six sheets wide
             int count = catalog.Boards.Count + catalog.FastenerBoxes.Count;
             // Two rows: material on top, equipment upgrades below (D-044).
             GameObject board = CreateBox("OrderBoard", parent, new Vector3(centerX, centerY - 0.17f, wallZ - 0.01f),
@@ -301,14 +305,54 @@ namespace WoodcraftSimulator.Editor
             float wallZ = InteriorDepth / 2f;
             float centerY = FloorTop + 1.5f;
             GameObject board = CreateBox("ToolWall", parent, new Vector3(0f, centerY, wallZ - 0.01f),
-                new Vector3(1.2f, 0.6f, 0.02f), materials.Workbench);
+                new Vector3(1.7f, 0.6f, 0.02f), materials.Workbench);
             Object.DestroyImmediate(board.GetComponent<BoxCollider>()); // the outlines are what you aim at
 
             // Item, x on the board, size of the item box (x = width, y = thickness, z = length) as built on the bench.
-            AddToolPlace(parent, materials, ItemAssets.TapeMeasure(), -0.45f, new Vector3(0.07f, 0.035f, 0.07f), wallZ, centerY);
-            AddToolPlace(parent, materials, ItemAssets.CarpenterPencil(), -0.25f, new Vector3(0.012f, 0.007f, 0.175f), wallZ, centerY);
-            AddToolPlace(parent, materials, ItemAssets.HandSaw(), 0.05f, new Vector3(0.12f, 0.004f, 0.5f), wallZ, centerY);
-            AddToolPlace(parent, materials, ItemAssets.DrillDriver(), 0.4f, new Vector3(0.2f, 0.07f, 0.16f), wallZ, centerY);
+            AddToolPlace(parent, materials, ItemAssets.TapeMeasure(), -0.72f, new Vector3(0.07f, 0.035f, 0.07f), wallZ, centerY);
+            AddToolPlace(parent, materials, ItemAssets.CarpenterPencil(), -0.58f, new Vector3(0.012f, 0.007f, 0.175f), wallZ, centerY);
+            AddToolPlace(parent, materials, ItemAssets.HandSaw(), -0.4f, new Vector3(0.12f, 0.004f, 0.5f), wallZ, centerY);
+            AddToolPlace(parent, materials, ItemAssets.DrillDriver(), -0.12f, new Vector3(0.2f, 0.07f, 0.16f), wallZ, centerY);
+
+            // Phase 9 tools (D-045) start on the wall.
+            var economy = Object.FindFirstObjectByType<WorkshopEconomy>();
+            var hammerSize = new Vector3(0.035f, 0.03f, 0.33f);
+            ToolHook hammerPlace = AddToolPlace(parent, materials, ItemAssets.Hammer(), 0.15f, hammerSize, wallZ, centerY);
+            GameObject hammer = CreateHangingItem("Hammer", parent, ItemAssets.Hammer(), hammerSize, hammerPlace,
+                materials.Steel, new Vector3(0.2f, -0.22f, 0.42f), new Vector3(0f, -10f, 0f));
+            var hammerTool = hammer.AddComponent<HandFastenTool>();
+            SetFastenKind(hammerTool, FastenerKind.Nail, 1.2f, economy);
+
+            var glueSize = new Vector3(0.06f, 0.06f, 0.18f);
+            ToolHook gluePlace = AddToolPlace(parent, materials, ItemAssets.GlueBottle(), 0.32f, glueSize, wallZ, centerY);
+            GameObject glue = CreateHangingItem("GlueBottle", parent, ItemAssets.GlueBottle(), glueSize, gluePlace,
+                materials.ToolYellow, new Vector3(0.18f, -0.18f, 0.38f), new Vector3(-60f, 0f, 0f));
+            var glueTool = glue.AddComponent<HandFastenTool>();
+            SetFastenKind(glueTool, FastenerKind.Dowel, 0.8f, economy);
+        }
+
+        /// <summary>A pickup item that starts hanging on its tool-wall place.</summary>
+        private static GameObject CreateHangingItem(string name, Transform parent, ItemDefinition definition, Vector3 size,
+            ToolHook place, Material material, Vector3 handPosition, Vector3 handRotation)
+        {
+            GameObject item = CreatePickupItem(name, parent, definition, size, Vector3.zero, 0f, material,
+                handPosition, handRotation);
+            Transform hang = new SerializedObject(place).FindProperty("hangPoint").objectReferenceValue as Transform;
+            if (hang != null)
+            {
+                item.transform.SetPositionAndRotation(hang.position, hang.rotation);
+            }
+
+            return item;
+        }
+
+        private static void SetFastenKind(HandFastenTool tool, FastenerKind kind, float seconds, WorkshopEconomy economy)
+        {
+            var serialized = new SerializedObject(tool);
+            serialized.FindProperty("kind").enumValueIndex = (int)kind;
+            serialized.FindProperty("seconds").floatValue = seconds;
+            serialized.FindProperty("economy").objectReferenceValue = economy;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
         }
 
         private static ToolHook AddToolPlace(Transform parent, GreyboxMaterials materials, ItemDefinition item, float x,
@@ -364,7 +408,7 @@ namespace WoodcraftSimulator.Editor
             var sheetSize = new Vector3(0.21f, 0.297f, 0.002f);
             for (int i = 0; i < 3; i++)
             {
-                float x = centerX + (i - 1.5f) * 0.3f;
+                float x = centerX + (i - 1f) * 0.3f;
                 GameObject sheet = CreateBox($"UpgradeSheet_{i}", parent, new Vector3(x, rowY, wallZ - 0.021f),
                     sheetSize, materials.Paper);
                 EnlargeGrabCollider(sheet, sheetSize);
@@ -446,7 +490,10 @@ namespace WoodcraftSimulator.Editor
             SetReference(sounds, "toolBelt", player.GetComponent<PlayerToolBelt>());
             SetReference(sounds, "economy", Object.FindFirstObjectByType<WorkshopEconomy>());
         }
-        private static Object[] Fasteners() => new Object[] { BlueprintAssets.WoodScrew5x80(), BlueprintAssets.WoodScrew4x40() };
+        private static Object[] Fasteners() => new Object[]
+        {
+            BlueprintAssets.WoodScrew5x80(), BlueprintAssets.WoodScrew4x40(), BlueprintAssets.Nail2_8x50(), BlueprintAssets.Dowel8x40()
+        };
 
         private static void SetReferences(Object target, string propertyName, IReadOnlyList<Object> values)
         {

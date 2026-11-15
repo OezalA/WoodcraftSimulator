@@ -73,6 +73,12 @@ namespace WoodcraftSimulator.Construction
                 }
             }
 
+            if (report.DryingJoints > 0)
+            {
+                text.Append(Loc.T($"Glue drying: {report.DryingJoints} joint(s) clamped\n",
+                    $"Tutkal kuruyor: {report.DryingJoints} bağlantı işkencede\n"));
+            }
+
             if (sawdustCubicCentimeters.HasValue)
             {
                 text.Append(Loc.T("Sawdust so far: ", "Şimdiye kadar talaş: "))

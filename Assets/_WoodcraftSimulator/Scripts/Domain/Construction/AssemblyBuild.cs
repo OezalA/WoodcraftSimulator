@@ -34,7 +34,10 @@ namespace WoodcraftSimulator.Construction
         WrongFastener,
 
         /// <summary>Only a fastened screw whose head still stands out can be driven further, and only deeper.</summary>
-        NotProud
+        NotProud,
+
+        /// <summary>A dowel goes into a drilled hole only (D-045).</summary>
+        HoleRequired
     }
 
     public enum PilotResult
@@ -131,8 +134,9 @@ namespace WoodcraftSimulator.Construction
     public sealed class AssemblyQualityReport
     {
         internal AssemblyQualityReport(IReadOnlyList<PartQuality> parts, IReadOnlyList<FastenerQuality> fasteners,
-            int fastenersRequired)
+            int fastenersRequired, int dryingJoints = 0)
         {
+            DryingJoints = dryingJoints;
             Parts = parts;
             Fasteners = fasteners;
             FastenersInstalled = fasteners.Count;
@@ -198,7 +202,10 @@ namespace WoodcraftSimulator.Construction
         public int Splits { get; }
 
         /// <summary>Everything installed and fastened. Quality (accuracy, seats, splits) is reported separately.</summary>
-        public bool IsComplete => PartsInstalled == PartsRequired && FastenersInstalled == FastenersRequired;
+        /// <summary>Glued joints whose glue is still drying (D-045).</summary>
+        public int DryingJoints { get; }
+
+        public bool IsComplete => PartsInstalled == PartsRequired && FastenersInstalled == FastenersRequired && DryingJoints == 0;
     }
 
     /// <summary>
@@ -220,6 +227,7 @@ namespace WoodcraftSimulator.Construction
 
         private readonly Dictionary<string, TimberPiece> installed = new Dictionary<string, TimberPiece>();
         private readonly Dictionary<string, PointState[]> points = new Dictionary<string, PointState[]>();
+        private readonly Dictionary<string, double> drying = new Dictionary<string, double>();
 
         public AssemblyBuild(Blueprint blueprint)
         {
@@ -253,6 +261,51 @@ namespace WoodcraftSimulator.Construction
         public bool HasPilotHole(string connectionId, int point) => TryGetPoint(connectionId, point, out PointState state) && state.PilotHole;
 
         public bool IsSplit(string connectionId, int point) => TryGetPoint(connectionId, point, out PointState state) && state.Split;
+
+        /// <summary>Seconds the glue of this joint still needs to dry (0 = dry or not glued).</summary>
+        public double DryingSeconds(string connectionId) =>
+            drying.TryGetValue(connectionId ?? string.Empty, out double seconds) ? seconds : 0.0;
+
+        public bool IsDrying(string connectionId) => DryingSeconds(connectionId) > 0.0;
+
+        /// <summary>Lets glue dry for <paramref name="seconds"/> of playing time. Completes the assembly when the last joint is dry.</summary>
+        public void AdvanceTime(double seconds)
+        {
+            if (seconds <= 0.0 || drying.Count == 0)
+            {
+                return;
+            }
+
+            bool wasComplete = IsComplete;
+            bool anyDried = false;
+            foreach (string id in new List<string>(drying.Keys))
+            {
+                double left = drying[id] - seconds;
+                if (left <= 0.0)
+                {
+                    drying.Remove(id);
+                    anyDried = true;
+                }
+                else
+                {
+                    drying[id] = left;
+                }
+            }
+
+            if (anyDried)
+            {
+                NotifyChanged(wasComplete);
+            }
+        }
+
+        /// <summary>Loading a save: glue that was still drying.</summary>
+        public void RestoreDrying(string connectionId, double seconds)
+        {
+            if (Blueprint.TryGetConnection(connectionId, out _) && seconds > 0.0)
+            {
+                drying[connectionId] = seconds;
+            }
+        }
 
         /// <summary>Head height of the screw in the point, or null if there is none.</summary>
         public Length? HeadHeight(string connectionId, int point) =>
@@ -498,10 +551,23 @@ namespace WoodcraftSimulator.Construction
                 return FastenResult.WrongFastener;
             }
 
+            bool dowel = fastener != null && fastener.Kind == FastenerKind.Dowel;
+            if (checkType && dowel && !state.PilotHole)
+            {
+                return FastenResult.HoleRequired;
+            }
+
             bool wasComplete = IsComplete;
             state.Fastened = true;
             state.HeadHeight = headHeight;
-            state.Split = !state.PilotHole && fastener != null && NeedsPilotHole(connectionId, point, fastener);
+            state.Split = !dowel && !state.PilotHole && fastener != null && NeedsPilotHole(connectionId, point, fastener);
+
+            // The last dowel of a glued joint: the clamps go on and the glue starts drying (not when loading a save).
+            if (dowel && checkType && Array.TrueForAll(points[connectionId], p => p.Fastened))
+            {
+                drying[connectionId] = GlueRules.DryingSeconds;
+            }
+
             NotifyChanged(wasComplete);
             return FastenResult.Fastened;
         }
@@ -530,7 +596,7 @@ namespace WoodcraftSimulator.Construction
                 }
             }
 
-            return new AssemblyQualityReport(parts.AsReadOnly(), fasteners.AsReadOnly(), required);
+            return new AssemblyQualityReport(parts.AsReadOnly(), fasteners.AsReadOnly(), required, drying.Count);
         }
 
         private bool TryGetPoint(string connectionId, int point, out PointState state)

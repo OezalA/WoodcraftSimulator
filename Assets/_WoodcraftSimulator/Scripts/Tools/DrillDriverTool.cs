@@ -212,6 +212,19 @@ namespace WoodcraftSimulator.Tools
                 targetPoint = point;
             }
 
+            // Nails and dowels are not driven with the drill (D-045); the drill bit still makes their holes.
+            FastenerKind kind = station.Fastener(station.FastenerIdAt(connection))?.Kind ?? FastenerKind.Screw;
+            if (bit == Bit.Driver && kind != FastenerKind.Screw)
+            {
+                pickup.HandOffset = Vector3.zero;
+                string hint = kind == FastenerKind.Nail
+                    ? Loc.T("This joint is nailed: use the hammer", "Bu bağlantı çivilenir: çekiç kullan")
+                    : Loc.T($"This joint is doweled: drill the holes ([{modeKeyLabel}] drill bit), then glue the dowels in",
+                        $"Bu bağlantı kavelalı: delikleri aç ([{modeKeyLabel}] matkap ucu), sonra kavelaları tutkalla tak");
+                SetLines($"{ToolLine()}\n{hint}", resultLine);
+                return;
+            }
+
             if (!pressed)
             {
                 pickup.HandOffset = Vector3.zero;

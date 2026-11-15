@@ -93,6 +93,40 @@ namespace WoodcraftSimulator.Editor
 
         public const string ShelfScrewId = "wood-screw-4x40";
 
+        public const string NailId = "nail-2.8x50";
+        public const string DowelId = "dowel-8x40";
+
+        /// <summary>Generic 2.8 × 50 mm wire nail (D-045), hammered in.</summary>
+        public static FastenerDefinition Nail2_8x50() =>
+            GetOrCreateFastener("Nail2_8x50", NailId, "Wire nail 2.8 × 50 mm", 2.8f, 50f, FastenerKind.Nail);
+
+        /// <summary>Generic 8 × 40 mm wooden dowel (D-045), glued into drilled holes.</summary>
+        public static FastenerDefinition Dowel8x40() =>
+            GetOrCreateFastener("Dowel8x40", DowelId, "Wooden dowel 8 × 40 mm", 8f, 40f, FastenerKind.Dowel);
+
+        private static FastenerDefinition GetOrCreateFastener(string fileName, string id, string displayName,
+            float diameter, float length, FastenerKind kind)
+        {
+            string path = $"{FastenerFolder}/{fileName}.asset";
+            var definition = AssetDatabase.LoadAssetAtPath<FastenerDefinition>(path);
+            if (definition != null)
+            {
+                return definition;
+            }
+
+            definition = ScriptableObject.CreateInstance<FastenerDefinition>();
+            AssetDatabase.CreateAsset(definition, path);
+            var serialized = new SerializedObject(definition);
+            serialized.FindProperty("id").stringValue = id;
+            serialized.FindProperty("displayName").stringValue = displayName;
+            serialized.FindProperty("diameterMillimeters").floatValue = diameter;
+            serialized.FindProperty("lengthMillimeters").floatValue = length;
+            serialized.FindProperty("kind").enumValueIndex = (int)kind;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            AssetDatabase.SaveAssetIfDirty(definition);
+            return definition;
+        }
+
         /// <summary>Generic 4 × 40 mm wood screw for 18 mm boards (dimensions only, no product data).</summary>
         public static FastenerDefinition WoodScrew4x40()
         {

@@ -24,12 +24,15 @@ namespace WoodcraftSimulator.Editor
         private static readonly Dictionary<string, string> Items = new Dictionary<string, string>
         {
             { "tape-measure", "Metre" }, { "drill-driver", "Şarjlı matkap" }, { "hand-saw", "El testeresi" },
-            { "carpenter-pencil", "Marangoz kalemi" }
+            { "carpenter-pencil", "Marangoz kalemi" },
+            { "hammer", "Çekiç" }, { "glue-bottle", "Ahşap tutkalı" }, { "sanding-block", "Zımpara takozu" },
+            { "oil-brush", "Ahşap yağı ve fırça" }
         };
 
         private static readonly Dictionary<string, string> Fasteners = new Dictionary<string, string>
         {
-            { "wood-screw-5x80", "Ahşap vidası 5 × 80 mm" }, { "wood-screw-4x40", "Ahşap vidası 4 × 40 mm" }
+            { "wood-screw-5x80", "Ahşap vidası 5 × 80 mm" }, { "wood-screw-4x40", "Ahşap vidası 4 × 40 mm" },
+            { "nail-2.8x50", "Tel çivi 2,8 × 50 mm" }, { "dowel-8x40", "Ahşap kavela 8 × 40 mm" }
         };
 
         private static readonly Dictionary<string, string> Blueprints = new Dictionary<string, string>

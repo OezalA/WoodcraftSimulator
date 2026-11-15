@@ -26,6 +26,16 @@ namespace WoodcraftSimulator.Editor
         public static ItemDefinition CarpenterPencil() =>
             GetOrCreate("CarpenterPencil", "carpenter-pencil", "Carpenter's pencil", ItemSizeClass.Small);
 
+        // Phase 9 tools (D-045).
+        public static ItemDefinition Hammer() => GetOrCreate("Hammer", "hammer", "Claw hammer", ItemSizeClass.Small);
+
+        public static ItemDefinition GlueBottle() => GetOrCreate("GlueBottle", "glue-bottle", "Wood glue", ItemSizeClass.Small);
+
+        public static ItemDefinition SandingBlock() =>
+            GetOrCreate("SandingBlock", "sanding-block", "Sanding block", ItemSizeClass.Small);
+
+        public static ItemDefinition OilBrush() => GetOrCreate("OilBrush", "oil-brush", "Wood oil and brush", ItemSizeClass.Small);
+
         private static ItemDefinition GetOrCreate(string fileName, string id, string displayName, ItemSizeClass size)
         {
             string path = $"{Folder}/{fileName}.asset";

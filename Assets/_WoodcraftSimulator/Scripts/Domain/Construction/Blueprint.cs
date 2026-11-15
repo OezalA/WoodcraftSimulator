@@ -8,8 +8,10 @@ namespace WoodcraftSimulator.Construction
     /// <summary>A fastener type, e.g. a 5 × 80 mm wood screw. Generic sizes only, no products (master prompt §6.8).</summary>
     public sealed class FastenerSpec
     {
-        public FastenerSpec(string id, string displayName, Length diameter, Length length)
+        public FastenerSpec(string id, string displayName, Length diameter, Length length,
+            FastenerKind kind = FastenerKind.Screw)
         {
+            Kind = kind;
             if (string.IsNullOrWhiteSpace(id))
             {
                 throw new ArgumentException("Fastener id must not be empty.", nameof(id));
@@ -33,6 +35,8 @@ namespace WoodcraftSimulator.Construction
         public Length Diameter { get; }
 
         public Length Length { get; }
+
+        public FastenerKind Kind { get; }
 
         public override string ToString() => DisplayName;
     }

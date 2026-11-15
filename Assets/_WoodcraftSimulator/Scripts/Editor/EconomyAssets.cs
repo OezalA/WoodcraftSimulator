@@ -19,27 +19,59 @@ namespace WoodcraftSimulator.Editor
         {
             string path = $"{Folder}/MaterialCatalog.asset";
             var catalog = AssetDatabase.LoadAssetAtPath<MaterialCatalogDefinition>(path);
-            if (catalog != null)
+            if (catalog == null)
             {
-                return catalog;
+                catalog = ScriptableObject.CreateInstance<MaterialCatalogDefinition>();
+                AssetDatabase.CreateAsset(catalog, path);
             }
 
-            catalog = ScriptableObject.CreateInstance<MaterialCatalogDefinition>();
-            AssetDatabase.CreateAsset(catalog, path);
-
+            // Entries are added when missing (by id); existing entries and their prices are kept.
             var serialized = new SerializedObject(catalog);
             SerializedProperty boards = serialized.FindProperty("boards");
-            boards.arraySize = 2;
-            SetBoard(boards.GetArrayElementAtIndex(0), "spruce-2000x145x18", species["spruce"], 2000f, 145f, 18f, 8.5f);
-            SetBoard(boards.GetArrayElementAtIndex(1), "spruce-2400x95x45", species["spruce"], 2400f, 95f, 45f, 9.9f);
+            EnsureBoard(boards, "spruce-2000x145x18", species["spruce"], 2000f, 145f, 18f, 8.5f);
+            EnsureBoard(boards, "spruce-2400x95x45", species["spruce"], 2400f, 95f, 45f, 9.9f);
 
             SerializedProperty boxes = serialized.FindProperty("fastenerBoxes");
-            boxes.arraySize = 2;
-            SetBox(boxes.GetArrayElementAtIndex(0), "screws-4x40-200", BlueprintAssets.WoodScrew4x40(), 200, 6f);
-            SetBox(boxes.GetArrayElementAtIndex(1), "screws-5x80-50", BlueprintAssets.WoodScrew5x80(), 50, 7.5f);
+            EnsureBox(boxes, "screws-4x40-200", BlueprintAssets.WoodScrew4x40(), 200, 6f);
+            EnsureBox(boxes, "screws-5x80-50", BlueprintAssets.WoodScrew5x80(), 50, 7.5f);
+            EnsureBox(boxes, "nails-2.8x50-250", BlueprintAssets.Nail2_8x50(), 250, 4f);
+            EnsureBox(boxes, "dowels-8x40-50", BlueprintAssets.Dowel8x40(), 50, 3.5f);
             serialized.ApplyModifiedPropertiesWithoutUndo();
             AssetDatabase.SaveAssets();
             return catalog;
+        }
+
+        /// <summary>Adds a board entry unless one with this id exists.</summary>
+        public static void EnsureBoard(SerializedProperty boards, string id, WoodSpeciesDefinition species, float length,
+            float width, float thickness, float price)
+        {
+            if (IndexOf(boards, id) < 0)
+            {
+                boards.arraySize++;
+                SetBoard(boards.GetArrayElementAtIndex(boards.arraySize - 1), id, species, length, width, thickness, price);
+            }
+        }
+
+        private static void EnsureBox(SerializedProperty boxes, string id, Object fastener, int boxSize, float price)
+        {
+            if (IndexOf(boxes, id) < 0)
+            {
+                boxes.arraySize++;
+                SetBox(boxes.GetArrayElementAtIndex(boxes.arraySize - 1), id, fastener, boxSize, price);
+            }
+        }
+
+        private static int IndexOf(SerializedProperty array, string id)
+        {
+            for (int i = 0; i < array.arraySize; i++)
+            {
+                if (array.GetArrayElementAtIndex(i).FindPropertyRelative("id").stringValue == id)
+                {
+                    return i;
+                }
+            }
+
+            return -1;
         }
 
         /// <summary>Gives a job its default pay if none is set yet (assets created before the economy).</summary>

@@ -3,6 +3,26 @@ using WoodcraftSimulator.Measurement;
 
 namespace WoodcraftSimulator.Construction
 {
+    /// <summary>How a fastener is put in (D-045): each kind has its own tool.</summary>
+    public enum FastenerKind
+    {
+        /// <summary>Driven with the drill-driver (clutch, head height).</summary>
+        Screw,
+
+        /// <summary>Hammered in, always flush. Splits near an end like a screw.</summary>
+        Nail,
+
+        /// <summary>Glued into a drilled hole; the joint holds once the glue has dried. Never splits.</summary>
+        Dowel
+    }
+
+    /// <summary>Wood glue (D-045): a doweled joint is clamped and must dry before it counts as finished.</summary>
+    public static class GlueRules
+    {
+        /// <summary>Playing seconds a glued joint dries (shortened from real hours for play).</summary>
+        public const double DryingSeconds = 45.0;
+    }
+
     /// <summary>How a driven screw head ends up relative to the surface.</summary>
     public enum ScrewSeat
     {

@@ -124,6 +124,9 @@ namespace WoodcraftSimulator.Construction
             Setup(blueprint);
         }
 
+        // Glue dries with playing time (paused = Time.deltaTime 0). Completion may follow when the last joint is dry.
+        private void Update() => Build?.AdvanceTime(Time.deltaTime);
+
         /// <summary>The fastener type with this id, if the station knows it.</summary>
         public FastenerSpec Fastener(string fastenerId) =>
             fastenerSpecs != null && fastenerSpecs.TryGetValue(fastenerId ?? string.Empty, out FastenerSpec spec) ? spec : null;
@@ -281,7 +284,8 @@ namespace WoodcraftSimulator.Construction
                         connectionId = connection.id,
                         points = points.ToArray(),
                         headHeightsTenths = heights.ToArray(),
-                        pilotHoles = pilots.ToArray()
+                        pilotHoles = pilots.ToArray(),
+                        dryingSeconds = Build.DryingSeconds(connection.id)
                     });
                 }
             }
@@ -385,6 +389,8 @@ namespace WoodcraftSimulator.Construction
                                          $"not restored: {result}", this);
                     }
                 }
+
+                Build.RestoreDrying(connection.connectionId, connection.dryingSeconds);
             }
 
             UpdatePointMarkers();

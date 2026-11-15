@@ -145,6 +145,9 @@ namespace WoodcraftSimulator.Persistence
 
         /// <summary>Point indices with a pilot hole.</summary>
         public int[] pilotHoles = Array.Empty<int>();
+
+        /// <summary>Seconds the joint's glue still had to dry (D-045); 0 = dry or not glued.</summary>
+        public double dryingSeconds;
     }
 
     /// <summary>The job in progress (none if <see cref="activeJobId"/> is empty) and the jobs already delivered.</summary>

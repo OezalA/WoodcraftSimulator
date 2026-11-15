@@ -18,11 +18,16 @@ namespace WoodcraftSimulator.Construction
         [SerializeField, Min(0.1f)] private float diameterMillimeters = 5f;
         [SerializeField, Min(1f)] private float lengthMillimeters = 80f;
 
+        [Tooltip("Screw: drill-driver; nail: hammer; dowel: glued into a drilled hole (D-045).")]
+        [SerializeField] private FastenerKind kind = FastenerKind.Screw;
+
         public string Id => id;
+
+        public FastenerKind Kind => kind;
 
         public string DisplayName => Localization.Loc.Pick(displayName, displayNameTurkish);
 
         public FastenerSpec ToDomain() => new FastenerSpec(id, DisplayName,
-            Length.FromMillimeters((double)diameterMillimeters), Length.FromMillimeters((double)lengthMillimeters));
+            Length.FromMillimeters((double)diameterMillimeters), Length.FromMillimeters((double)lengthMillimeters), kind);
     }
 }
