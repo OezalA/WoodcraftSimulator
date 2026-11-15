@@ -35,8 +35,14 @@ namespace WoodcraftSimulator.Jobs
             for (int i = 0; i < plan.Lines.Count; i++)
             {
                 CutListLine line = plan.Lines[i];
-                text.Append("  ").Append(line.Quantity).Append(" x ").Append(line.Length).Append("  ")
-                    .Append(SlotNames(line));
+                text.Append("  ").Append(line.Quantity).Append(" x ").Append(line.Length);
+                if (line.Dimensions.Width != plan.Stock.Dimensions.Width)
+                {
+                    // A ripped part (D-045): its width matters too.
+                    text.Append(Loc.T(", width ", ", genişlik ")).Append(line.Dimensions.Width);
+                }
+
+                text.Append("  ").Append(SlotNames(line));
                 if (progress != null && i < progress.Count)
                 {
                     CutListLineProgress state = progress[i];
@@ -99,8 +105,14 @@ namespace WoodcraftSimulator.Jobs
                     parts.Add(part.FormatMillimeters());
                 }
 
-                text.Append(Loc.T("  Board ", "  Tahta ")).Append(i + 1).Append(": ").Append(string.Join(" + ", parts))
-                    .Append(Loc.T(" mm, offcut ", " mm, artık ")).Append(board.Offcut).Append('\n');
+                text.Append(Loc.T("  Board ", "  Tahta ")).Append(i + 1).Append(": ");
+                if (board.RipWidth.HasValue)
+                {
+                    string strip = board.RipWidth.Value.ToString();
+                    text.Append(Loc.T($"rip {board.Strips} x {strip} strip(s), then ", $"boyuna {board.Strips} x {strip} şerit, sonra "));
+                }
+
+                text.Append(string.Join(" + ", parts)).Append(Loc.T(" mm, offcut ", " mm, artık ")).Append(board.Offcut).Append('\n');
             }
 
             AppendFasteners(text, plan, fastenerName);

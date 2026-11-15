@@ -190,11 +190,11 @@ namespace WoodcraftSimulator.Editor
             float centerY = FloorTop + 1.5f;
             const float centerX = -1.9f;
             GameObject board = CreateBox("JobBoard", parent, new Vector3(centerX, centerY, wallZ - 0.01f),
-                new Vector3(0.7f, 0.5f, 0.02f), materials.Workbench);
+                new Vector3(1.0f, 0.5f, 0.02f), materials.Workbench);
             Object.DestroyImmediate(board.GetComponent<BoxCollider>()); // the sheets are what you aim at
 
             var jobBoard = board.AddComponent<JobBoard>();
-            JobDefinition[] jobs = { JobAssets.FrameJob(species), JobAssets.ShelfJob(species) };
+            JobDefinition[] jobs = { JobAssets.FrameJob(species), JobAssets.ShelfJob(species), ToteAssets.ToteJob(species) };
             for (int i = 0; i < jobs.Length; i++)
             {
                 // A4 portrait (210 × 297 mm) pinned on the board; the sheet is a child of the workshop, not the board,
@@ -676,7 +676,7 @@ namespace WoodcraftSimulator.Editor
             SetReference(station, "holeMaterial", materials.PencilMark);
             SetReference(station, "waste", Object.FindFirstObjectByType<WorkshopWaste>());
             SetReferences(station, "knownBlueprints",
-                new Object[] { BlueprintAssets.Frame600x300(), BlueprintAssets.WallShelf() });
+                new Object[] { BlueprintAssets.Frame600x300(), BlueprintAssets.WallShelf(), ToteAssets.ToolTote() });
             SetReferences(station, "fasteners", Fasteners());
 
             // Cordless drill-driver lying on the table beside the frame (placeholder box: 200 mm tall body,

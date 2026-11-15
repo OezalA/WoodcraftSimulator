@@ -517,3 +517,22 @@ Risk accepted by the owner: errors found late may touch several phases. Scope ch
 - **Sounds** (8d, `ProceduralSounds`): generated in code, no files to license: saw strokes and drill motor (loops while
   working), clutch/screw click, knock on pick up / put down, rising / falling tones for money in / out, quiet room
   tone. To be replaced by real sounds in the visual/audio pass (D-037).
+
+## D-045: Phase 9 woodworking: nails, glued dowels, sanding and oil, rip cuts, tool tote job (Accepted, 2026-11-15, batch D-043)
+- **Fastener kinds** (`FastenerKind` on `FastenerSpec`/`FastenerDefinition`): screw (drill-driver), nail (claw hammer,
+  always flush, same split rule as screws: pre-drill red points), dowel (glue bottle; needs a hole drilled with the
+  drill bit, never splits). Each tool refuses the other kinds and names the right tool.
+- **Glue**: when the last dowel of a joint is in, the joint is clamped and dries for `GlueRules.DryingSeconds` (45 s of
+  playing time, shortened from real hours); the assembly completes only when all glue is dry (`AssemblyBuild.AdvanceTime`,
+  driven by the station's Update; remaining time saved per connection). The report shows drying joints.
+- **Surface** (`BoardSurface` raw / sanded / oiled on `TimberBoard`, saved per board): sanding block, then oil brush
+  (oil on unsanded wood is refused); time grows with the board's surface area. A job with `requiresFinish` gets a fifth
+  quality goal "every part sanded and oiled"; the goal bonus is split over all goals (D-040).
+- **Rip cut** (`Ripcut`): saw in hand, Q switches crosscut / rip; the wheel sets the strip width (±1 mm, Shift ±10), a
+  guide line shows the cut along the board, hold LMB. The strip keeps the set width, the kerf goes into the rest; pencil
+  marks stay on both. Material plans now rip narrower parts from full-length strips (as many strips per board as fit;
+  widths are not mixed on one board). The job sheet shows the width of ripped parts.
+- **Tool tote job** (436 × 145 × 250 mm, 18 mm spruce, €90, finish required): base + two ends (crosscut), sides 100 mm and
+  handle 45 mm (ripped), ends doweled and glued to the base, sides nailed (ends pre-drilled), handle screwed. Plan: 3 boards.
+- New tools hang on the tool wall at start: claw hammer, wood glue, sanding block, oil brush. Catalog: nails 2.8 × 50 (250,
+  €4), dowels 8 × 40 (50, €3.50); new workshops also start with 100 nails and 24 dowels.

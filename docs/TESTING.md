@@ -442,6 +442,23 @@ Console errors), **Build Test Workshop Scene**, Play, Esc → `Yeni atölye`. Re
 | Sounds | Saw strokes while sawing, drill motor while drilling/driving, a click when a screw seats, a knock when picking up/putting down, tones on buying (falling) and on pay (rising), a faint room tone |
 | Save, quit Play, Play | Upgrades still owned (sheets say `Sende var`), hung tools still on the wall |
 
+### MT-025: Hammer, glue and dowels, sanding and oil, rip cut, tool tote (Phase 9, D-045)
+| Step | Expected |
+|---|---|
+| Tool wall | Four more tools hang there: `Çekiç`, `Ahşap tutkalı`, `Zımpara takozu`, `Ahşap yağı ve fırça` |
+| Job board: third sheet `Alet sandığı` | Offer: `Ücret €90.00`, 3 boards, boards 2 and 3 `boyuna ... şerit, sonra ...` |
+| Accept; saw in hand, Q | `Boyuna kesim: genişlik 100 mm ...`; wheel changes the width; a guide line runs along the board |
+| Board on the sawhorses or bench, hold LMB | Takes a few seconds; result `Boyuna kesildi: 100 mm şerit + 43 mm kalan`; two boards side by side |
+| Rip a 45 mm strip, crosscut all parts (Q back to crosscut) | The job sheet shows `genişlik 100 mm` / `45 mm` lines with ready counts |
+| Install base, ends; drill (driver bit) on an end-base point | `Bu bağlantı kavelalı: delikleri aç ...` |
+| Drill bit on the dowel points, then glue bottle, hold LMB | `Kavela tutkallanıp takıldı`; after the 2nd: `Bağlantı işkencede: tutkal kuruyor`; aiming at the table with the glue shows `Tutkal kuruyor: NN sn` |
+| Sides: hammer on red points without pre-drilling (optional) | `Tahta çatladı!` (same rule as screws); pre-drilled: `Çivi çakıldı, hizada` |
+| Handle: drill-driver (red points: pre-drill) | Screws as before |
+| Last part done, glue still drying | No result yet; it appears when the glue is dry |
+| Sanding block on a part, hold LMB | `Zımparalandı`, the part gets lighter; oil brush on an unsanded part: `Önce zımparala ...`; on a sanded part: darker, `Yağlandı` |
+| Result | Five goals incl. `Her parça zımparalı ve yağlı (n/6 parça)`; pay split over five goals |
+| Save while glue dries, quit, Play | Drying continues where it stopped; surfaces kept |
+
 ## Game view setup (corrects the earlier tip)
 A fixed resolution such as *Full HD (1920x1080)* at `Scale 1x` **crops** the image when the Game view window is
 smaller than 1920×1080: the bottom (tool belt bar) and the lower right (tool in hand) are cut off.

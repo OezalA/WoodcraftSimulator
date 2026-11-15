@@ -102,7 +102,170 @@ namespace WoodcraftSimulator.Tools
             }
 
             sawLoop = new LoopSound(source, ProceduralSounds.Saw, 0.45f);
+            modeAction = InputSystem.actions.FindAction("Player/ToolMode", throwIfNotFound: true);
+            adjustAction = InputSystem.actions.FindAction("Player/AdjustTool", throwIfNotFound: true);
+            coarseAction = InputSystem.actions.FindAction("Player/CoarseAdjust", throwIfNotFound: true);
+            modeKeyLabel = modeAction.GetBindingDisplayString(InputBinding.MaskByGroup("Keyboard&Mouse"),
+                InputBinding.DisplayStringOptions.DontIncludeInteractions);
             SetGuideVisible(false);
+        }
+
+        // Rip cut (D-045): the width is set with the wheel (like a marking gauge / fence), then the saw cuts along.
+        private InputAction modeAction;
+        private InputAction adjustAction;
+        private InputAction coarseAction;
+        private string modeKeyLabel;
+        private bool ripMode;
+        private float ripWidthMillimeters = 100f;
+        private TimberBoard ripBoard;
+        private float ripProgress;
+
+        private void UpdateRip()
+        {
+            if (adjustAction.WasPerformedThisFrame())
+            {
+                float value = adjustAction.ReadValue<float>();
+                if (value != 0f)
+                {
+                    ripWidthMillimeters = Mathf.Clamp(ripWidthMillimeters + Math.Sign(value) * (coarseAction.IsPressed() ? 10f : 1f),
+                        10f, 500f);
+                    ripProgress = 0f;
+                }
+            }
+
+            string header = Loc.T($"Rip cut: width {ripWidthMillimeters:0} mm   [Wheel] ±1 mm, Shift ±10   [{modeKeyLabel}] crosscut",
+                $"Boyuna kesim: genişlik {ripWidthMillimeters:0} mm   [Tekerlek] ±1 mm, Shift ±10   [{modeKeyLabel}] enine kesim");
+            if (!aim.TryAim(context, out BoardAimPoint point))
+            {
+                ripBoard = null;
+                ripProgress = 0f;
+                SetGuideVisible(false);
+                SetLines(header, resultLine);
+                return;
+            }
+
+            TimberBoard board = point.Board;
+            if (board != ripBoard)
+            {
+                ripBoard = board;
+                ripProgress = 0f;
+            }
+
+            if (board.TryGetComponent(out Carryable carryable) && carryable.InstalledIn != null)
+            {
+                SetGuideVisible(false);
+                SetLines($"{header}\n" + Loc.T("Take it out of the assembly to cut it", "Kesmek için önce montajdan çıkar"), resultLine);
+                return;
+            }
+
+            if (IsOnFloor(board))
+            {
+                SetGuideVisible(false);
+                SetLines($"{header}\n" + Loc.T("Not on the floor: put the board on the workbench or the sawhorses",
+                    "Yerde kesilmez: tahtayı tezgaha ya da sehpalara koy"), resultLine);
+                return;
+            }
+
+            Length width = Length.FromMillimeters((double)ripWidthMillimeters);
+            if (Ripcut.TryRip(board.Piece, board.Marks, width, saw, out RipResult rip) != RipRefusal.None)
+            {
+                SetGuideVisible(false);
+                SetLines($"{header}\n" + Loc.T($"Too narrow: both pieces must be at least {Ripcut.MinimumWidth} wide",
+                    $"Çok dar: iki parça da en az {Ripcut.MinimumWidth} genişlikte olmalı"), resultLine);
+                return;
+            }
+
+            ShowRipGuide(board, width);
+            bool sawing = useAction.IsPressed() && Time.frameCount != ignoreInputFrame;
+            if (!sawing)
+            {
+                pickup.HandOffset = Vector3.zero;
+                SetLines($"{header}\n" + Loc.T($"Hold {useKeyLabel} to rip a {width} strip off this board",
+                    $"Bu tahtadan {width} şerit kesmek için {useKeyLabel} basılı tut"), resultLine);
+                return;
+            }
+
+            // A long cut: time grows with the length and thickness of the board.
+            BoardDimensions size = board.Piece.Dimensions;
+            float seconds = 2f + 2.5f * (float)size.Length.Meters * (float)(size.Thickness.Millimeters / 18.0);
+            float speed = upgrades != null && upgrades.Has(Economy.WorkshopUpgrades.PullSaw) ? upgradedSpeedFactor : 1f;
+            ripProgress += Time.deltaTime * speed / seconds;
+            strokeTime += Time.deltaTime;
+            sawingNow = true;
+            pickup.HandOffset = Vector3.forward * (Mathf.Sin(strokeTime * strokesPerSecond * 2f * Mathf.PI) * strokeLength);
+            if (ripProgress < 1f)
+            {
+                SetLines($"{header}\n" + Loc.T($"Ripping  {Mathf.FloorToInt(ripProgress * 100f)}%",
+                    $"Boyuna kesiliyor  %{Mathf.FloorToInt(ripProgress * 100f)}"), resultLine);
+                return;
+            }
+
+            FinishRip(board, rip);
+        }
+
+        private void ShowRipGuide(TimberBoard board, Length width)
+        {
+            if (cutGuide == null)
+            {
+                return;
+            }
+
+            BoardDimensions size = board.Piece.Dimensions;
+            float x = (float)(-size.Width.Meters / 2.0 + width.Meters + saw.Kerf.Meters / 2.0);
+            float y = (float)(size.Thickness.Meters / 2.0) + GuideSurfaceOffset;
+            float halfLength = (float)(size.Length.Meters / 2.0);
+            cutGuide.SetPosition(0, board.transform.TransformPoint(new Vector3(x, y, -halfLength)));
+            cutGuide.SetPosition(1, board.transform.TransformPoint(new Vector3(x, y, halfLength)));
+            SetGuideVisible(true);
+        }
+
+        /// <summary>Replaces the board by the strip (at the board's -X edge) and the rest, side by side.</summary>
+        private void FinishRip(TimberBoard original, RipResult rip)
+        {
+            BoardDimensions size = original.Piece.Dimensions;
+            double half = size.Width.Meters / 2.0;
+            float stripX = (float)(-half + rip.Strip.Dimensions.Width.Meters / 2.0);
+            float restX = (float)(half - rip.Rest.Dimensions.Width.Meters / 2.0);
+            Transform originalTransform = original.transform;
+            foreach ((TimberPiece piece, BoardMarks marks, float x) in new[]
+                     {
+                         (rip.Strip, rip.StripMarks, stripX), (rip.Rest, rip.RestMarks, restX)
+                     })
+            {
+                GameObject copy = Instantiate(original.gameObject, originalTransform.TransformPoint(new Vector3(x, 0f, 0f)),
+                    originalTransform.rotation, originalTransform.parent);
+                copy.name = $"{piece.Species.DisplayName}_{piece.Dimensions.Length.FormatMillimeters()}x{piece.Dimensions.Width.FormatMillimeters()}";
+                copy.GetComponent<TimberBoard>().SetPiece(piece, marks);
+                if (copy.TryGetComponent(out PersistentId persistentId))
+                {
+                    persistentId.AssignNew();
+                }
+
+                if (copy.TryGetComponent(out Carryable carryable))
+                {
+                    carryable.RequestSupportCheck();
+                }
+            }
+
+            if (waste != null)
+            {
+                waste.Log.Record(rip.Waste);
+            }
+
+            if (original.TryGetComponent(out Carryable originalCarryable))
+            {
+                originalCarryable.RequestSupportCheckAbove();
+            }
+
+            Destroy(original.gameObject);
+            aim.Release();
+            ripBoard = null;
+            ripProgress = 0f;
+            pickup.HandOffset = Vector3.zero;
+            SetGuideVisible(false);
+            resultLine = Loc.T($"Ripped: {rip.Strip.Dimensions.Width} strip + {rip.Rest.Dimensions.Width} rest (kerf {saw.Kerf})",
+                $"Boyuna kesildi: {rip.Strip.Dimensions.Width} şerit + {rip.Rest.Dimensions.Width} kalan (testere payı {saw.Kerf})");
+            SetLines(null, resultLine);
         }
 
         public void Equip(HeldToolContext toolContext)
@@ -119,6 +282,8 @@ namespace WoodcraftSimulator.Tools
             sawLoop?.Set(false);
             aim.Release();
             ClearTarget();
+            ripBoard = null;
+            ripProgress = 0f;
             SetGuideVisible(false);
             resultLine = null;
             SetLines(null, null);
@@ -139,12 +304,30 @@ namespace WoodcraftSimulator.Tools
                 return;
             }
 
+            // Q switches between crosscut and rip cut (D-045), not in the middle of a cut.
+            if (modeAction.WasPressedThisFrame() && progress <= 0f && ripProgress <= 0f)
+            {
+                ripMode = !ripMode;
+                ClearTarget();
+                ripBoard = null;
+                SetGuideVisible(false);
+            }
+
+            if (ripMode)
+            {
+                UpdateRip();
+                return;
+            }
+
             if (!aim.TryAim(context, out BoardAimPoint point) || !TryFindMark(point, out PencilMark mark))
             {
                 bool onBoard = point.Board != null;
                 ClearTarget();
                 SetGuideVisible(false);
-                SetLines(onBoard ? Loc.T("No pencil line here: mark the cut first", "Burada kalem çizgisi yok: önce kesim yerini işaretle") : null, resultLine);
+                SetLines(onBoard
+                    ? Loc.T($"No pencil line here: mark the cut first   [{modeKeyLabel}] rip cut",
+                        $"Burada kalem çizgisi yok: önce kesim yerini işaretle   [{modeKeyLabel}] boyuna kesim")
+                    : null, resultLine);
                 return;
             }
 

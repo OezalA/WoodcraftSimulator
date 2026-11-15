@@ -115,11 +115,11 @@ calculated correctly.
 - [x] 8c: Sawhorse cutting station
 - [x] 8d: Placeholder sounds generated in code (saw, drill, screw, pick up / place, ambience)
 
-## Phase 9: Advanced Woodworking (scope approved 2026-11-15, D-043)
-- [ ] 9a: Rip cut (lengthwise)
-- [ ] 9b: Hammer and nails (fastener type per joint)
-- [ ] 9c: Sanding and surface finish (quality goal)
-- [ ] 9d: Wood glue and dowels (clamping, drying time)
+## Phase 9: Advanced Woodworking (scope approved 2026-11-15, D-043) - code done (tool tote job), awaiting batch test MT-025 (D-045)
+- [x] 9a: Rip cut (lengthwise)
+- [x] 9b: Hammer and nails (fastener type per joint)
+- [x] 9c: Sanding and surface finish (quality goal)
+- [x] 9d: Wood glue and dowels (clamping, drying time)
 
 ## Phase 10: Outdoor Construction (scope approved 2026-11-15, D-043)
 - [ ] 10a: Outdoor area next to the workshop, site preparation
