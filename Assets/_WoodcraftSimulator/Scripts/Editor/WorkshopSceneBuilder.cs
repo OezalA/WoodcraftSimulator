@@ -174,6 +174,7 @@ namespace WoodcraftSimulator.Editor
             BuildAssemblyTable(workshop, materials);
             BuildJobBoard(workshop, materials, species);
             BuildToolWall(workshop, materials);
+            BuildSawhorses(workshop, materials.Workbench);
         }
 
         /// <summary>
@@ -395,6 +396,45 @@ namespace WoodcraftSimulator.Editor
             entry.FindPropertyRelative("effect").stringValue = effect;
             entry.FindPropertyRelative("effectTurkish").stringValue = effectTurkish;
             entry.FindPropertyRelative("priceEuros").floatValue = price;
+        }
+
+        /// <summary>
+        /// Two sawhorses (Phase 8c, D-044) between the timber rack and the workbench: 0.65 m high, beams across the
+        /// room's Z axis 1.2 m apart, so a long board laid along Z rests on both. Boards are sawn at work height only
+        /// (bench, sawhorses, table), not on the floor; the saw is told where the floor is.
+        /// </summary>
+        private static void BuildSawhorses(Transform parent, Material wood)
+        {
+            const float height = 0.65f;
+            const float beamLength = 0.9f;
+            const float beamWidth = 0.09f;
+            const float beamThickness = 0.06f;
+            const float legSize = 0.045f;
+            const float centerX = -1.6f;
+            var horses = new GameObject("Sawhorses").transform;
+            horses.SetParent(parent, false);
+            foreach (float z in new[] { -0.6f, 0.6f })
+            {
+                CreateBox("SawhorseBeam", horses, new Vector3(centerX, FloorTop + height - beamThickness / 2f, z),
+                    new Vector3(beamLength, beamThickness, beamWidth), wood);
+                float legHeight = height - beamThickness;
+                foreach (float dx in new[] { -beamLength / 2f + 0.06f, beamLength / 2f - 0.06f })
+                {
+                    foreach (float dz in new[] { -0.12f, 0.12f })
+                    {
+                        CreateBox("SawhorseLeg", horses, new Vector3(centerX + dx, FloorTop + legHeight / 2f, z + dz),
+                            new Vector3(legSize, legHeight, legSize), wood);
+                    }
+                }
+            }
+
+            HandSawTool saw = Object.FindFirstObjectByType<HandSawTool>();
+            if (saw != null)
+            {
+                var serialized = new SerializedObject(saw);
+                serialized.FindProperty("floorY").floatValue = FloorTop;
+                serialized.ApplyModifiedPropertiesWithoutUndo();
+            }
         }
         private static Object[] Fasteners() => new Object[] { BlueprintAssets.WoodScrew5x80(), BlueprintAssets.WoodScrew4x40() };
 

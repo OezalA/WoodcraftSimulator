@@ -27,6 +27,13 @@ namespace WoodcraftSimulator.Tools
 
         [SerializeField, Min(1f)] private float upgradedSpeedFactor = 1.7f;
 
+        [Header("Work height (D-044)")]
+        [Tooltip("World height of the workshop floor surface.")]
+        [SerializeField] private float floorY;
+
+        [Tooltip("A board whose underside is lower than this above the floor counts as lying on the floor.")]
+        [SerializeField, Min(0f)] private float minimumWorkHeight = 0.25f;
+
         [Tooltip("Where the sawdust of every cut is recorded.")]
         [SerializeField] private WorkshopWaste waste;
 
@@ -145,6 +152,14 @@ namespace WoodcraftSimulator.Tools
                 return;
             }
 
+            // A board lying on the floor is not sawn (D-044): put it on the workbench or the sawhorses.
+            if (IsOnFloor(point.Board))
+            {
+                SetLines(Loc.T("Not on the floor: put the board on the workbench or the sawhorses",
+                    "Yerde kesilmez: tahtayı tezgaha ya da sehpalara koy"), resultLine);
+                return;
+            }
+
             Length atDistance = mark.DistanceFromReference(point.BoardLength);
             bool sawing = useAction.IsPressed() && Time.frameCount != ignoreInputFrame;
             if (!sawing)
@@ -178,6 +193,17 @@ namespace WoodcraftSimulator.Tools
                 shownPercent = percent;
                 SetLines(Loc.T($"Sawing  {percent}%", $"Kesiliyor  %{percent}"), resultLine);
             }
+        }
+
+        private bool IsOnFloor(TimberBoard board)
+        {
+            float lowest = float.MaxValue;
+            foreach (Collider boardCollider in board.GetComponentsInChildren<Collider>())
+            {
+                lowest = Mathf.Min(lowest, boardCollider.bounds.min.y);
+            }
+
+            return lowest < floorY + minimumWorkHeight;
         }
 
         /// <summary>The pencil line on the aimed board nearest to the aimed point, within the snap distance.</summary>
