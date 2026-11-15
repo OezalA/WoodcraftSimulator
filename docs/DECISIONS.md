@@ -368,3 +368,15 @@ for a versioned save system (§6.16) without tying it to a phase. Plan approved 
   - Unknown ids in the save (object no longer in the scene) are skipped with a warning; scene objects the save doesn't
     know keep their built state. Validation extended (duplicate stations/switches/cut lists, two boards in a slot,
     invalid fastening points, infinite waste).
+
+## D-037: Placeholder visuals now; purchased Asset Store models in a later visual pass (Accepted, 2026-11-15)
+Owner (2026-11-15): continue with the current visuals and buy Unity Asset Store packages at the end. Consequences:
+- Gameplay never depends on a tool's mesh: logic, colliders and visuals stay separate. Tools get named anchor points
+  (e.g. blade/kerf line, chuck/bit tip, grip) as child transforms, so a bought model replaces the placeholder child
+  without code changes. Real-world scale is kept (1 unit = 1 m) so imported models are sized against it.
+- **Licensing: the GitHub repo is public.** Asset Store assets may be used in the game but not redistributed, so
+  purchased packages must **not** be committed to the public repo. To decide when buying: a git-ignored folder
+  (e.g. `Assets/ThirdParty/`, placeholders as fallback) or a private repository.
+- When choosing packs: URP-compatible (Built-in-only materials render pink), works with Unity 6, real scale, sensible
+  polycount/LODs, no real brand logos, prefer packs that are models + materials only (no extra scripts/dependencies).
+- The visual pass also covers wood-grain materials for boards, first-person hands and lighting / post-processing.

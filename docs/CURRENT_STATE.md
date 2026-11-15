@@ -71,6 +71,7 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 - Build Settings: `Workshop` enabled; deleted `SampleScene` still listed (disabled, harmless).
 - Mouse look tuned for mouse only; gamepad right stick would be far too slow.
 - In-game text is English only.
+- Tool and board visuals are placeholders until the visual pass with purchased assets (D-037).
 - Save & load (D-036): one save slot; objects only move when the game moves them (no free drop of tools yet, so tools are on the belt or where the scene put them).
 - Pencil marks: no eraser, only on the board's flat faces, no squared lines / angles (D-028).
 - Assist option "type the dimension, the line is drawn" (owner's option A, D-034) deferred to a settings menu.
