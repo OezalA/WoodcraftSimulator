@@ -26,3 +26,16 @@ MonoBehaviour:
   - 'Top and bottom shelves are screwed 9 mm from the ends of the sides: pre-drill
     those.'
   - Start with a low clutch and raise it until the screw stops flush by itself.
+  payEuros: 60
+  requiresFinish: 0
+  extraStocks: []
+  depositShare: 0
+  displayNameTurkish: "K\xFC\xE7\xFCk raf"
+  descriptionTurkish: "18 mm ladin tahtadan 500 geni\u015Flik, 600 y\xFCkseklik,
+    145 derinlikte ayakl\u0131 raf: iki yan, aralar\u0131nda \xFC\xE7 raf, her ba\u011Flant\u0131da
+    iki adet 4 \xD7 40 mm vida."
+  tipsTurkish:
+  - "\xDCst ve alt raflar yan tahtalar\u0131n ucuna 9 mm mesafeden vidalan\u0131r
+    (k\u0131rm\u0131z\u0131 noktalar): \xF6nce bunlara pilot delik a\xE7 (Q)."
+  - "D\xFC\u015F\xFCk torkla ba\u015Fla, vida kendili\u011Finden hizada durana kadar
+    torku art\u0131r."

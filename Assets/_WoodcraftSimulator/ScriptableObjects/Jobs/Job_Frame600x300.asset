@@ -27,3 +27,17 @@ MonoBehaviour:
     the line.
   - 'The corner screws are close to the rail ends: pre-drill (Q switches to the drill
     bit) or the rail splits.'
+  payEuros: 35
+  requiresFinish: 0
+  extraStocks: []
+  depositShare: 0
+  displayNameTurkish: "Al\u0131\u015Ft\u0131rma \xE7er\xE7evesi"
+  descriptionTurkish: "Yap\u0131 kerestesinden 600 \xD7 300 mm \xE7er\xE7eve: iki
+    kay\u0131t, aralar\u0131nda iki yan, her k\xF6\u015Fede iki adet 5 \xD7 80 mm
+    vida."
+  tipsTurkish:
+  - "Metrenin kancas\u0131n\u0131 \xF6l\xE7t\xFC\u011F\xFCn uca tak; testere pay\u0131
+    \xE7izginin art\u0131k taraf\u0131nda kals\u0131n."
+  - "K\xF6\u015Fe vidalar\u0131 kay\u0131t u\xE7lar\u0131na yak\u0131n (k\u0131rm\u0131z\u0131
+    noktalar): \xF6nce pilot delik a\xE7 (Q matkap ucuna ge\xE7er), yoksa kay\u0131t
+    \xE7atlar."

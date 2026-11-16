@@ -1,0 +1,48 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 537f385b4d91875408760371ee5ea153, type: 3}
+  m_Name: Job_ToolTote
+  m_EditorClassIdentifier: WoodcraftSimulator::WoodcraftSimulator.Jobs.JobDefinition
+  id: tool-tote-job
+  displayName: Tool tote
+  description: 'An open tool tote from 18 mm spruce: doweled and glued base, nailed
+    sides, screwed handle, sanded and oiled.'
+  blueprint: {fileID: 11400000, guid: 1ea0ef9cc7358e14bb0da64916527bad, type: 2}
+  stockSpecies: {fileID: 11400000, guid: dca24a1dc39899146a557f009cce814a, type: 2}
+  stockLengthMillimeters: 2000
+  stockWidthMillimeters: 145
+  stockThicknessMillimeters: 18
+  spareBoards: 0
+  tips:
+  - 'Rip the sides (100 mm) and the handle (45 mm): saw in hand, Q for rip mode,
+    the wheel sets the width.'
+  - 'Ends to base: drill the dowel holes, glue the dowels in, then let the clamped
+    joint dry.'
+  - 'The nails near the ends of the sides are red points: pre-drill them, or the
+    sides split.'
+  - Sand, then oil every part for the full pay.
+  payEuros: 90
+  requiresFinish: 1
+  extraStocks: []
+  depositShare: 0
+  displayNameTurkish: "Alet sand\u0131\u011F\u0131"
+  descriptionTurkish: "18 mm ladinden a\xE7\u0131k alet sand\u0131\u011F\u0131: kavelal\u0131
+    ve tutkall\u0131 taban, \xE7ivili yanlar, vidal\u0131 sap; z\u0131mparal\u0131
+    ve ya\u011Fl\u0131."
+  tipsTurkish:
+  - "Yanlar\u0131 (100 mm) ve sap\u0131 (45 mm) boyuna kes: testere elde, Q boyuna
+    kesim modu, tekerlek geni\u015Fli\u011Fi ayarlar."
+  - "Ba\u015Flar tabana: kavela deliklerini a\xE7, kavelalar\u0131 tutkalla tak,
+    i\u015Fkencedeki ba\u011Flant\u0131n\u0131n kurumas\u0131n\u0131 bekle."
+  - "Yanlar\u0131n u\xE7lar\u0131na yak\u0131n \xE7iviler k\u0131rm\u0131z\u0131
+    noktalar: \xF6nce delik a\xE7, yoksa yanlar \xE7atlar."
+  - "Tam \xFCcret i\xE7in her par\xE7ay\u0131 \xF6nce z\u0131mparala, sonra ya\u011Fla."

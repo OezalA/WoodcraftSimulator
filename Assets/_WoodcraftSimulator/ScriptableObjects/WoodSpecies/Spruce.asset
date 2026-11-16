@@ -14,8 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: WoodcraftSimulator::WoodcraftSimulator.Materials.WoodSpeciesDefinition
   id: spruce
   displayName: Spruce
+  displayNameTurkish: Ladin
   scientificName: Picea abies
   densityKgPerCubicMeter: 450
+  isTimber: 1
   greyboxColor: {r: 0.9, g: 0.8, b: 0.62, a: 1}
   dataNotes: "Approximate typical air-dry density (~12 % moisture content), rounded.
     Natural variation is roughly \xB110 % or more. Placeholder reference value: verify

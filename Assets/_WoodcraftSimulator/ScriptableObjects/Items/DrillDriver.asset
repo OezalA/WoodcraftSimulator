@@ -14,4 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: WoodcraftSimulator::WoodcraftSimulator.Inventory.ItemDefinition
   id: drill-driver
   displayName: Drill-driver
+  displayNameTurkish: "\u015Earjl\u0131 matkap"
   sizeClass: 0

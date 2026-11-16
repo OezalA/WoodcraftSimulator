@@ -14,4 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: WoodcraftSimulator::WoodcraftSimulator.Inventory.ItemDefinition
   id: carpenter-pencil
   displayName: Carpenter's pencil
+  displayNameTurkish: Marangoz kalemi
   sizeClass: 0

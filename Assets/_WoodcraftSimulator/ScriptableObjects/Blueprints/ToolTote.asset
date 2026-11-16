@@ -1,0 +1,169 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dc528ec7b8637c24085ef71205a28437, type: 3}
+  m_Name: ToolTote
+  m_EditorClassIdentifier: WoodcraftSimulator::WoodcraftSimulator.Construction.BlueprintDefinition
+  id: tool-tote
+  displayName: "Tool tote 436 \xD7 145 \xD7 250 mm"
+  displayNameTurkish: "Alet sand\u0131\u011F\u0131 436 \xD7 145 \xD7 250 mm"
+  accuracyMillimeters: 1
+  fitMillimeters: 5
+  slots:
+  - id: base
+    displayName: Base
+    displayNameTurkish: Taban
+    lengthMillimeters: 400
+    widthMillimeters: 145
+    thicknessMillimeters: 18
+    localPosition: {x: 0, y: 0.01, z: 0}
+    localEulerAngles: {x: -0, y: 90, z: 0}
+    prerequisites: []
+  - id: end-left
+    displayName: Left end
+    displayNameTurkish: "Sol ba\u015F"
+    lengthMillimeters: 250
+    widthMillimeters: 145
+    thicknessMillimeters: 18
+    localPosition: {x: -0.209, y: 0.126, z: 0}
+    localEulerAngles: {x: 270, y: 270, z: 0}
+    prerequisites:
+    - base
+  - id: end-right
+    displayName: Right end
+    displayNameTurkish: "Sa\u011F ba\u015F"
+    lengthMillimeters: 250
+    widthMillimeters: 145
+    thicknessMillimeters: 18
+    localPosition: {x: 0.209, y: 0.126, z: 0}
+    localEulerAngles: {x: 270, y: 270, z: 0}
+    prerequisites:
+    - base
+  - id: side-front
+    displayName: Front side
+    displayNameTurkish: "\xD6n yan"
+    lengthMillimeters: 436
+    widthMillimeters: 100
+    thicknessMillimeters: 18
+    localPosition: {x: 0, y: 0.051, z: -0.0815}
+    localEulerAngles: {x: -0, y: 90, z: 90}
+    prerequisites:
+    - end-left
+    - end-right
+  - id: side-back
+    displayName: Back side
+    displayNameTurkish: Arka yan
+    lengthMillimeters: 436
+    widthMillimeters: 100
+    thicknessMillimeters: 18
+    localPosition: {x: 0, y: 0.051, z: 0.0815}
+    localEulerAngles: {x: -0, y: 90, z: 90}
+    prerequisites:
+    - end-left
+    - end-right
+  - id: handle
+    displayName: Handle
+    displayNameTurkish: Sap
+    lengthMillimeters: 400
+    widthMillimeters: 45
+    thicknessMillimeters: 18
+    localPosition: {x: 0, y: 0.22850001, z: 0}
+    localEulerAngles: {x: -0, y: 90, z: 90}
+    prerequisites:
+    - end-left
+    - end-right
+  connections:
+  - id: end-left-base
+    partA: end-left
+    partB: base
+    fastenerId: dowel-8x40
+    points:
+    - localPosition: {x: -0.218, y: 0.01, z: -0.04}
+      localDirection: {x: 1, y: 0, z: 0}
+    - localPosition: {x: -0.218, y: 0.01, z: 0.04}
+      localDirection: {x: 1, y: 0, z: 0}
+  - id: end-right-base
+    partA: end-right
+    partB: base
+    fastenerId: dowel-8x40
+    points:
+    - localPosition: {x: 0.218, y: 0.01, z: -0.04}
+      localDirection: {x: -1, y: 0, z: 0}
+    - localPosition: {x: 0.218, y: 0.01, z: 0.04}
+      localDirection: {x: -1, y: 0, z: 0}
+  - id: front-left
+    partA: side-front
+    partB: end-left
+    fastenerId: nail-2.8x50
+    points:
+    - localPosition: {x: -0.209, y: 0.03, z: -0.0905}
+      localDirection: {x: 0, y: 0, z: 1}
+    - localPosition: {x: -0.209, y: 0.075, z: -0.0905}
+      localDirection: {x: 0, y: 0, z: 1}
+  - id: front-right
+    partA: side-front
+    partB: end-right
+    fastenerId: nail-2.8x50
+    points:
+    - localPosition: {x: 0.209, y: 0.03, z: -0.0905}
+      localDirection: {x: 0, y: 0, z: 1}
+    - localPosition: {x: 0.209, y: 0.075, z: -0.0905}
+      localDirection: {x: 0, y: 0, z: 1}
+  - id: back-left
+    partA: side-back
+    partB: end-left
+    fastenerId: nail-2.8x50
+    points:
+    - localPosition: {x: -0.209, y: 0.03, z: 0.0905}
+      localDirection: {x: 0, y: 0, z: -1}
+    - localPosition: {x: -0.209, y: 0.075, z: 0.0905}
+      localDirection: {x: 0, y: 0, z: -1}
+  - id: back-right
+    partA: side-back
+    partB: end-right
+    fastenerId: nail-2.8x50
+    points:
+    - localPosition: {x: 0.209, y: 0.03, z: 0.0905}
+      localDirection: {x: 0, y: 0, z: -1}
+    - localPosition: {x: 0.209, y: 0.075, z: 0.0905}
+      localDirection: {x: 0, y: 0, z: -1}
+  - id: front-base
+    partA: side-front
+    partB: base
+    fastenerId: nail-2.8x50
+    points:
+    - localPosition: {x: -0.1, y: 0.01, z: -0.0905}
+      localDirection: {x: 0, y: 0, z: 1}
+    - localPosition: {x: 0.1, y: 0.01, z: -0.0905}
+      localDirection: {x: 0, y: 0, z: 1}
+  - id: back-base
+    partA: side-back
+    partB: base
+    fastenerId: nail-2.8x50
+    points:
+    - localPosition: {x: -0.1, y: 0.01, z: 0.0905}
+      localDirection: {x: 0, y: 0, z: -1}
+    - localPosition: {x: 0.1, y: 0.01, z: 0.0905}
+      localDirection: {x: 0, y: 0, z: -1}
+  - id: left-handle
+    partA: end-left
+    partB: handle
+    fastenerId: wood-screw-4x40
+    points:
+    - localPosition: {x: -0.218, y: 0.22850001, z: 0}
+      localDirection: {x: 1, y: 0, z: 0}
+  - id: right-handle
+    partA: end-right
+    partB: handle
+    fastenerId: wood-screw-4x40
+    points:
+    - localPosition: {x: 0.218, y: 0.22850001, z: 0}
+      localDirection: {x: -1, y: 0, z: 0}

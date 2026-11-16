@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: WoodcraftSimulator::WoodcraftSimulator.Cutting.SawDefinition
   id: hand-saw
   displayName: Hand saw
+  displayNameTurkish: El testeresi
   kerfMillimeters: 2
   secondsPerSquareCentimeter: 0.07
   secondsRange: {x: 1.5, y: 8}

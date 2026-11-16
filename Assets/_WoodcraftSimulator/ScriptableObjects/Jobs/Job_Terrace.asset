@@ -1,0 +1,63 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 537f385b4d91875408760371ee5ea153, type: 3}
+  m_Name: Job_Terrace
+  m_EditorClassIdentifier: WoodcraftSimulator::WoodcraftSimulator.Jobs.JobDefinition
+  id: terrace-job
+  displayName: Small terrace
+  description: "A ground-level terrace 2.4 \xD7 1.8 m in front of the workshop: pier
+    blocks, beams, joists, larch decking."
+  blueprint: {fileID: 11400000, guid: 64e13811f4ef96045ab2011b4e7092de, type: 2}
+  stockSpecies: {fileID: 11400000, guid: 3fd4be3a08bd3c74f9b6fafeb4fe74ab, type: 2}
+  stockLengthMillimeters: 2400
+  stockWidthMillimeters: 145
+  stockThicknessMillimeters: 28
+  spareBoards: 0
+  tips:
+  - Outside, in front of the door. Set out the site at the corner stake, then dig
+    and gravel each pier spot.
+  - 'Build bottom up: pier blocks, beams, joists (cut 1800 mm on the sawhorses outside),
+    deck boards.'
+  - Beams and joists are fixed with steel connectors (drill-driver); deck screws
+    at the board ends need pilot holes.
+  - The customer paid half as a deposit for the material; the rest comes on delivery.
+  payEuros: 650
+  requiresFinish: 0
+  extraStocks:
+  - species: {fileID: 11400000, guid: dca24a1dc39899146a557f009cce814a, type: 2}
+    lengthMillimeters: 2400
+    widthMillimeters: 145
+    thicknessMillimeters: 45
+  - species: {fileID: 11400000, guid: dca24a1dc39899146a557f009cce814a, type: 2}
+    lengthMillimeters: 2400
+    widthMillimeters: 120
+    thicknessMillimeters: 45
+  - species: {fileID: 11400000, guid: e4d6a686a9c30c646b613105b74c882f, type: 2}
+    lengthMillimeters: 200
+    widthMillimeters: 200
+    thicknessMillimeters: 200
+  depositShare: 0.5
+  displayNameTurkish: "K\xFC\xE7\xFCk teras"
+  descriptionTurkish: "At\xF6lyenin \xF6n\xFCnde zemine yak\u0131n 2,4 \xD7 1,8 m
+    teras: beton ayaklar, kiri\u015Fler, d\xF6\u015Feme alt\u0131 kiri\u015Fleri,
+    melez d\xF6\u015Feme."
+  tipsTurkish:
+  - "D\u0131\u015Far\u0131da, kap\u0131n\u0131n \xF6n\xFCnde. K\xF6\u015Fe kaz\u0131\u011F\u0131nda
+    alan\u0131 i\u015Faretle, sonra her ayak yerini kaz ve \xE7ak\u0131l d\xF6k."
+  - "A\u015Fa\u011F\u0131dan yukar\u0131 kur: beton ayaklar, kiri\u015Fler, d\xF6\u015Feme
+    alt\u0131 kiri\u015Fleri (d\u0131\u015Far\u0131daki sehpalarda 1800 mm kes),
+    d\xF6\u015Feme tahtalar\u0131."
+  - "Kiri\u015Fler ve d\xF6\u015Feme alt\u0131 kiri\u015Fleri \xE7elik ba\u011Flant\u0131
+    elemanlar\u0131yla sabitlenir (\u015Farjl\u0131 matkap); tahta u\xE7lar\u0131ndaki
+    vidalar pilot delik ister."
+  - "M\xFC\u015Fteri malzeme i\xE7in yar\u0131s\u0131n\u0131 avans olarak \xF6dedi;
+    kalan\u0131 teslimde gelir."

@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 921a803f223dcb4468b4c57d7ca29854, type: 3}
+  m_Name: PostBasePlate
+  m_EditorClassIdentifier: WoodcraftSimulator::WoodcraftSimulator.Construction.FastenerDefinition
+  id: post-base-plate
+  displayName: U beam bracket with screws
+  displayNameTurkish: "U kiri\u015F aya\u011F\u0131 (vidalar\u0131yla)"
+  diameterMillimeters: 5
+  lengthMillimeters: 40
+  kind: 3

@@ -14,8 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: WoodcraftSimulator::WoodcraftSimulator.Materials.WoodSpeciesDefinition
   id: larch
   displayName: Larch
+  displayNameTurkish: Melez
   scientificName: Larix decidua
   densityKgPerCubicMeter: 590
+  isTimber: 1
   greyboxColor: {r: 0.82, g: 0.58, b: 0.4, a: 1}
   dataNotes: "Approximate typical air-dry density (~12 % moisture content), rounded.
     Natural variation is roughly \xB110 % or more. Placeholder reference value: verify

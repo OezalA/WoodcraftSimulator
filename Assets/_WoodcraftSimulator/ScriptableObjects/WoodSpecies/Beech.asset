@@ -14,8 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: WoodcraftSimulator::WoodcraftSimulator.Materials.WoodSpeciesDefinition
   id: beech
   displayName: Beech
+  displayNameTurkish: "Kay\u0131n"
   scientificName: Fagus sylvatica
   densityKgPerCubicMeter: 720
+  isTimber: 1
   greyboxColor: {r: 0.85, g: 0.66, b: 0.5, a: 1}
   dataNotes: "Approximate typical air-dry density (~12 % moisture content), rounded.
     Natural variation is roughly \xB110 % or more. Placeholder reference value: verify

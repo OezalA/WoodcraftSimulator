@@ -14,4 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: WoodcraftSimulator::WoodcraftSimulator.Inventory.ItemDefinition
   id: tape-measure
   displayName: Tape measure
+  displayNameTurkish: Metre
   sizeClass: 0

@@ -14,11 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: WoodcraftSimulator::WoodcraftSimulator.Construction.BlueprintDefinition
   id: frame-600x300
   displayName: "Frame 600 \xD7 300 mm"
+  displayNameTurkish: "\xC7er\xE7eve 600 \xD7 300 mm"
   accuracyMillimeters: 1
   fitMillimeters: 5
   slots:
   - id: front
     displayName: Front rail
+    displayNameTurkish: "\xD6n kay\u0131t"
     lengthMillimeters: 600
     widthMillimeters: 95
     thicknessMillimeters: 45
@@ -27,6 +29,7 @@ MonoBehaviour:
     prerequisites: []
   - id: back
     displayName: Back rail
+    displayNameTurkish: "Arka kay\u0131t"
     lengthMillimeters: 600
     widthMillimeters: 95
     thicknessMillimeters: 45
@@ -35,6 +38,7 @@ MonoBehaviour:
     prerequisites: []
   - id: left
     displayName: Left side
+    displayNameTurkish: Sol yan
     lengthMillimeters: 210
     widthMillimeters: 95
     thicknessMillimeters: 45
@@ -43,6 +47,7 @@ MonoBehaviour:
     prerequisites: []
   - id: right
     displayName: Right side
+    displayNameTurkish: "Sa\u011F yan"
     lengthMillimeters: 210
     widthMillimeters: 95
     thicknessMillimeters: 45

@@ -14,5 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: WoodcraftSimulator::WoodcraftSimulator.Construction.FastenerDefinition
   id: wood-screw-5x80
   displayName: "Wood screw 5 \xD7 80 mm"
+  displayNameTurkish: "Ah\u015Fap vidas\u0131 5 \xD7 80 mm"
   diameterMillimeters: 5
   lengthMillimeters: 80
+  kind: 0

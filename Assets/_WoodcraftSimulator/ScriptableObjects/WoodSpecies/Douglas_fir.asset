@@ -14,8 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: WoodcraftSimulator::WoodcraftSimulator.Materials.WoodSpeciesDefinition
   id: douglas-fir
   displayName: Douglas fir
+  displayNameTurkish: Duglas
   scientificName: Pseudotsuga menziesii
   densityKgPerCubicMeter: 530
+  isTimber: 1
   greyboxColor: {r: 0.84, g: 0.6, b: 0.42, a: 1}
   dataNotes: "Approximate typical air-dry density (~12 % moisture content), rounded.
     Natural variation is roughly \xB110 % or more. Placeholder reference value: verify

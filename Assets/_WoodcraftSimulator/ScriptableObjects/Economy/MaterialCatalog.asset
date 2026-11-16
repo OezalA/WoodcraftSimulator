@@ -1,0 +1,86 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 38ecdf3891428fd42b487a7d8dbcdfbb, type: 3}
+  m_Name: MaterialCatalog
+  m_EditorClassIdentifier: WoodcraftSimulator::WoodcraftSimulator.Economy.MaterialCatalogDefinition
+  boards:
+  - id: spruce-2000x145x18
+    species: {fileID: 11400000, guid: dca24a1dc39899146a557f009cce814a, type: 2}
+    lengthMillimeters: 2000
+    widthMillimeters: 145
+    thicknessMillimeters: 18
+    priceEuros: 8.5
+    deliverOutdoors: 0
+  - id: spruce-2400x95x45
+    species: {fileID: 11400000, guid: dca24a1dc39899146a557f009cce814a, type: 2}
+    lengthMillimeters: 2400
+    widthMillimeters: 95
+    thicknessMillimeters: 45
+    priceEuros: 9.9
+    deliverOutdoors: 0
+  - id: larch-2400x145x28
+    species: {fileID: 11400000, guid: 3fd4be3a08bd3c74f9b6fafeb4fe74ab, type: 2}
+    lengthMillimeters: 2400
+    widthMillimeters: 145
+    thicknessMillimeters: 28
+    priceEuros: 12
+    deliverOutdoors: 1
+  - id: spruce-2400x145x45
+    species: {fileID: 11400000, guid: dca24a1dc39899146a557f009cce814a, type: 2}
+    lengthMillimeters: 2400
+    widthMillimeters: 145
+    thicknessMillimeters: 45
+    priceEuros: 14
+    deliverOutdoors: 1
+  - id: spruce-2400x120x45
+    species: {fileID: 11400000, guid: dca24a1dc39899146a557f009cce814a, type: 2}
+    lengthMillimeters: 2400
+    widthMillimeters: 120
+    thicknessMillimeters: 45
+    priceEuros: 11
+    deliverOutdoors: 1
+  - id: concrete-pier-200
+    species: {fileID: 11400000, guid: e4d6a686a9c30c646b613105b74c882f, type: 2}
+    lengthMillimeters: 200
+    widthMillimeters: 200
+    thicknessMillimeters: 200
+    priceEuros: 4.5
+    deliverOutdoors: 1
+  fastenerBoxes:
+  - id: screws-4x40-200
+    fastener: {fileID: 11400000, guid: a24339b0500c9b647bd1ed790096f860, type: 2}
+    boxSize: 200
+    priceEuros: 6
+  - id: screws-5x80-50
+    fastener: {fileID: 11400000, guid: e55e660430e73e44bb43676b13c1b182, type: 2}
+    boxSize: 50
+    priceEuros: 7.5
+  - id: nails-2.8x50-250
+    fastener: {fileID: 11400000, guid: 9c92fbecc7511294a87fc74fe52ebe20, type: 2}
+    boxSize: 250
+    priceEuros: 4
+  - id: dowels-8x40-50
+    fastener: {fileID: 11400000, guid: f41611b596cb5cd44a1d1392300f494e, type: 2}
+    boxSize: 50
+    priceEuros: 3.5
+  - id: deck-screws-5x60-200
+    fastener: {fileID: 11400000, guid: b83f194a0c711b044baa3e20bffea5ae, type: 2}
+    boxSize: 200
+    priceEuros: 18
+  - id: joist-hangers-10
+    fastener: {fileID: 11400000, guid: f53b6af64cec09f4586abbcd07b382c9, type: 2}
+    boxSize: 10
+    priceEuros: 15
+  - id: post-bases-6
+    fastener: {fileID: 11400000, guid: a3092826b351ea24f984105f395962b1, type: 2}
+    boxSize: 6
+    priceEuros: 12

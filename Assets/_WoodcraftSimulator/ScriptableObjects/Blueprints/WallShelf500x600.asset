@@ -14,11 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: WoodcraftSimulator::WoodcraftSimulator.Construction.BlueprintDefinition
   id: wall-shelf-500x600
   displayName: "Shelf 500 \xD7 600 mm"
+  displayNameTurkish: "Raf 500 \xD7 600 mm"
   accuracyMillimeters: 1
   fitMillimeters: 5
   slots:
   - id: left
     displayName: Left side
+    displayNameTurkish: Sol yan
     lengthMillimeters: 600
     widthMillimeters: 145
     thicknessMillimeters: 18
@@ -27,6 +29,7 @@ MonoBehaviour:
     prerequisites: []
   - id: right
     displayName: Right side
+    displayNameTurkish: "Sa\u011F yan"
     lengthMillimeters: 600
     widthMillimeters: 145
     thicknessMillimeters: 18
@@ -35,6 +38,7 @@ MonoBehaviour:
     prerequisites: []
   - id: bottom
     displayName: Bottom shelf
+    displayNameTurkish: Alt raf
     lengthMillimeters: 464
     widthMillimeters: 145
     thicknessMillimeters: 18
@@ -44,6 +48,7 @@ MonoBehaviour:
     - left
   - id: middle
     displayName: Middle shelf
+    displayNameTurkish: Orta raf
     lengthMillimeters: 464
     widthMillimeters: 145
     thicknessMillimeters: 18
@@ -53,6 +58,7 @@ MonoBehaviour:
     - left
   - id: top
     displayName: Top shelf
+    displayNameTurkish: "\xDCst raf"
     lengthMillimeters: 464
     widthMillimeters: 145
     thicknessMillimeters: 18
