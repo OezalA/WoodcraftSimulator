@@ -1,6 +1,6 @@
 # Current State
 
-_Last updated: 2026-11-15_
+_Last updated: 2026-11-16_
 
 ## Current milestone
 **Phase 5 (Basic Assembly) done**: accepted by the owner on 2026-11-15 ("hepsi süper") after MT-013 and MT-015;
@@ -13,11 +13,10 @@ first try: the saw works as before (D-030). In-game texts Turkish (D-041), red p
 **Phase 7 (material economy) started** (plan K1-K7 approved 2026-11-15, D-040): 7a domain rules done (money, ledger,
 catalog, consumable screws, priced bill of materials, job settlement, inventory summary, save format 2). 7b (scene)
 next. D-042 (recommended clutch on the drill, owner request) implemented, awaiting MT-022.
-**Batch to Phase 10 (D-043)**: owner tests 7b-10 at once. 7b done (MT-023). Phase 8 done (D-044, MT-024). Phase 9 done (D-045, MT-025). Phase 10 done (outdoor terrace, site preparation, several stocks, connectors, deposit; D-046, MT-026). **Batch complete: waiting for the owner's test (TESTING.md, MT-022..MT-026).**
-Owner batch test in progress (2026-11-16). Findings so far:
-- F1: a fallen, tilted offcut stayed tilted when picked up (and was placed tilted). First fix (nearest right angle) still held steeply fallen boards upright (owner re-test). Second fix: on pick-up the length is always horizontal, flat or on edge, never on end (static compile OK; not yet re-tested in Unity).
-- F2: laying boards on the sawhorses / on the ground was hard. Fixed (D-047): free placement lowers the object onto the highest support under its footprint (up to 0.75 m above the aim), moves away if only the player is in the way, then runs the D-031 support check (static compile OK; not yet re-tested in Unity).
-- F3: beam-to-pier fixing looked unreal (no steel part). Changed (D-048): a steel U beam bracket shows on each set pier block, the screw point is on its flange. Joists: steel angle brackets instead of "joist hangers" (owner: "as in reality"). Needs a scene rebuild. Static compile NOT run (command approval service was down); not tested in Unity.
+**Batch to Phase 10 (D-043)**: owner tests 7b-10 at once. 7b done (MT-023). Phase 8 done (D-044, MT-024). Phase 9 done (D-045, MT-025). Phase 10 done (outdoor terrace, site preparation, several stocks, connectors, deposit; D-046, MT-026). **Batch accepted by the owner on 2026-11-16 ("faz 10 kadar ok") after the batch test and fixes F1-F3; `main` fast-forwarded to `develop`.** Findings fixed during the test:
+- F1: a fallen, tilted offcut stayed tilted when picked up (and was placed tilted). First fix (nearest right angle) still held steeply fallen boards upright (owner re-test). Second fix: on pick-up the length is always horizontal, flat or on edge, never on end.
+- F2: laying boards on the sawhorses / on the ground was hard. Fixed (D-047): free placement lowers the object onto the highest support under its footprint (up to 0.75 m above the aim), moves away if only the player is in the way, then runs the D-031 support check.
+- F3: beam-to-pier fixing looked unreal (no steel part). Changed (D-048): a steel U beam bracket shows on each set pier block, the screw point is on its flange. Joists: steel angle brackets instead of "joist hangers" (owner: "as in reality"). Needs a scene rebuild. Static compile OK later.
 Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 
 ## Completed
@@ -82,6 +81,7 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 | Phase 6 + D-041 (owner) | Accepted: "her şey iyi çalışıyor devam edebiliriz"; `main` fast-forwarded to 86821c5 | 2026-11-15 |
 | D-042 recommended clutch: static compile + `dotnet test` | 0 errors, 0 warnings; 233/233 tests passed (Claude). Unity compile + play-test pending (MT-022) | 2026-11-15 |
 | Batch 7b-10 (D-040, D-043..D-046): static compile + `dotnet test` after every step | 0 errors, 0 warnings; 247/247 tests passed (Claude). Not compiled or played in Unity yet: batch test MT-023..MT-026 pending | 2026-11-15 |
+| Batch test 7b-10 (owner) | Played through terrace and tool tote; findings F1-F3 fixed (D-047, D-048; static compile + 247/247 tests by Claude). Accepted: "faz 10 kadar ok"; `main` fast-forwarded | 2026-11-16 |
 
 ## Known issues / limitations
 - **Carry feel not liked yet** (owner, 2026-11-13). Ideas for later: smooth follow (lerp/slerp) instead of rigid
@@ -111,4 +111,6 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 1. Done: Company Name `OezalAstudio` (owner, 2026-11-15).
 2. Done: MT-016, MT-017 passed.
 3. Done: Phase 6 + D-041 accepted, `main` fast-forwarded. Owner: MT-022 (recommended clutch) when convenient.
-4. Owner: batch test (TESTING.md: MT-022, then the "Batch test up to Phase 10" section MT-023..MT-026). Then Claude fixes what it finds, `main` is fast-forwarded, Phase 11 is planned.
+4. Done: batch test up to Phase 10 accepted (2026-11-16), `main` fast-forwarded.
+5. Next: plan Phase 11 with the owner (MASTER_PROMPT roadmap). Open small idea: in the red slot preview, point out a
+   wrong thickness explicitly (owner used 28 mm larch for an 18 mm spruce part).
