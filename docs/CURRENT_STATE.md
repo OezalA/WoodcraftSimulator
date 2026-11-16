@@ -14,6 +14,8 @@ first try: the saw works as before (D-030). In-game texts Turkish (D-041), red p
 catalog, consumable screws, priced bill of materials, job settlement, inventory summary, save format 2). 7b (scene)
 next. D-042 (recommended clutch on the drill, owner request) implemented, awaiting MT-022.
 **Batch to Phase 10 (D-043)**: owner tests 7b-10 at once. 7b done (MT-023). Phase 8 done (D-044, MT-024). Phase 9 done (D-045, MT-025). Phase 10 done (outdoor terrace, site preparation, several stocks, connectors, deposit; D-046, MT-026). **Batch complete: waiting for the owner's test (TESTING.md, MT-022..MT-026).**
+Owner batch test in progress (2026-11-16). Findings so far:
+- F1: a fallen, tilted offcut stayed tilted when picked up (and was placed tilted). Fixed: `PlayerCarrier` squares the carried orientation to the nearest right angle on pick-up (static compile OK; not yet re-tested in Unity).
 Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 
 ## Completed

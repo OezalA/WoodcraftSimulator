@@ -134,7 +134,9 @@ namespace WoodcraftSimulator.Handling
             carryable.RequestSupportCheckAbove();
 
             carried = carryable;
-            carryRotation = Quaternion.Inverse(YawRotation()) * carryable.transform.rotation;
+            // Held level: a piece that fell and lies tilted (e.g. an offcut half on the sawhorse, half on the ground)
+            // comes up squared to the nearest right angle, relative to the view.
+            carryRotation = SnapToRightAngles(Quaternion.Inverse(YawRotation()) * carryable.transform.rotation);
             carried.SetCarried(true);
             CreatePreview();
 
@@ -334,6 +336,33 @@ namespace WoodcraftSimulator.Handling
 
         /// <summary>Camera heading without pitch, so carried objects stay level when looking up or down.</summary>
         private Quaternion YawRotation() => Quaternion.Euler(0f, cameraTransform.eulerAngles.y, 0f);
+
+        /// <summary>The orientation with every axis turned to the nearest of ±X, ±Y, ±Z (multiples of 90°).</summary>
+        private static Quaternion SnapToRightAngles(Quaternion rotation)
+        {
+            Vector3 forward = NearestAxis(rotation * Vector3.forward);
+            Vector3 up = NearestAxis(rotation * Vector3.up);
+            if (Mathf.Abs(Vector3.Dot(forward, up)) > 0.5f)
+            {
+                // Both closest to the same axis (about 45° off): up takes the nearest of the remaining axes.
+                up = NearestAxis(Vector3.ProjectOnPlane(rotation * Vector3.up, forward));
+            }
+
+            return Quaternion.LookRotation(forward, up);
+        }
+
+        private static Vector3 NearestAxis(Vector3 v)
+        {
+            float x = Mathf.Abs(v.x);
+            float y = Mathf.Abs(v.y);
+            float z = Mathf.Abs(v.z);
+            if (x >= y && x >= z)
+            {
+                return new Vector3(Mathf.Sign(v.x), 0f, 0f);
+            }
+
+            return y >= z ? new Vector3(0f, Mathf.Sign(v.y), 0f) : new Vector3(0f, 0f, Mathf.Sign(v.z));
+        }
 
         /// <summary>Half of the rotated box's extent along world up.</summary>
         private static float VerticalHalfExtent(Quaternion rotation, Vector3 halfExtents)
