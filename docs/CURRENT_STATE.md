@@ -19,7 +19,9 @@ next. D-042 (recommended clutch on the drill, owner request) implemented, awaiti
 - F3: beam-to-pier fixing looked unreal (no steel part). Changed (D-048): a steel U beam bracket shows on each set pier block, the screw point is on its flange. Joists: steel angle brackets instead of "joist hangers" (owner: "as in reality"). Needs a scene rebuild. Static compile OK later.
 **Phase 11 (larger structures) started** (plan approved 2026-11-16, D-049): garden pergola 3 × 3 m, stepladder,
 spirit level for plumbing posts, temporary braces, working height; stage inspections (11e) after the interim test.
-11a-11d code done; **interim test MT-027 pending** (owner rebuilds the scene first).
+11a-11d code done; **interim test MT-027 in progress**. Finding fixed (D-050): setting parts from the ladder was very
+hard ("merdiven kısa"): parts now also snap when aiming at the ghost itself; stepladder 2.0 m, standing step 1.45 m,
+carried at the side. Needs a scene rebuild, then MT-027 continues.
 Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 
 ## Completed
@@ -85,7 +87,8 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 | D-042 recommended clutch: static compile + `dotnet test` | 0 errors, 0 warnings; 233/233 tests passed (Claude). Unity compile + play-test pending (MT-022) | 2026-11-15 |
 | Batch 7b-10 (D-040, D-043..D-046): static compile + `dotnet test` after every step | 0 errors, 0 warnings; 247/247 tests passed (Claude). Not compiled or played in Unity yet: batch test MT-023..MT-026 pending | 2026-11-15 |
 | Batch test 7b-10 (owner) | Played through terrace and tool tote; findings F1-F3 fixed (D-047, D-048; static compile + 247/247 tests by Claude). Accepted: "faz 10 kadar ok"; `main` fast-forwarded | 2026-11-16 |
-| Phase 11a-11d (D-049): static compile + `dotnet test` | 0 errors, 0 warnings; 263/263 tests passed (Claude). Not compiled or played in Unity yet: interim test MT-027 pending | 2026-11-16 |
+| Phase 11a-11d (D-049): static compile + `dotnet test` | 0 errors, 0 warnings; 263/263 tests passed (Claude). Compiled in Unity (no `error CS` in Editor.log, .meta files generated); owner started MT-027 (ladder, pergola) | 2026-11-16 |
+| MT-027 finding D-050 (ghost aim, taller ladder): static compile + `dotnet test` | 0 errors, 0 warnings; 263/263 (Claude). Not compiled or played in Unity yet | 2026-11-16 |
 
 ## Known issues / limitations
 - **Carry feel not liked yet** (owner, 2026-11-13). Ideas for later: smooth follow (lerp/slerp) instead of rigid
@@ -117,6 +120,6 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 3. Done: Phase 6 + D-041 accepted, `main` fast-forwarded. Owner: MT-022 (recommended clutch) when convenient.
 4. Done: batch test up to Phase 10 accepted (2026-11-16), `main` fast-forwarded.
 5. Done: Phase 11 planned (D-049); 11a-11d implemented.
-6. Next: owner rebuilds the scene and runs the interim test MT-027 (stepladder, spirit level, braces, reach, pergola).
+6. In progress: MT-027. Finding D-050 fixed; owner rebuilds the scene and continues MT-027 (from the ladder rows).
    Then 11e stage inspections. Open small idea: in the red slot preview, point out a wrong thickness explicitly (owner
    used 28 mm larch for an 18 mm spruce part).

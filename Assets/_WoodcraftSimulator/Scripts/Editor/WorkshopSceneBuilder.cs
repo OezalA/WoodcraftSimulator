@@ -807,14 +807,15 @@ namespace WoodcraftSimulator.Editor
         }
 
         /// <summary>
-        /// Portable A-frame stepladder (D-049), 1.4 m high with its top standing step at 0.95 m; the steps face −Z.
+        /// Portable A-frame stepladder (D-049, D-050), 2.0 m high with its top standing step at 1.45 m (the rails above it
+        /// are the hand hold); the steps face −Z.
         /// One box collider is its footprint (carried and placed like a board); rails, legs and steps are visual only.
         /// </summary>
         private static void BuildStepladder(Transform parent, GreyboxMaterials materials, Vector3 groundPosition)
         {
             const float width = 0.5f;
-            const float height = 1.4f;
-            const float depth = 0.8f;
+            const float height = 2.0f;
+            const float depth = 1.0f;
             var ladder = new GameObject("Stepladder");
             ladder.transform.SetParent(parent, false);
             ladder.transform.localPosition = groundPosition + Vector3.up * 0.001f;
@@ -841,7 +842,7 @@ namespace WoodcraftSimulator.Editor
                     new Vector2(0.025f, 0.04f), materials.Steel));
             }
 
-            foreach (float y in new[] { 0.32f, 0.64f, 0.95f })
+            foreach (float y in new[] { 0.37f, 0.73f, 1.09f, 1.45f })
             {
                 float z = -depth / 2f + (depth / 2f - 0.06f) * (y / (height - 0.04f));
                 visuals.Add(CreateBox("Step", ladder.transform, new Vector3(0f, y - 0.0125f, z), new Vector3(width - 0.06f, 0.025f, 0.12f),
@@ -1070,7 +1071,7 @@ namespace WoodcraftSimulator.Editor
         private static void BuildAssemblyTable(Transform parent, GreyboxMaterials materials)
         {
             const float length = 1.2f;
-            const float depth = 0.8f;
+            const float depth = 1.0f;
             const float surfaceHeight = 0.75f;
             const float topThickness = 0.04f;
             const float legSize = 0.06f;
@@ -1182,7 +1183,7 @@ namespace WoodcraftSimulator.Editor
         {
             // Typical workbench: 2.0 m x 0.8 m, work surface 0.90 m above the floor, 60 mm top.
             const float length = 2.0f;
-            const float depth = 0.8f;
+            const float depth = 1.0f;
             const float surfaceHeight = 0.9f;
             const float topThickness = 0.06f;
             const float legSize = 0.07f;

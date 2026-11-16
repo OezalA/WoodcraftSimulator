@@ -1,0 +1,63 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 537f385b4d91875408760371ee5ea153, type: 3}
+  m_Name: Job_Pergola
+  m_EditorClassIdentifier: WoodcraftSimulator::WoodcraftSimulator.Jobs.JobDefinition
+  id: pergola-job
+  displayName: Garden pergola
+  description: "A free-standing pergola 3 \xD7 3 m beside the terrace: pier blocks,
+    four plumb posts, two beams, five rafters."
+  blueprint: {fileID: 11400000, guid: 3192a9caa043a8942b1a9c48663a5e56, type: 2}
+  stockSpecies: {fileID: 11400000, guid: dca24a1dc39899146a557f009cce814a, type: 2}
+  stockLengthMillimeters: 3000
+  stockWidthMillimeters: 120
+  stockThicknessMillimeters: 45
+  spareBoards: 0
+  tips:
+  - Outside, right of the terrace. Set out the site at the corner stake, then dig
+    and gravel the four pier spots.
+  - 'Cut the posts to 2200 mm on the sawhorses. A post never goes in exactly vertical:
+    hold the spirit level against two neighbouring faces, push it upright with the
+    wheel, then nail a temporary brace (left mouse button).'
+  - 'Only braced posts can be fastened or carry a beam. Beams and rafters are higher
+    than you can reach: carry the stepladder there, climb it with Space.'
+  - The customer paid half as a deposit for the material; the rest comes on delivery.
+  payEuros: 850
+  requiresFinish: 0
+  extraStocks:
+  - species: {fileID: 11400000, guid: dca24a1dc39899146a557f009cce814a, type: 2}
+    lengthMillimeters: 3000
+    widthMillimeters: 145
+    thicknessMillimeters: 45
+  - species: {fileID: 11400000, guid: dca24a1dc39899146a557f009cce814a, type: 2}
+    lengthMillimeters: 2400
+    widthMillimeters: 100
+    thicknessMillimeters: 100
+  - species: {fileID: 11400000, guid: e4d6a686a9c30c646b613105b74c882f, type: 2}
+    lengthMillimeters: 200
+    widthMillimeters: 200
+    thicknessMillimeters: 200
+  depositShare: 0.5
+  displayNameTurkish: "Bah\xE7e pergolas\u0131"
+  descriptionTurkish: "Teras\u0131n yan\u0131nda serbest duran 3 \xD7 3 m pergola:
+    beton ayaklar, \u015Fak\xFCl\xFCnde d\xF6rt direk, iki kiri\u015F, be\u015F a\u015F\u0131k."
+  tipsTurkish:
+  - "D\u0131\u015Far\u0131da, teras\u0131n sa\u011F\u0131nda. K\xF6\u015Fe kaz\u0131\u011F\u0131nda
+    alan\u0131 i\u015Faretle, sonra d\xF6rt ayak yerini kaz ve \xE7ak\u0131l d\xF6k."
+  - "Direkleri sehpalarda 2200 mm kes. Direk hi\xE7bir zaman tam dik oturmaz: su
+    terazisini iki kom\u015Fu y\xFCze tut, tekerlekle d\xFCzelt, sonra ge\xE7ici
+    destek \xE7ak (sol t\u0131k)."
+  - "Sadece destekli direk sabitlenebilir ve kiri\u015F ta\u015F\u0131r. Kiri\u015Fler
+    ve a\u015F\u0131klar uzanamayaca\u011F\u0131n y\xFCkseklikte: merdiveni oraya
+    ta\u015F\u0131, Space ile \xE7\u0131k."
+  - "M\xFC\u015Fteri malzeme i\xE7in yar\u0131s\u0131n\u0131 avans olarak \xF6dedi;
+    kalan\u0131 teslimde gelir."

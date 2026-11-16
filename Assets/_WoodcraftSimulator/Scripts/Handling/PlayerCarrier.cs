@@ -39,6 +39,9 @@ namespace WoodcraftSimulator.Handling
         private const float PlayerClearanceStep = 0.1f;
         private const int PlayerClearanceSteps = 12;
 
+        // A ghost just behind the aimed surface still counts (the beam slot right on top of a post's end, D-050).
+        private const float GhostBehindSurface = 0.05f;
+
         private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
         private static readonly Color ValidColor = new Color(0.30f, 1.00f, 0.40f, 0.35f);
         private static readonly Color BlockedColor = new Color(1.00f, 0.30f, 0.25f, 0.35f);
@@ -63,6 +66,7 @@ namespace WoodcraftSimulator.Handling
 
         private Carryable carried;
         private Quaternion carryRotation = Quaternion.identity;
+        private Vector3 currentHoldOffset;
 
         private GameObject preview;
         private MeshRenderer previewRenderer;
@@ -143,6 +147,7 @@ namespace WoodcraftSimulator.Handling
             carryable.RequestSupportCheckAbove();
 
             carried = carryable;
+            currentHoldOffset = carryable.TryGetComponent(out ICarryHold hold) ? hold.HoldOffset : holdOffset;
             // Held level: a piece that fell and lies tilted or upright (e.g. an offcut half on the sawhorse, half on
             // the ground) comes up with its length horizontal, flat or on edge (D-047).
             carryRotation = LevelForCarrying(Quaternion.Inverse(YawRotation()) * carryable.transform.rotation);
@@ -177,7 +182,7 @@ namespace WoodcraftSimulator.Handling
 
             Quaternion rotation = YawRotation() * carryRotation;
             carried.transform.SetPositionAndRotation(
-                cameraTransform.position + YawRotation() * holdOffset, rotation);
+                cameraTransform.position + YawRotation() * currentHoldOffset, rotation);
 
             UpdatePlacement(rotation);
 
@@ -207,8 +212,9 @@ namespace WoodcraftSimulator.Handling
             lastSurfaceHitValid = hasHit;
             snapTarget = null;
 
-            // Predefined places (e.g. assembly slots) win over free placement when the aim is close to one.
-            if (hasHit && TrySnap(hit))
+            // Predefined places (e.g. assembly slots) win over free placement when the aim is close to one, or when the
+            // view passes through an empty place's ghost (D-050).
+            if ((hasHit && TrySnap(hit)) || TryGhostSnap(ray, hasHit, hit))
             {
                 return;
             }
@@ -328,6 +334,51 @@ namespace WoodcraftSimulator.Handling
                 return false;
             }
 
+            ShowSnap(target, WithinReach(offered));
+            return true;
+        }
+
+        /// <summary>
+        /// Snaps into an empty place whose ghost the view passes through (ghosts have no colliders, D-050): a beam slot
+        /// in the air on top of the posts is aimed at directly. Not through something solid in front of it; and if the
+        /// view goes on to a surface, only when the piece fits there, so a refused ghost (e.g. a deck board over the
+        /// ground) never keeps a board from being put down on the ground behind it.
+        /// </summary>
+        private bool TryGhostSnap(Ray ray, bool hasHit, RaycastHit hit)
+        {
+            float limit = hasHit ? hit.distance + GhostBehindSurface : placementRange;
+            IPlacementTarget best = null;
+            SnapPlacement bestSnap = default;
+            float bestDistance = float.PositiveInfinity;
+            foreach (IPlacementTarget target in PlacementTargets.All)
+            {
+                if (target.TryGetSnapOnRay(carried, ray, limit, out SnapPlacement offered, out float distance) &&
+                    distance < bestDistance)
+                {
+                    best = target;
+                    bestSnap = offered;
+                    bestDistance = distance;
+                }
+            }
+
+            if (best == null)
+            {
+                return false;
+            }
+
+            bestSnap = WithinReach(bestSnap);
+            if (hasHit && !bestSnap.Allowed)
+            {
+                return false;
+            }
+
+            ShowSnap(best, bestSnap);
+            return true;
+        }
+
+        /// <summary>The snap, refused if its lowest point is above working height from the feet (D-049).</summary>
+        private SnapPlacement WithinReach(SnapPlacement offered)
+        {
             // A part is set from below: its lowest point must be within working height of the feet (D-049).
             float lowest = (offered.Position + offered.Rotation * carried.Center).y -
                            VerticalHalfExtent(offered.Rotation, carried.Size * 0.5f);
@@ -340,6 +391,11 @@ namespace WoodcraftSimulator.Handling
                     offered.SlotIndex);
             }
 
+            return offered;
+        }
+
+        private void ShowSnap(IPlacementTarget target, SnapPlacement offered)
+        {
             snapTarget = target;
             snap = offered;
             placementPosition = offered.Position;
@@ -351,7 +407,6 @@ namespace WoodcraftSimulator.Handling
             preview.transform.SetPositionAndRotation(placementPosition, placementRotation);
             previewBlock.SetColor(BaseColorId, offered.Allowed ? ValidColor : BlockedColor);
             previewRenderer.SetPropertyBlock(previewBlock);
-            return true;
         }
 
         private void Place()

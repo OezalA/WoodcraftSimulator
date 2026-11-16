@@ -616,3 +616,21 @@ Risk accepted by the owner: errors found late may touch several phases. Scope ch
 - Simplifications (stated in the job): the foundation is a ready concrete block, not a frost-proof footing ~80 cm deep;
   no permanent knee braces (needs angled cuts, later); no load calculation, dimensions from common practice, not a
   certified design; connectors count as one fastening point each.
+
+## D-050: MT-027 finding: setting parts from the stepladder (Accepted, 2026-11-16, owner feedback)
+Owner (MT-027, in the middle of the test): "merdivene çıkınca tahtaları koymak çok zor", "merdiven kısa". The Editor.log
+showed every try from the ladder refused with "no surface within 3 m": eyes at 2.60 m, level with the beams (2.40-2.55 m).
+- **Cause 1**: a part snapped only when the aim hit a collider of the assembly near the slot. In the air on top of the
+  posts that is just the 100 × 100 post end (or the 45 mm top of a beam seen almost edge-on). Ghosts have no colliders,
+  so aiming at the ghost itself hit nothing.
+- **Fix 1 (ghost aim)**: `IPlacementTarget.TryGetSnapOnRay`: the view ray passing through an empty slot's ghost (its box
+  3 cm larger on every side) offers that slot too (nearest placeable first, as before). Registered targets
+  (`PlacementTargets`). Not through something solid in front; when the ray goes on to a surface behind the ghost, only
+  a slot the part fits (green) is taken, so a refused ghost never stops a board from being put on the ground behind it.
+  Eyes inside a ghost do not count. Applies to every assembly (also the bench and the terrace).
+- **Cause 2 / Fix 2 (taller ladder)**: the stepladder is 2.0 m high (was 1.4) with four steps; the top standing step is
+  at 1.45 m (was 0.95; the rails above are the hand hold, as on a real stepladder you don't stand on the top). Eyes
+  ~3.1 m look down onto the pergola top; reach ~3.5 m above the ground.
+- **Carrying the ladder**: a taller ladder in front of the eyes hides the view, so it is carried low at the right side
+  (`ICarryHold`, optional on any carryable).
+- Needs a scene rebuild (ladder geometry). D-049's "0.95 m" is superseded.

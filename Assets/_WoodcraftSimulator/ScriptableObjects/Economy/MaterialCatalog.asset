@@ -55,6 +55,27 @@ MonoBehaviour:
     thicknessMillimeters: 200
     priceEuros: 4.5
     deliverOutdoors: 1
+  - id: spruce-3000x120x45
+    species: {fileID: 11400000, guid: dca24a1dc39899146a557f009cce814a, type: 2}
+    lengthMillimeters: 3000
+    widthMillimeters: 120
+    thicknessMillimeters: 45
+    priceEuros: 15
+    deliverOutdoors: 1
+  - id: spruce-3000x145x45
+    species: {fileID: 11400000, guid: dca24a1dc39899146a557f009cce814a, type: 2}
+    lengthMillimeters: 3000
+    widthMillimeters: 145
+    thicknessMillimeters: 45
+    priceEuros: 18
+    deliverOutdoors: 1
+  - id: spruce-2400x100x100
+    species: {fileID: 11400000, guid: dca24a1dc39899146a557f009cce814a, type: 2}
+    lengthMillimeters: 2400
+    widthMillimeters: 100
+    thicknessMillimeters: 100
+    priceEuros: 22
+    deliverOutdoors: 1
   fastenerBoxes:
   - id: screws-4x40-200
     fastener: {fileID: 11400000, guid: a24339b0500c9b647bd1ed790096f860, type: 2}
@@ -84,3 +105,7 @@ MonoBehaviour:
     fastener: {fileID: 11400000, guid: a3092826b351ea24f984105f395962b1, type: 2}
     boxSize: 6
     priceEuros: 12
+  - id: post-anchors-4
+    fastener: {fileID: 11400000, guid: 13ce2a72568d80545926baa214387cb0, type: 2}
+    boxSize: 4
+    priceEuros: 28

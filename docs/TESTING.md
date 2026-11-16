@@ -485,9 +485,9 @@ Rebuild the scene first (*WoodcraftSimulator > Build Test Workshop Scene*).
 | Tool wall | A yellow `Su terazisi` hangs right of the oil brush; E takes it |
 | Go out, right of the terrace | Pergola site 3.4 × 3.4 m with four spots, a corner stake, sawhorses at its front left, a yellow stepladder |
 | Look at the stepladder | `[E] Merdiven al` and below `[Space] Merdivene çık` |
-| Space | You stand on the ladder (eyes ~0.95 m higher), can look around but not walk; prompt line `[Space] Merdivenden in` |
+| Space | You stand on the ladder (feet 1.45 m higher, D-050: you look down onto the post tops), can look around but not walk; prompt line `[Space] Merdivenden in` |
 | Space again | Back on the ground where you stood |
-| E on the ladder, carry it, place it, R rotates | Stays upright while carried; placed like a board |
+| E on the ladder, carry it, place it, R rotates | Stays upright, carried low at your right side (view stays free); placed like a board |
 | Job board: fifth sheet `Bahçe pergolası` | Offer: 5 rafters, 2 beams, 4 posts 2400 × 100 × 100, 4 concrete blocks; `ücret €850.00, avans €425.00` |
 | Prepare the site, set the 4 blocks | Each block shows a steel U post base on top |
 | Cut a post to 2200 mm on the pergola sawhorses, set it on a block | The post goes into the U base and stands visibly a little crooked |
@@ -497,7 +497,9 @@ Rebuild the scene first (*WoodcraftSimulator > Build Test Workshop Scene*).
 | Plumb on both faces, LMB | Two wooden braces from the post to the ground; `Destek çakıldı ...`; the wheel no longer moves it |
 | Carry a beam to two posts, one not braced yet | Red: `Ön kiriş: önce direkleri şakülüne getir ve geçici destek çak` |
 | Braced posts, beam from the ground | Red: `Buradan yerleştiremezsin (ayağından 2.4 m yukarıda): merdiven kullan` |
-| Climb the ladder with the beam in hand, place it | Green, it sits on the post tops; steel angle brackets appear on the post tops |
+| Climb the ladder with the beam in hand, aim at the beam's ghost (in the air above the posts, D-050), place it | Green as soon as the crosshair is on the ghost; it sits on the post tops; steel angle brackets appear on the post tops |
+| Rafters: aim at a rafter ghost from the ladder | Green on the ghost itself, no need to hit the beam top |
+| Bench / terrace: aim at a ghost as before, and lay a board on the ground next to a red ghost | Snapping works as before; a red ghost does not stop putting the board on the ground behind it |
 | Drill-driver on a high point from the ground | `Uzanamazsın ...: merdiven kullan`; from the ladder it works |
 | Fasten all joints of a post | Its braces disappear |
 | Rafters (from the ladder), all brackets | Stage line: site, foundation, posts, beams, rafters; at the end the result with pay; delivery pays the rest |

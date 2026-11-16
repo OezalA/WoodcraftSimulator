@@ -10,14 +10,18 @@ namespace WoodcraftSimulator.Workshop
     /// <summary>
     /// A portable A-frame stepladder (Phase 11, D-049). It is carried like a board (E) and set down upright where it is
     /// needed; Jump (Space) while looking at it climbs onto its top standing step, Jump again climbs down. On it the
-    /// player can look around, carry and use tools, but not walk. Standing ~0.95 m higher raises the working reach
-    /// (<see cref="Construction.WorkReach"/>) from ~2.1 m to ~3 m above the ground.
+    /// player can look around, carry and use tools, but not walk. Standing 1.45 m higher raises the working reach
+    /// (<see cref="Construction.WorkReach"/>) from ~2.1 m to ~3.5 m above the ground, and the eyes (~3.1 m) look down
+    /// onto the top of a 2.4 m pergola instead of along it (D-050). Carried low at the side so it doesn't hide the view.
     /// </summary>
     [RequireComponent(typeof(Carryable))]
-    public sealed class Stepladder : MonoBehaviour, IClimbable, ICarryCondition, IDescribable, IInteractionHint
+    public sealed class Stepladder : MonoBehaviour, IClimbable, ICarryCondition, ICarryHold, IDescribable, IInteractionHint
     {
         [Tooltip("Feet position on the top standing step, in local space (the steps face −Z).")]
-        [SerializeField] private Vector3 standPoint = new Vector3(0f, 0.95f, -0.1f);
+        [SerializeField] private Vector3 standPoint = new Vector3(0f, 1.45f, -0.17f);
+
+        [Tooltip("Where it is carried, relative to the eyes (x right, y up, z forward): low at the right side.")]
+        [SerializeField] private Vector3 holdOffset = new Vector3(0.6f, -1.55f, 0.7f);
 
         // Upright = its up axis within ~18° of vertical.
         private const float MinUprightDot = 0.95f;
@@ -27,6 +31,8 @@ namespace WoodcraftSimulator.Workshop
         private string climbKeyLabel;
 
         public Vector3 StandPosition => transform.TransformPoint(standPoint);
+
+        public Vector3 HoldOffset => holdOffset;
 
         public string Description => Loc.T("Stepladder", "Merdiven");
 

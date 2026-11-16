@@ -137,5 +137,7 @@ posts, stage inspections at the end of each stage (block the next stage, affect 
   temporary brace (visible battens, removed once the post's joints hold)
 - [x] 11d: Pergola site, blueprint (4 piers + U post bases, 4 posts 100 × 100 × 2200, 2 beams, 5 rafters, angle
   brackets), job (€850, 50 % deposit), sawhorses, catalog entries
+- [x] MT-027 finding (D-050): parts could hardly be set from the ladder (aim needed a collider, ladder too short):
+  ghost aim, stepladder 2.0 m with the standing step at 1.45 m, carried at the side
 - [ ] 11e: Stage inspections (customer checks each stage: parts, fastenings, plumb; problems block the next stage
   until fixed; first-time passes count for pay)

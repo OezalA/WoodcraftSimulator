@@ -45,6 +45,9 @@ namespace WoodcraftSimulator.Construction
         [Tooltip("A carried board snaps when the aim point is within this distance (m) of an empty slot.")]
         [SerializeField, Min(0.01f)] private float snapDistance = 0.08f;
 
+        // Aiming at a ghost (D-050): its box counts this much larger on every side.
+        private const float GhostAimMargin = 0.03f;
+
         [Header("Fastening points")]
         [Tooltip("Marker of a fastening point that can be screwed now (both parts installed).")]
         [SerializeField] private Material pointMarkerMaterial;
@@ -132,6 +135,10 @@ namespace WoodcraftSimulator.Construction
 
             Setup(blueprint);
         }
+
+        private void OnEnable() => PlacementTargets.Register(this);
+
+        private void OnDisable() => PlacementTargets.Unregister(this);
 
         // Glue dries with playing time (paused = Time.deltaTime 0). Completion may follow when the last joint is dry.
         private void Update() => Build?.AdvanceTime(Time.deltaTime);
@@ -778,12 +785,53 @@ namespace WoodcraftSimulator.Construction
                 return false;
             }
 
-            // Among the empty slots near the aim point, prefer the nearest one the piece can go into; otherwise
-            // explain the nearest one.
+            int chosen = ChooseSlot(board.Piece, i =>
+            {
+                float distance = DistanceToSlot(i, aimPoint);
+                return distance <= snapDistance ? distance : float.PositiveInfinity;
+            }, out _);
+            if (chosen < 0)
+            {
+                return false;
+            }
+
+            snap = Offer(chosen, board.Piece);
+            return true;
+        }
+
+        public bool TryGetSnapOnRay(Carryable carried, Ray ray, float maxDistance, out SnapPlacement snap, out float distance)
+        {
+            snap = default;
+            distance = float.PositiveInfinity;
+            if (!enabled || installed == null || !carried.TryGetComponent(out TimberBoard board) || board.Piece == null)
+            {
+                return false;
+            }
+
+            int chosen = ChooseSlot(board.Piece, i =>
+            {
+                float entry = RayEntersSlot(i, ray);
+                return entry <= maxDistance ? entry : float.PositiveInfinity;
+            }, out distance);
+            if (chosen < 0)
+            {
+                return false;
+            }
+
+            snap = Offer(chosen, board.Piece);
+            return true;
+        }
+
+        /// <summary>
+        /// Among the empty slots with a finite <paramref name="distanceOf"/>, the nearest one the piece can go into;
+        /// otherwise the nearest one (to explain why not). -1 if none.
+        /// </summary>
+        private int ChooseSlot(TimberPiece piece, Func<int, float> distanceOf, out float chosenDistance)
+        {
             int nearest = -1;
             int nearestPlaceable = -1;
-            float nearestDistance = float.MaxValue;
-            float nearestPlaceableDistance = float.MaxValue;
+            float nearestDistance = float.PositiveInfinity;
+            float nearestPlaceableDistance = float.PositiveInfinity;
             for (int i = 0; i < installed.Length; i++)
             {
                 if (installed[i] != null)
@@ -791,8 +839,8 @@ namespace WoodcraftSimulator.Construction
                     continue;
                 }
 
-                float distance = DistanceToSlot(i, aimPoint);
-                if (distance > snapDistance)
+                float distance = distanceOf(i);
+                if (float.IsPositiveInfinity(distance))
                 {
                     continue;
                 }
@@ -803,21 +851,21 @@ namespace WoodcraftSimulator.Construction
                     nearestDistance = distance;
                 }
 
-                if (distance < nearestPlaceableDistance &&
-                    Build.CanPlace(active.Slots[i].id, board.Piece) == PlaceResult.Placed)
+                if (distance < nearestPlaceableDistance && Build.CanPlace(active.Slots[i].id, piece) == PlaceResult.Placed)
                 {
                     nearestPlaceable = i;
                     nearestPlaceableDistance = distance;
                 }
             }
 
-            int chosen = nearestPlaceable >= 0 ? nearestPlaceable : nearest;
-            if (chosen < 0)
-            {
-                return false;
-            }
+            chosenDistance = nearestPlaceable >= 0 ? nearestPlaceableDistance : nearestDistance;
+            return nearestPlaceable >= 0 ? nearestPlaceable : nearest;
+        }
 
-            PlaceResult result = Build.CanPlace(active.Slots[chosen].id, board.Piece);
+        /// <summary>The snap pose for a slot: allowed if the piece fits there now, otherwise the reason.</summary>
+        private SnapPlacement Offer(int chosen, TimberPiece piece)
+        {
+            PlaceResult result = Build.CanPlace(active.Slots[chosen].id, piece);
 
             // An outdoor site may still need preparing for this part (pier spots, D-046).
             string blocked = null;
@@ -828,9 +876,8 @@ namespace WoodcraftSimulator.Construction
                 blocked = $"{slot?.DisplayName}: {reason}";
             }
 
-            snap = new SnapPlacement(SlotPosition(chosen), SlotRotation(chosen), result == PlaceResult.Placed && blocked == null,
-                blocked ?? Describe(chosen, board.Piece, result), chosen);
-            return true;
+            return new SnapPlacement(SlotPosition(chosen), SlotRotation(chosen), result == PlaceResult.Placed && blocked == null,
+                blocked ?? Describe(chosen, piece, result), chosen);
         }
 
         public void Install(Carryable carryable, SnapPlacement snap)
@@ -1115,6 +1162,41 @@ namespace WoodcraftSimulator.Construction
                 Mathf.Max(0f, Mathf.Abs(local.y) - half.y),
                 Mathf.Max(0f, Mathf.Abs(local.z) - half.z));
             return outside.magnitude;
+        }
+
+        /// <summary>
+        /// Distance along the ray to where it enters the slot's box, enlarged by <see cref="GhostAimMargin"/> so a thin
+        /// part is not a hair to aim at; infinity if it misses, or if the eyes are inside the box (e.g. standing in a
+        /// deck board's ghost: that would snap whatever one looks at).
+        /// </summary>
+        private float RayEntersSlot(int index, Ray ray)
+        {
+            Vector3 half = SlotSize(active.Slots[index]) * 0.5f + Vector3.one * GhostAimMargin;
+            Quaternion toLocal = Quaternion.Inverse(SlotRotation(index));
+            Vector3 origin = toLocal * (ray.origin - SlotPosition(index));
+            Vector3 direction = toLocal * ray.direction;
+
+            float enter = float.NegativeInfinity;
+            float exit = float.PositiveInfinity;
+            for (int axis = 0; axis < 3; axis++)
+            {
+                if (Mathf.Abs(direction[axis]) < 1e-6f)
+                {
+                    if (Mathf.Abs(origin[axis]) > half[axis])
+                    {
+                        return float.PositiveInfinity;
+                    }
+
+                    continue;
+                }
+
+                float a = (-half[axis] - origin[axis]) / direction[axis];
+                float b = (half[axis] - origin[axis]) / direction[axis];
+                enter = Mathf.Max(enter, Mathf.Min(a, b));
+                exit = Mathf.Min(exit, Mathf.Max(a, b));
+            }
+
+            return enter > 0f && enter <= exit ? enter : float.PositiveInfinity;
         }
 
         private static Vector3 SlotSize(BlueprintDefinition.Slot slot) => new Vector3(
