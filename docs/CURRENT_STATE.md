@@ -16,6 +16,8 @@ next. D-042 (recommended clutch on the drill, owner request) implemented, awaiti
 **Batch to Phase 10 (D-043)**: owner tests 7b-10 at once. 7b done (MT-023). Phase 8 done (D-044, MT-024). Phase 9 done (D-045, MT-025). Phase 10 done (outdoor terrace, site preparation, several stocks, connectors, deposit; D-046, MT-026). **Batch complete: waiting for the owner's test (TESTING.md, MT-022..MT-026).**
 Owner batch test in progress (2026-11-16). Findings so far:
 - F1: a fallen, tilted offcut stayed tilted when picked up (and was placed tilted). Fixed: `PlayerCarrier` squares the carried orientation to the nearest right angle on pick-up (static compile OK; not yet re-tested in Unity).
+- F2: laying boards on the sawhorses / on the ground was hard. Fixed (D-047): free placement lowers the object onto the highest support under its footprint (up to 0.75 m above the aim), moves away if only the player is in the way, then runs the D-031 support check (static compile OK; not yet re-tested in Unity).
+- F3: beam-to-pier fixing looked unreal (no steel part). Changed (D-048): a steel U beam bracket shows on each set pier block, the screw point is on its flange. Joists: steel angle brackets instead of "joist hangers" (owner: "as in reality"). Needs a scene rebuild. Static compile NOT run (command approval service was down); not tested in Unity.
 Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 
 ## Completed

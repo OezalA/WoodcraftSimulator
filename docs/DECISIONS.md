@@ -560,3 +560,28 @@ Risk accepted by the owner: errors found late may touch several phases. Scope ch
   200 €18, joist hangers 10 €15, post base plates 6 €12. The order board now has rows (seven sheets each).
 - Known simplifications: the terrace is level ground only (no slope, no frost depth); connectors are one point each (the
   screws of a bracket are not counted separately); concrete blocks are listed as "boards" in texts.
+
+## D-047: Carrying fixes from the batch test: squared pick-up, lowering onto supports (Accepted, 2026-11-16, owner test feedback)
+- F1: a piece that fell and lies tilted is squared to the nearest right angle (relative to the view) when picked up, so
+  it is held and placed level.
+- F2: laying boards on the sawhorses or on the ground was hard (the 9 cm sawhorse beams had to be hit exactly; a long
+  board aimed at the floor overlapped the sawhorses or the player). Free placement now lowers the carried object from
+  0.75 m above the aimed point onto the highest support under its footprint (never higher, so not onto the workbench
+  beside you). If only the player is in the way, the placement moves away along the view (up to 1.2 m). After a free
+  placement the support check of D-031 runs: across two sawhorses the board stays, hanging over an edge it tips.
+- The old "steepest surface" setting is gone: the aimed point only picks the position; the support is found below it.
+
+## D-048: Terrace beams sit in steel U beam brackets on the pier blocks (Accepted, 2026-11-16, owner test feedback)
+- Owner: fixing the beams with "post base plates" did not look real; there was no steel part, the screw point floated
+  on the beam's outer face. Real practice: a steel U bracket anchored in the pier block, the beam sits in it and is
+  screwed through the flanges.
+- Each set pier block now shows a U beam bracket (base plate, two 100 mm flanges 45 mm apart; visual only), driven by
+  `SitePreparation` from the station's `Changed` event. The screw point moved onto the outer flange (mid-height).
+- The connector keeps its id `post-base-plate` (saves stay valid); its name is now "U beam bracket with screws" /
+  "U kiriş ayağı (vidalarıyla)". Bought in boxes of 6 as before; consumed when screwed.
+- `TerraceAssets.Terrace()` now rewrites the blueprint asset on every scene build, so layout changes reach it.
+- Joists sit on the beams, so a joist hanger was the wrong part. Owner: "as it is in reality". The connector (id
+  `joist-hanger` kept) is now a steel angle bracket, "Angle bracket with screws" / "Köşe bağlantı demiri
+  (vidalarıyla)": 40 mm foot on the beam top beside the joist, 40 mm upright leg on the joist's side towards the
+  terrace centre (so the foot never sticks out past a beam end), screwed through the upright leg. Shown once the joist
+  is set. Brackets are generic in `SitePreparation` (visual + slot id per bracket).

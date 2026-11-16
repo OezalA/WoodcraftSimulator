@@ -33,8 +33,8 @@ namespace WoodcraftSimulator.Editor
         {
             { "wood-screw-5x80", "Ahşap vidası 5 × 80 mm" }, { "wood-screw-4x40", "Ahşap vidası 4 × 40 mm" },
             { "nail-2.8x50", "Tel çivi 2,8 × 50 mm" }, { "dowel-8x40", "Ahşap kavela 8 × 40 mm" },
-            { "deck-screw-5x60", "Teras vidası 5 × 60 mm" }, { "joist-hanger", "Kiriş askısı (vidalarıyla)" },
-            { "post-base-plate", "Ayak bağlantı plakası (vidalarıyla)" }
+            { "deck-screw-5x60", "Teras vidası 5 × 60 mm" }, { "joist-hanger", "Köşe bağlantı demiri (vidalarıyla)" },
+            { "post-base-plate", "U kiriş ayağı (vidalarıyla)" }
         };
 
         private static readonly Dictionary<string, string> Blueprints = new Dictionary<string, string>

@@ -19,11 +19,53 @@ namespace WoodcraftSimulator.Workshop
         [Tooltip("The string line around the outline, shown once the site is set out.")]
         [SerializeField] private LineRenderer stringLine;
 
+        [Tooltip("Steel brackets (visual only), each shown while the part of the same index in Bracket Slots is set " +
+                 "(D-048): U beam brackets on the pier blocks, angle brackets beside the joists.")]
+        [SerializeField] private GameObject[] bracketVisuals = Array.Empty<GameObject>();
+
+        [SerializeField] private string[] bracketSlots = Array.Empty<string>();
+
         public bool Marked { get; private set; }
 
         public event Action Changed;
 
+        private AssemblyStation station;
+
+        private void Awake() => TryGetComponent(out station);
+
+        private void OnEnable()
+        {
+            if (station != null)
+            {
+                station.Changed += ShowBrackets;
+            }
+        }
+
+        private void OnDisable()
+        {
+            if (station != null)
+            {
+                station.Changed -= ShowBrackets;
+            }
+        }
+
         private void Start() => Refresh();
+
+        /// <summary>
+        /// Each steel bracket shows while its part is set (D-048): the U bracket with its pier block (the beam then
+        /// sits in it), the angle bracket with its joist (then screwed through its upright leg).
+        /// </summary>
+        private void ShowBrackets()
+        {
+            AssemblyBuild build = station != null ? station.Build : null;
+            for (int i = 0; i < bracketVisuals.Length && i < bracketSlots.Length; i++)
+            {
+                if (bracketVisuals[i] != null)
+                {
+                    bracketVisuals[i].SetActive(build != null && build.GetPiece(bracketSlots[i]) != null);
+                }
+            }
+        }
 
         public void Mark()
         {
@@ -165,6 +207,8 @@ namespace WoodcraftSimulator.Workshop
                     spot.ShowState(Marked);
                 }
             }
+
+            ShowBrackets();
 
             Changed?.Invoke();
         }

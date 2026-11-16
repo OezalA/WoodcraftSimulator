@@ -544,6 +544,8 @@ namespace WoodcraftSimulator.Editor
 
             var preparation = siteObject.AddComponent<SitePreparation>();
             var spots = new Object[6];
+            var bracketVisuals = new List<Object>();
+            var bracketSlots = new List<string>();
             for (int i = 0; i < 6; i++)
             {
                 Vector3 p = TerraceAssets.PierPosition(i);
@@ -556,6 +558,8 @@ namespace WoodcraftSimulator.Editor
                     materials.Steel);
                 Object.DestroyImmediate(gravel.GetComponent<BoxCollider>());
                 gravel.SetActive(false);
+                bracketVisuals.Add(BuildBeamBracket(site, new Vector3(p.x, TerraceAssets.PierTop, p.z), materials.Steel));
+                bracketSlots.Add($"pier-{i + 1}");
                 var siteSpot = spot.AddComponent<SiteSpot>();
                 spot.AddComponent<PersistentId>().Set($"PierSpot_{i + 1}");
                 var serializedSpot = new SerializedObject(siteSpot);
@@ -590,6 +594,27 @@ namespace WoodcraftSimulator.Editor
             SetReferences(preparation, "spots", spots);
             SetReference(preparation, "stringLine", line);
 
+            // Angle brackets joist-to-beam (D-048), shown once the joist is set; one per joist and beam.
+            for (int j = 0; j < TerraceAssets.JoistX.Length; j++)
+            {
+                foreach (float beamZ in TerraceAssets.BeamZ)
+                {
+                    bracketVisuals.Add(BuildAngleBracket(site, j, beamZ, materials.Steel));
+                    bracketSlots.Add($"joist-{j + 1}");
+                }
+            }
+
+            SetReferences(preparation, "bracketVisuals", bracketVisuals);
+            var serializedPreparation = new SerializedObject(preparation);
+            SerializedProperty slotsProperty = serializedPreparation.FindProperty("bracketSlots");
+            slotsProperty.arraySize = bracketSlots.Count;
+            for (int i = 0; i < bracketSlots.Count; i++)
+            {
+                slotsProperty.GetArrayElementAtIndex(i).stringValue = bracketSlots[i];
+            }
+
+            serializedPreparation.ApplyModifiedPropertiesWithoutUndo();
+
             var station = siteObject.AddComponent<AssemblyStation>();
             siteObject.AddComponent<PersistentId>().Set("TerraceSite");
             SetReference(station, "blueprint", TerraceAssets.Terrace());
@@ -614,6 +639,65 @@ namespace WoodcraftSimulator.Editor
             // Sawhorses left of the site, for cutting joists to length outside.
             BuildSawhorses(environment, materials.Workbench, new Vector3(-2.4f, 0f, -6f), setSawFloor: false);
         }
+        /// <summary>
+        /// Steel U beam bracket on top of a pier block (D-048): a base plate and two side flanges 45 mm apart, open
+        /// along X so the beam on edge sits in it. Visual only (no collider); shown while the block is set.
+        /// </summary>
+        private static GameObject BuildBeamBracket(Transform site, Vector3 basePosition, Material steel)
+        {
+            const float length = 0.1f;
+            const float flangeHeight = TerraceAssets.BracketFlangeHeight;
+            const float sheet = TerraceAssets.BracketSheet;
+            const float inner = 0.045f;
+            var bracket = new GameObject("UBeamBracket").transform;
+            bracket.SetParent(site, false);
+            bracket.localPosition = basePosition;
+
+            var parts = new[]
+            {
+                CreateBox("BasePlate", bracket, new Vector3(0f, sheet / 2f, 0f), new Vector3(length, sheet, inner + 2f * sheet), steel),
+                CreateBox("Flange", bracket, new Vector3(0f, flangeHeight / 2f, -(inner + sheet) / 2f),
+                    new Vector3(length, flangeHeight, sheet), steel),
+                CreateBox("Flange", bracket, new Vector3(0f, flangeHeight / 2f, (inner + sheet) / 2f),
+                    new Vector3(length, flangeHeight, sheet), steel)
+            };
+            foreach (GameObject part in parts)
+            {
+                Object.DestroyImmediate(part.GetComponent<BoxCollider>());
+            }
+
+            bracket.gameObject.SetActive(false);
+            return bracket.gameObject;
+        }
+
+        /// <summary>
+        /// Steel angle bracket joist-to-beam (D-048): the foot lies on the beam top beside the joist, the upright leg
+        /// against the joist's side towards the terrace centre (the screw point is on it). Visual only (no collider).
+        /// </summary>
+        private static GameObject BuildAngleBracket(Transform site, int joist, float beamZ, Material steel)
+        {
+            const float leg = TerraceAssets.AngleLeg;
+            const float sheet = TerraceAssets.BracketSheet;
+            float side = TerraceAssets.AngleBracketSide(joist);
+            var bracket = new GameObject($"AngleBracket_{joist + 1}").transform;
+            bracket.SetParent(site, false);
+            // Origin: the joist's side face at the beam top, on the beam's centre line.
+            bracket.localPosition = new Vector3(TerraceAssets.JoistX[joist] + side * 0.0225f, TerraceAssets.BeamTop, beamZ);
+
+            var parts = new[]
+            {
+                CreateBox("Foot", bracket, new Vector3(side * leg / 2f, sheet / 2f, 0f), new Vector3(leg, sheet, leg), steel),
+                CreateBox("Upright", bracket, new Vector3(side * sheet / 2f, leg / 2f, 0f), new Vector3(sheet, leg, leg), steel)
+            };
+            foreach (GameObject part in parts)
+            {
+                Object.DestroyImmediate(part.GetComponent<BoxCollider>());
+            }
+
+            bracket.gameObject.SetActive(false);
+            return bracket.gameObject;
+        }
+
         private static Object[] Fasteners() => new Object[]
         {
             BlueprintAssets.WoodScrew5x80(), BlueprintAssets.WoodScrew4x40(), BlueprintAssets.Nail2_8x50(), BlueprintAssets.Dowel8x40(),

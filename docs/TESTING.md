@@ -471,7 +471,9 @@ Console errors), **Build Test Workshop Scene**, Play, Esc → `Yeni atölye`. Re
 | E on each spot | The stake goes, a gravel bed appears; stage counts up |
 | Set the six blocks, then the beams, joists (cut 1800 mm on the outdoor sawhorses), deck boards | Each layer only after the one below; the stage line follows (`Aşama 3/5: kirişler ...`) |
 | Try to saw a concrete block | `Beton testereyle kesilmez` |
-| Drill-driver on a post base / joist hanger point | Works like a screw (clutch advice shown), never splits |
+| Set a pier block (D-048) | A steel U beam bracket appears on top of it; the beam sits between its flanges |
+| Set a joist (D-048) | A steel angle bracket appears at each beam: foot on the beam top, upright leg on the joist's inner side |
+| Drill-driver on a U bracket flange / angle bracket point | Works like a screw (clutch advice shown), never splits |
 | Deck screws at the board ends | Red points: pre-drill |
 | Complete | Result with pay, timber cost of all four stocks, profit; delivering pays the rest (pay minus the €325 deposit) |
 | Save during the build, quit, Play | Site preparation, deposit and progress kept |

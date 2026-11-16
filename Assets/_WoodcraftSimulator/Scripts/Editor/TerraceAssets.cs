@@ -10,8 +10,8 @@ namespace WoodcraftSimulator.Editor
     /// <summary>
     /// Phase 10 (D-046): a small ground-level terrace 2.4 × 1.8 m built outside the workshop. Layers, bottom up:
     /// six concrete pier blocks on prepared gravel spots, two beams on edge (2400 × 145 × 45) fixed to the piers with
-    /// post base plates, five joists (1800 × 120 × 45) on the beams with joist hangers, twelve larch deck boards
-    /// (2400 × 145 × 28, 5 mm gaps) screwed to the outer and middle joists. Origin = ground at the terrace centre.
+    /// steel U beam brackets anchored in the blocks (D-048), five joists (1800 × 120 × 45) on the beams fixed with
+    /// steel angle brackets (D-048), twelve larch deck boards (2400 × 145 × 28, 5 mm gaps) screwed to the outer and middle joists. Origin = ground at the terrace centre.
     /// </summary>
     public static class TerraceAssets
     {
@@ -28,29 +28,76 @@ namespace WoodcraftSimulator.Editor
         public static FastenerDefinition DeckScrew() => BlueprintAssets.GetOrCreateFastener("DeckScrew5x60", DeckScrewId,
             "Deck screw 5 × 60 mm", 5f, 60f, FastenerKind.Screw);
 
-        public static FastenerDefinition JoistHanger() => BlueprintAssets.GetOrCreateFastener("JoistHanger", JoistHangerId,
-            "Joist hanger with screws", 5f, 40f, FastenerKind.Connector);
+        /// <summary>Top of the concrete pier blocks above the ground (m).</summary>
+        public const float PierTop = 0.2f;
 
-        public static FastenerDefinition PostBase() => BlueprintAssets.GetOrCreateFastener("PostBasePlate", PostBaseId,
-            "Post base plate with screws", 5f, 40f, FastenerKind.Connector);
+        /// <summary>Steel U beam bracket on each pier block (D-048): flange height and sheet thickness (m).</summary>
+        public const float BracketFlangeHeight = 0.1f;
+        public const float BracketSheet = 0.003f;
+
+        /// <summary>Top of the beams above the ground (m): the joists sit on it.</summary>
+        public const float BeamTop = PierTop + 0.145f;
+
+        /// <summary>Leg length and width of the angle bracket fixing a joist to a beam (m, D-048).</summary>
+        public const float AngleLeg = 0.04f;
+
+        /// <summary>
+        /// Side (+1 = +X, −1 = −X) of joist <paramref name="joist"/> that carries its angle brackets: towards the
+        /// terrace centre, so the bracket's foot on the beam never sticks out past the beam end.
+        /// </summary>
+        public static float AngleBracketSide(int joist) => JoistX[joist] < 0f ? 1f : -1f;
+
+        /// <summary>
+        /// The joist-to-beam connector: a steel angle bracket, one leg on the beam top beside the joist, the other
+        /// screwed to the joist's side (D-048). Id kept from D-046 ("joist hanger") so saves stay valid.
+        /// </summary>
+        public static FastenerDefinition JoistHanger()
+        {
+            FastenerDefinition fastener = BlueprintAssets.GetOrCreateFastener("JoistHanger", JoistHangerId,
+                "Angle bracket with screws", 5f, 40f, FastenerKind.Connector);
+            return Rename(fastener, "Angle bracket with screws", "Köşe bağlantı demiri (vidalarıyla)");
+        }
+
+        private static FastenerDefinition Rename(FastenerDefinition fastener, string name, string nameTurkish)
+        {
+            var serialized = new SerializedObject(fastener);
+            serialized.FindProperty("displayName").stringValue = name;
+            serialized.FindProperty("displayNameTurkish").stringValue = nameTurkish;
+            if (serialized.ApplyModifiedPropertiesWithoutUndo())
+            {
+                AssetDatabase.SaveAssetIfDirty(fastener);
+            }
+
+            return fastener;
+        }
+
+        /// <summary>
+        /// The pier-to-beam connector: a steel U beam bracket anchored in the pier block; the beam sits in it and is
+        /// screwed through the flanges (D-048, owner feedback). Id kept from D-046 so saves stay valid.
+        /// </summary>
+        public static FastenerDefinition PostBase()
+        {
+            FastenerDefinition fastener = BlueprintAssets.GetOrCreateFastener("PostBasePlate", PostBaseId,
+                "U beam bracket with screws", 5f, 40f, FastenerKind.Connector);
+            return Rename(fastener, "U beam bracket with screws", "U kiriş ayağı (vidalarıyla)");
+        }
 
         public static Vector3 PierPosition(int index) => new Vector3(PierX[index % 3], 0f, BeamZ[index / 3]);
 
         public static BlueprintDefinition Terrace()
         {
             string path = $"{BlueprintAssets.Folder}/Terrace2400x1800.asset";
+            // Rewritten on every call (data defined here only), so layout changes reach an existing asset (D-048).
             var definition = AssetDatabase.LoadAssetAtPath<BlueprintDefinition>(path);
-            if (definition != null)
+            if (definition == null)
             {
-                return definition;
+                definition = ScriptableObject.CreateInstance<BlueprintDefinition>();
+                AssetDatabase.CreateAsset(definition, path);
             }
 
-            definition = ScriptableObject.CreateInstance<BlueprintDefinition>();
-            AssetDatabase.CreateAsset(definition, path);
-
             const float gap = 0.001f;
-            const float pierTop = 0.2f;
-            const float beamTop = pierTop + 0.145f;
+            const float pierTop = PierTop;
+            const float beamTop = BeamTop;
             const float joistTop = beamTop + 0.12f;
             Vector3 onEdgeAlongX = Quaternion.LookRotation(Vector3.right, Vector3.forward).eulerAngles;
             Vector3 onEdgeAlongZ = Quaternion.LookRotation(Vector3.forward, Vector3.right).eulerAngles;
@@ -121,20 +168,24 @@ namespace WoodcraftSimulator.Editor
             var connections = new List<(string id, string a, string b, string fastener, Vector3 point, Vector3 direction)>();
             for (int i = 0; i < 6; i++)
             {
-                // Post base plate on the beam's outer face, screwed into the beam and anchored in the pier block.
+                // U beam bracket anchored in the pier block (D-048): screwed through its outer flange into the beam.
                 int b = i / 3;
-                float face = BeamZ[b] + (b == 0 ? -0.0225f : 0.0225f);
+                float flange = 0.0225f + BracketSheet;
+                float face = BeamZ[b] + (b == 0 ? -flange : flange);
                 connections.Add(($"pier-{i + 1}-plate", beamIds[b], $"pier-{i + 1}", PostBaseId,
-                    new Vector3(PierX[i % 3], pierTop + 0.03f, face), b == 0 ? Vector3.forward : Vector3.back));
+                    new Vector3(PierX[i % 3], pierTop + BracketFlangeHeight / 2f, face), b == 0 ? Vector3.forward : Vector3.back));
             }
 
             for (int j = 0; j < JoistX.Length; j++)
             {
                 for (int b = 0; b < 2; b++)
                 {
-                    // Joist hanger on the joist's side, over the beam.
+                    // Angle bracket (D-048): foot on the beam top beside the joist, upright leg screwed into the joist's
+                    // side (the side towards the terrace centre).
+                    float side = AngleBracketSide(j);
                     connections.Add(($"joist-{j + 1}-{beamIds[b]}", $"joist-{j + 1}", beamIds[b], JoistHangerId,
-                        new Vector3(JoistX[j] - 0.0225f, beamTop + 0.04f, BeamZ[b]), Vector3.right));
+                        new Vector3(JoistX[j] + side * (0.0225f + BracketSheet), beamTop + AngleLeg / 2f, BeamZ[b]),
+                        Vector3.right * -side));
                 }
             }
 
