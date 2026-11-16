@@ -33,6 +33,10 @@ namespace WoodcraftSimulator.Player
         [Tooltip("How fast the field of view changes, in degrees per second.")]
         [SerializeField, Min(1f)] private float fieldOfViewSpeed = 200f;
 
+        [Header("Climbing (D-049)")]
+        [Tooltip("How far from the eyes (m) a stepladder can be climbed with Jump.")]
+        [SerializeField, Min(0.5f)] private float climbRange = 2f;
+
         // Small constant downward speed while grounded so isGrounded stays reliable on slopes/steps.
         private const float GroundedStickVelocity = -2f;
 
@@ -48,6 +52,22 @@ namespace WoodcraftSimulator.Player
         private float pitch;
         private float verticalVelocity;
         private float lookSensitivity;
+
+        private readonly RaycastHit[] climbBuffer = new RaycastHit[16];
+        private IClimbable ladder;
+        private Vector3 groundPosition;
+
+        /// <summary>Standing on a stepladder (no walking; Jump climbs down).</summary>
+        public bool IsOnLadder => ladder != null;
+
+        /// <summary>
+        /// Where the player stands on the ground: on a ladder, the spot it was climbed from (saving keeps the player
+        /// there, not in the air).
+        /// </summary>
+        public Vector3 GroundPosition => ladder != null ? groundPosition : transform.position;
+
+        /// <summary>Raised after climbing onto or down from a ladder.</summary>
+        public event System.Action LadderChanged;
 
         /// <summary>Degrees of rotation per pixel of mouse movement. Initialized from <see cref="UserPreferences"/>.</summary>
         public float LookSensitivity
@@ -89,6 +109,7 @@ namespace WoodcraftSimulator.Player
         /// </summary>
         public void Teleport(Vector3 position, float yawDegrees, float pitchDegrees)
         {
+            LeaveLadder();
             bool wasEnabled = characterController.enabled;
             characterController.enabled = false;
             transform.SetPositionAndRotation(position, Quaternion.Euler(0f, yawDegrees, 0f));
@@ -124,6 +145,34 @@ namespace WoodcraftSimulator.Player
             viewCamera.fieldOfView = Mathf.MoveTowards(viewCamera.fieldOfView, target, fieldOfViewSpeed * Time.deltaTime);
         }
 
+        private bool TryFindLadder(out IClimbable target)
+        {
+            target = null;
+            var ray = new Ray(cameraTransform.position, cameraTransform.forward);
+            if (!PhysicsQueries.RaycastIgnoring(ray, climbRange, Physics.DefaultRaycastLayers, transform, climbBuffer,
+                    out RaycastHit hit))
+            {
+                return false;
+            }
+
+            target = hit.collider.GetComponentInParent<IClimbable>();
+            return target != null && target.CanClimb(out _);
+        }
+
+        /// <summary>Gets off the ladder in state only (the caller moves the player); the controller stays as it was.</summary>
+        private void LeaveLadder()
+        {
+            if (ladder == null)
+            {
+                return;
+            }
+
+            ladder.SetOccupied(false);
+            ladder = null;
+            characterController.enabled = true;
+            LadderChanged?.Invoke();
+        }
+
         private void HandleLook()
         {
             // Mouse delta is already "per frame", so it must NOT be multiplied by Time.deltaTime.
@@ -139,6 +188,35 @@ namespace WoodcraftSimulator.Player
 
         private void HandleMovement()
         {
+            // On a stepladder: no walking, no gravity; Jump climbs down to where the player stood (D-049).
+            if (ladder != null)
+            {
+                if (jumpAction.WasPressedThisFrame())
+                {
+                    Vector3 ground = groundPosition;
+                    LeaveLadder();
+                    characterController.enabled = false;
+                    transform.position = ground;
+                    characterController.enabled = true;
+                    verticalVelocity = 0f;
+                }
+
+                return;
+            }
+
+            // Jump while looking at a standing stepladder climbs onto it instead.
+            if (jumpAction.WasPressedThisFrame() && TryFindLadder(out IClimbable target))
+            {
+                groundPosition = transform.position;
+                ladder = target;
+                ladder.SetOccupied(true);
+                characterController.enabled = false;
+                transform.position = target.StandPosition;
+                verticalVelocity = 0f;
+                LadderChanged?.Invoke();
+                return;
+            }
+
             bool isGrounded = characterController.isGrounded;
 
             if (isGrounded && verticalVelocity < 0f)

@@ -478,6 +478,31 @@ Console errors), **Build Test Workshop Scene**, Play, Esc → `Yeni atölye`. Re
 | Complete | Result with pay, timber cost of all four stocks, profit; delivering pays the rest (pay minus the €325 deposit) |
 | Save during the build, quit, Play | Site preparation, deposit and progress kept |
 
+### MT-027: Pergola interim test: stepladder, spirit level, braces, working height (Phase 11a-11d, D-049)
+Rebuild the scene first (*WoodcraftSimulator > Build Test Workshop Scene*).
+| Step | Expected |
+|---|---|
+| Tool wall | A yellow `Su terazisi` hangs right of the oil brush; E takes it |
+| Go out, right of the terrace | Pergola site 3.4 × 3.4 m with four spots, a corner stake, sawhorses at its front left, a yellow stepladder |
+| Look at the stepladder | `[E] Merdiven al` and below `[Space] Merdivene çık` |
+| Space | You stand on the ladder (eyes ~0.95 m higher), can look around but not walk; prompt line `[Space] Merdivenden in` |
+| Space again | Back on the ground where you stood |
+| E on the ladder, carry it, place it, R rotates | Stays upright while carried; placed like a board |
+| Job board: fifth sheet `Bahçe pergolası` | Offer: 5 rafters, 2 beams, 4 posts 2400 × 100 × 100, 4 concrete blocks; `ücret €850.00, avans €425.00` |
+| Prepare the site, set the 4 blocks | Each block shows a steel U post base on top |
+| Cut a post to 2200 mm on the pergola sawhorses, set it on a block | The post goes into the U base and stands visibly a little crooked |
+| Drill-driver on the post base point | `Direk n henüz şakülünde sabitlenmedi ...` (no screw) |
+| Spirit level in hand, aim at a post face | `Direk n: tepe sola/sağa x.x° yatık (metrede y mm)`; wheel changes it (Shift ×10); at ≤ 0.5° `bu yüzde kabarcık ortada ... Yan yüzü de kontrol et` |
+| LMB when only one face is plumb | `Henüz şakülünde değil: diğer yüzü kontrol et` |
+| Plumb on both faces, LMB | Two wooden braces from the post to the ground; `Destek çakıldı ...`; the wheel no longer moves it |
+| Carry a beam to two posts, one not braced yet | Red: `Ön kiriş: önce direkleri şakülüne getir ve geçici destek çak` |
+| Braced posts, beam from the ground | Red: `Buradan yerleştiremezsin (ayağından 2.4 m yukarıda): merdiven kullan` |
+| Climb the ladder with the beam in hand, place it | Green, it sits on the post tops; steel angle brackets appear on the post tops |
+| Drill-driver on a high point from the ground | `Uzanamazsın ...: merdiven kullan`; from the ladder it works |
+| Fasten all joints of a post | Its braces disappear |
+| Rafters (from the ladder), all brackets | Stage line: site, foundation, posts, beams, rafters; at the end the result with pay; delivery pays the rest |
+| Save while on the ladder / with crooked and braced posts, quit, Play | You stand on the ground beside the ladder; ladder pose, post leans and braces kept |
+
 ## Game view setup (corrects the earlier tip)
 A fixed resolution such as *Full HD (1920x1080)* at `Scale 1x` **crops** the image when the Game view window is
 smaller than 1920×1080: the bottom (tool belt bar) and the lower right (tool in hand) are cut off.

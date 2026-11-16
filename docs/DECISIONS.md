@@ -586,3 +586,33 @@ Risk accepted by the owner: errors found late may touch several phases. Scope ch
   (vidalarıyla)": 40 mm foot on the beam top beside the joist, 40 mm upright leg on the joist's side towards the
   terrace centre (so the foot never sticks out past a beam end), screwed through the upright leg. Shown once the joist
   is set. Brackets are generic in `SitePreparation` (visual + slot id per bracket).
+
+## D-049: Phase 11 pergola: stepladder, plumbing posts with a spirit level, braces, working height (Accepted, 2026-11-16, owner plan)
+- Owner's choices (2026-11-16): first larger structure = a garden pergola 3 × 3 m; height access with a stepladder;
+  plumbing posts with a spirit level tool (a checking/decision task, no motor skill, see realism-vs-playability);
+  stage inspections at the end of each stage (11e, after the interim test). Test plan B: interim test after 11a-11d.
+- **Plumb rule (domain, `PlumbRules`, `PostLean`)**: a slot can be a post (`PartSlot.RequiresPlumb`). A post set into
+  its slot leans 1.0-3.0° in each horizontal direction (random, either way). Plumb = at most 0.5° (~9 mm/m) both ways
+  (a rule of thumb, not a standard). The lean can be pushed in 0.1° steps (max 5°). A temporary brace can only be
+  nailed when plumb both ways; it locks the post. Only braced posts can be fastened (`FastenResult.NotBraced`) or carry
+  the next part (`PlaceResult.PrerequisiteNotBraced`). Taking a post out forgets its lean; setting it again leans anew.
+- **Spirit level**: held against a post face it reads the lean within that face (left/right as seen by the player); the
+  other direction shows on the neighbouring face, so two faces must be checked. Wheel pushes (Shift = 10 steps), LMB
+  braces. Braces are visual battens (no collider); they disappear once all of the post's joints are fastened.
+- **Working height (`WorkReach`)**: about 2.1 m above the feet. Fastening points and setting parts (their lowest point)
+  higher than that are refused with "use the stepladder". On the ladder the feet are 0.95 m higher (reach ~3 m).
+- **Stepladder**: a `Carryable` (carried and placed like a board; stays upright when carried). Space (Jump) while
+  looking at it climbs onto its top step; Space again climbs down to where the player stood. No walking on it; looking,
+  carrying and tools work. It can't be picked up while stood on. Climbing with a part in hand is allowed (a
+  simplification: in reality a 3 m beam is lifted by two people). Saved as a "prop" pose; the player is saved at the
+  ground spot, not on the ladder.
+- **Pergola**: 4 concrete piers (200 mm) on prepared spots, each with a steel U post base (visual, connector
+  `post-anchor`, boxes of 4 €28); posts 100 × 100 × 2200 cut from 2400 (€22); 2 beams 3000 × 145 × 45 on edge on the
+  post tops (€18); 5 rafters 3000 × 120 × 45 on edge on the beams (€15); beams and rafters fixed with the angle brackets
+  of D-048. Pay €850, 50 % deposit. Stages: site preparation, foundation, posts, beams, rafters (`SitePreparation`
+  stages are now data). Site right of the terrace, own sawhorses, material at the outdoor delivery area.
+- Save (format 2, additive fields): post lean/brace per assembly, preparation of every site by id (old saves: the
+  terrace's `site` array), prop poses.
+- Simplifications (stated in the job): the foundation is a ready concrete block, not a frost-proof footing ~80 cm deep;
+  no permanent knee braces (needs angled cuts, later); no load calculation, dimensions from common practice, not a
+  certified design; connectors count as one fastening point each.

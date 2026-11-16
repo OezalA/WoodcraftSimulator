@@ -11,7 +11,10 @@ namespace WoodcraftSimulator.Construction
         UnknownSlot,
         SlotFilled,
         PrerequisiteMissing,
-        DoesNotFit
+        DoesNotFit,
+
+        /// <summary>A post this part rests on is not plumbed and braced yet (D-049).</summary>
+        PrerequisiteNotBraced
     }
 
     public enum RemoveResult
@@ -37,7 +40,10 @@ namespace WoodcraftSimulator.Construction
         NotProud,
 
         /// <summary>A dowel goes into a drilled hole only (D-045).</summary>
-        HoleRequired
+        HoleRequired,
+
+        /// <summary>A post of this joint is not plumbed and braced yet (D-049).</summary>
+        NotBraced
     }
 
     public enum PilotResult
@@ -228,10 +234,22 @@ namespace WoodcraftSimulator.Construction
         private readonly Dictionary<string, TimberPiece> installed = new Dictionary<string, TimberPiece>();
         private readonly Dictionary<string, PointState[]> points = new Dictionary<string, PointState[]>();
         private readonly Dictionary<string, double> drying = new Dictionary<string, double>();
+        private readonly Dictionary<string, PostLean> leans = new Dictionary<string, PostLean>();
+        private readonly Func<double> random;
 
-        public AssemblyBuild(Blueprint blueprint)
+        /// <param name="random">
+        /// Source of random numbers in [0, 1) for the lean of a freshly set post (D-049); null = a new System.Random.
+        /// </param>
+        public AssemblyBuild(Blueprint blueprint, Func<double> random = null)
         {
             Blueprint = blueprint ?? throw new ArgumentNullException(nameof(blueprint));
+            if (random == null)
+            {
+                var generator = new Random();
+                random = generator.NextDouble;
+            }
+
+            this.random = random;
             foreach (ConnectionSpec connection in blueprint.Connections)
             {
                 var states = new PointState[connection.FastenerCount];
@@ -397,7 +415,20 @@ namespace WoodcraftSimulator.Construction
                 }
             }
 
-            return CheckFit(slot, piece).Fits ? PlaceResult.Placed : PlaceResult.DoesNotFit;
+            if (!CheckFit(slot, piece).Fits)
+            {
+                return PlaceResult.DoesNotFit;
+            }
+
+            foreach (string prerequisite in slot.Prerequisites)
+            {
+                if (leans.TryGetValue(prerequisite, out PostLean lean) && !lean.Braced)
+                {
+                    return PlaceResult.PrerequisiteNotBraced;
+                }
+            }
+
+            return PlaceResult.Placed;
         }
 
         public PlaceResult TryPlace(string slotId, TimberPiece piece)
@@ -406,6 +437,13 @@ namespace WoodcraftSimulator.Construction
             if (result == PlaceResult.Placed)
             {
                 installed[slotId] = piece;
+                Blueprint.TryGetSlot(slotId, out PartSlot slot);
+                if (slot.RequiresPlumb)
+                {
+                    // A post never goes in exactly vertical (D-049).
+                    leans[slotId] = new PostLean(PlumbRules.InitialLean(random()), PlumbRules.InitialLean(random()), false);
+                }
+
                 NotifyChanged(wasComplete: false);
             }
 
@@ -455,6 +493,7 @@ namespace WoodcraftSimulator.Construction
 
             piece = installed[slotId];
             installed.Remove(slotId);
+            leans.Remove(slotId);
             NotifyChanged(wasComplete: false);
             return RemoveResult.Removed;
         }
@@ -566,6 +605,11 @@ namespace WoodcraftSimulator.Construction
                 return FastenResult.WrongFastener;
             }
 
+            if (checkType && UnbracedPost(connectionId) != null)
+            {
+                return FastenResult.NotBraced;
+            }
+
             bool dowel = fastener != null && fastener.Kind == FastenerKind.Dowel;
             if (checkType && dowel && !state.PilotHole)
             {
@@ -625,6 +669,113 @@ namespace WoodcraftSimulator.Construction
             state = states[point];
             return true;
         }
+
+        /// <summary>The lean of an installed post (D-049); false for an empty slot or a slot that is not a post.</summary>
+        public bool TryGetLean(string slotId, out PostLean lean) => leans.TryGetValue(slotId ?? string.Empty, out lean);
+
+        /// <summary>
+        /// Pushes an unbraced post: changes its lean along one direction by <paramref name="deltaTenths"/> tenths of a
+        /// degree (limited to <see cref="PlumbRules.MaxLeanTenths"/>).
+        /// </summary>
+        public PlumbResult TryAdjustLean(string slotId, LeanAxis axis, int deltaTenths)
+        {
+            PlumbResult check = CheckPost(slotId, out PostLean lean);
+            if (check != PlumbResult.Done)
+            {
+                return check;
+            }
+
+            if (lean.Braced)
+            {
+                return PlumbResult.Braced;
+            }
+
+            int x = lean.XTenths;
+            int z = lean.ZTenths;
+            if (axis == LeanAxis.X)
+            {
+                x = Clamp(x + deltaTenths);
+            }
+            else
+            {
+                z = Clamp(z + deltaTenths);
+            }
+
+            leans[slotId] = new PostLean(x, z, false);
+            NotifyChanged(wasComplete: true);
+            return PlumbResult.Done;
+        }
+
+        /// <summary>Fixes a plumb post with a temporary brace; from now on its joints may be fastened.</summary>
+        public PlumbResult TryBrace(string slotId)
+        {
+            PlumbResult check = CheckPost(slotId, out PostLean lean);
+            if (check != PlumbResult.Done)
+            {
+                return check;
+            }
+
+            if (lean.Braced)
+            {
+                return PlumbResult.Braced;
+            }
+
+            if (!lean.IsPlumb)
+            {
+                return PlumbResult.NotPlumb;
+            }
+
+            leans[slotId] = new PostLean(lean.XTenths, lean.ZTenths, true);
+            NotifyChanged(wasComplete: true);
+            return PlumbResult.Done;
+        }
+
+        /// <summary>Loading a save: the saved lean and brace of an installed post.</summary>
+        public void RestoreLean(string slotId, int xTenths, int zTenths, bool braced)
+        {
+            if (CheckPost(slotId, out _) == PlumbResult.Done)
+            {
+                leans[slotId] = new PostLean(Clamp(xTenths), Clamp(zTenths), braced);
+                Changed?.Invoke();
+            }
+        }
+
+        /// <summary>The first installed post of this joint that is not braced yet, or null (D-049).</summary>
+        public string UnbracedPost(string connectionId)
+        {
+            if (!Blueprint.TryGetConnection(connectionId, out ConnectionSpec connection))
+            {
+                return null;
+            }
+
+            foreach (string part in new[] { connection.PartA, connection.PartB })
+            {
+                if (leans.TryGetValue(part, out PostLean lean) && !lean.Braced)
+                {
+                    return part;
+                }
+            }
+
+            return null;
+        }
+
+        private PlumbResult CheckPost(string slotId, out PostLean lean)
+        {
+            lean = default;
+            if (!Blueprint.TryGetSlot(slotId, out PartSlot slot))
+            {
+                return PlumbResult.UnknownSlot;
+            }
+
+            if (!slot.RequiresPlumb)
+            {
+                return PlumbResult.NotAPost;
+            }
+
+            return leans.TryGetValue(slotId, out lean) ? PlumbResult.Done : PlumbResult.SlotEmpty;
+        }
+
+        private static int Clamp(int tenths) => Math.Max(-PlumbRules.MaxLeanTenths, Math.Min(PlumbRules.MaxLeanTenths, tenths));
 
         private void NotifyChanged(bool wasComplete)
         {

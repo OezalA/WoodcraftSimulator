@@ -44,8 +44,10 @@ namespace WoodcraftSimulator.Construction
     /// <summary>A place in a blueprint for one piece of timber with given dimensions.</summary>
     public sealed class PartSlot
     {
-        public PartSlot(string id, string displayName, BoardDimensions dimensions, IEnumerable<string> prerequisites = null)
+        public PartSlot(string id, string displayName, BoardDimensions dimensions, IEnumerable<string> prerequisites = null,
+            bool requiresPlumb = false)
         {
+            RequiresPlumb = requiresPlumb;
             if (string.IsNullOrWhiteSpace(id))
             {
                 throw new ArgumentException("Slot id must not be empty.", nameof(id));
@@ -66,6 +68,11 @@ namespace WoodcraftSimulator.Construction
 
         /// <summary>Slots that must be filled before this one (assembly order).</summary>
         public IReadOnlyList<string> Prerequisites { get; }
+
+        /// <summary>
+        /// A standing post (D-049): it leans when set, must be plumbed and braced before any of its joints is fastened.
+        /// </summary>
+        public bool RequiresPlumb { get; }
     }
 
     /// <summary>A joint between two slots, made with a number of fasteners of one type (one per fastening point).</summary>

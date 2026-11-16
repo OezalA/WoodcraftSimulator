@@ -328,6 +328,18 @@ namespace WoodcraftSimulator.Handling
                 return false;
             }
 
+            // A part is set from below: its lowest point must be within working height of the feet (D-049).
+            float lowest = (offered.Position + offered.Rotation * carried.Center).y -
+                           VerticalHalfExtent(offered.Rotation, carried.Size * 0.5f);
+            float height = lowest - transform.position.y;
+            if (offered.Allowed && !Construction.WorkReach.CanReach(Measurement.Length.FromMeters(height)))
+            {
+                offered = new SnapPlacement(offered.Position, offered.Rotation, false,
+                    Localization.Loc.T($"Too high to set from here ({height:0.00} m above your feet): use the stepladder",
+                        $"Buradan yerleştiremezsin (ayağından {height:0.00} m yukarıda): merdiven kullan"),
+                    offered.SlotIndex);
+            }
+
             snapTarget = target;
             snap = offered;
             placementPosition = offered.Position;

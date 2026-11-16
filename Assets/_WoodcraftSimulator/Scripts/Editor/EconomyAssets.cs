@@ -37,6 +37,11 @@ namespace WoodcraftSimulator.Editor
             EnsureBoard(boards, "spruce-2400x120x45", species["spruce"], 2400f, 120f, 45f, 11f, outdoors: true);
             EnsureBoard(boards, "concrete-pier-200", species["concrete"], 200f, 200f, 200f, 4.5f, outdoors: true);
 
+            // Pergola material (D-049), also delivered outside.
+            EnsureBoard(boards, "spruce-3000x120x45", species["spruce"], 3000f, 120f, 45f, 15f, outdoors: true);
+            EnsureBoard(boards, "spruce-3000x145x45", species["spruce"], 3000f, 145f, 45f, 18f, outdoors: true);
+            EnsureBoard(boards, "spruce-2400x100x100", species["spruce"], 2400f, 100f, 100f, 22f, outdoors: true);
+
             SerializedProperty boxes = serialized.FindProperty("fastenerBoxes");
             EnsureBox(boxes, "screws-4x40-200", BlueprintAssets.WoodScrew4x40(), 200, 6f);
             EnsureBox(boxes, "screws-5x80-50", BlueprintAssets.WoodScrew5x80(), 50, 7.5f);
@@ -45,6 +50,7 @@ namespace WoodcraftSimulator.Editor
             EnsureBox(boxes, "deck-screws-5x60-200", TerraceAssets.DeckScrew(), 200, 18f);
             EnsureBox(boxes, "joist-hangers-10", TerraceAssets.JoistHanger(), 10, 15f);
             EnsureBox(boxes, "post-bases-6", TerraceAssets.PostBase(), 6, 12f);
+            EnsureBox(boxes, "post-anchors-4", PergolaAssets.PostAnchor(), 4, 28f);
             serialized.ApplyModifiedPropertiesWithoutUndo();
             AssetDatabase.SaveAssets();
             return catalog;

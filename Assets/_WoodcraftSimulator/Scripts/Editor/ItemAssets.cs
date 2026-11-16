@@ -36,6 +36,10 @@ namespace WoodcraftSimulator.Editor
 
         public static ItemDefinition OilBrush() => GetOrCreate("OilBrush", "oil-brush", "Wood oil and brush", ItemSizeClass.Small);
 
+        /// <summary>A 400 mm spirit level for plumbing posts (Phase 11, D-049).</summary>
+        public static ItemDefinition SpiritLevel() =>
+            GetOrCreate("SpiritLevel", "spirit-level", "Spirit level", ItemSizeClass.Small);
+
         private static ItemDefinition GetOrCreate(string fileName, string id, string displayName, ItemSizeClass size)
         {
             string path = $"{Folder}/{fileName}.asset";

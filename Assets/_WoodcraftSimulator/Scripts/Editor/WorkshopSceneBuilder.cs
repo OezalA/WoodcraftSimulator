@@ -174,6 +174,7 @@ namespace WoodcraftSimulator.Editor
             BuildWorkbenchLamp(workshop, materials.Wall);
             BuildAssemblyTable(workshop, materials);
             BuildTerraceSite(environment, materials);
+            BuildPergolaSite(environment, materials);
             BuildJobBoard(workshop, materials, species);
             BuildToolWall(workshop, materials);
             BuildSawhorses(workshop, materials.Workbench, new Vector3(-1.6f, FloorTop, 0f));
@@ -191,13 +192,14 @@ namespace WoodcraftSimulator.Editor
             float centerY = FloorTop + 1.5f;
             const float centerX = -1.9f;
             GameObject board = CreateBox("JobBoard", parent, new Vector3(centerX, centerY, wallZ - 0.01f),
-                new Vector3(1.3f, 0.5f, 0.02f), materials.Workbench);
+                new Vector3(1.6f, 0.5f, 0.02f), materials.Workbench);
             Object.DestroyImmediate(board.GetComponent<BoxCollider>()); // the sheets are what you aim at
 
             var jobBoard = board.AddComponent<JobBoard>();
             JobDefinition[] jobs =
             {
-                JobAssets.FrameJob(species), JobAssets.ShelfJob(species), ToteAssets.ToteJob(species), TerraceAssets.TerraceJob(species)
+                JobAssets.FrameJob(species), JobAssets.ShelfJob(species), ToteAssets.ToteJob(species), TerraceAssets.TerraceJob(species),
+                PergolaAssets.PergolaJob(species)
             };
             for (int i = 0; i < jobs.Length; i++)
             {
@@ -232,9 +234,17 @@ namespace WoodcraftSimulator.Editor
             SetReference(jobBoard, "cutList", Object.FindFirstObjectByType<CutList>());
             SetReference(jobBoard, "waste", Object.FindFirstObjectByType<WorkshopWaste>());
             SetReference(jobBoard, "economy", economy);
-            GameObject terraceSite = GameObject.Find("Environment/TerraceSite");
-            SetReferences(jobBoard, "otherStations",
-                terraceSite != null ? new Object[] { terraceSite.GetComponent<AssemblyStation>() } : new Object[0]);
+            var outdoorStations = new List<Object>();
+            foreach (string sitePath in new[] { "Environment/TerraceSite", "Environment/PergolaSite" })
+            {
+                GameObject outdoorSite = GameObject.Find(sitePath);
+                if (outdoorSite != null)
+                {
+                    outdoorStations.Add(outdoorSite.GetComponent<AssemblyStation>());
+                }
+            }
+
+            SetReferences(jobBoard, "otherStations", outdoorStations);
             SetReference(jobBoard, "saw", SawAssets.HandSaw());
             SetReferences(jobBoard, "fasteners", Fasteners());
         }
@@ -320,7 +330,7 @@ namespace WoodcraftSimulator.Editor
             float wallZ = InteriorDepth / 2f;
             float centerY = FloorTop + 1.5f;
             GameObject board = CreateBox("ToolWall", parent, new Vector3(0f, centerY, wallZ - 0.01f),
-                new Vector3(1.7f, 0.6f, 0.02f), materials.Workbench);
+                new Vector3(2.0f, 0.6f, 0.02f), materials.Workbench);
             Object.DestroyImmediate(board.GetComponent<BoxCollider>()); // the outlines are what you aim at
 
             // Item, x on the board, size of the item box (x = width, y = thickness, z = length) as built on the bench.
@@ -356,6 +366,13 @@ namespace WoodcraftSimulator.Editor
             GameObject brush = CreateHangingItem("OilBrush", parent, ItemAssets.OilBrush(), brushSize, brushPlace,
                 materials.Workbench, new Vector3(0.18f, -0.2f, 0.4f), new Vector3(20f, 0f, 0f));
             SetSurfaceResult(brush.AddComponent<SurfaceTool>(), BoardSurface.Oiled);
+
+            // Phase 11 (D-049): a 400 mm spirit level for plumbing posts.
+            var levelSize = new Vector3(0.045f, 0.025f, 0.4f);
+            ToolHook levelPlace = AddToolPlace(parent, materials, ItemAssets.SpiritLevel(), 0.86f, levelSize, wallZ, centerY);
+            GameObject level = CreateHangingItem("SpiritLevel", parent, ItemAssets.SpiritLevel(), levelSize, levelPlace,
+                materials.ToolYellow, new Vector3(0.2f, -0.22f, 0.45f), new Vector3(0f, -10f, 0f));
+            level.AddComponent<SpiritLevelTool>();
         }
 
         /// <summary>A pickup item that starts hanging on its tool-wall place.</summary>
@@ -639,17 +656,225 @@ namespace WoodcraftSimulator.Editor
             // Sawhorses left of the site, for cutting joists to length outside.
             BuildSawhorses(environment, materials.Workbench, new Vector3(-2.4f, 0f, -6f), setSawFloor: false);
         }
+
+        /// <summary>
+        /// Outdoor pergola site (Phase 11, D-049) right of the terrace: an assembly station for the pergola blueprint
+        /// (origin = ground at the pergola centre), a thin site floor, a corner stake and string line, four pier spots,
+        /// the steel post bases and angle brackets (shown with their parts), sawhorses to cut the posts, and the
+        /// stepladder. Material comes to the outdoor delivery area beside the terrace.
+        /// </summary>
+        private static void BuildPergolaSite(Transform environment, GreyboxMaterials materials)
+        {
+            var siteObject = new GameObject("PergolaSite");
+            siteObject.transform.SetParent(environment, false);
+            siteObject.transform.localPosition = PergolaSitePosition;
+            Transform site = siteObject.transform;
+
+            CreateBox("SiteFloor", site, new Vector3(0f, 0.005f, 0f), new Vector3(3.4f, 0.01f, 3.4f), materials.Concrete);
+
+            var preparation = siteObject.AddComponent<SitePreparation>();
+            var spots = new Object[4];
+            var bracketVisuals = new List<Object>();
+            var bracketSlots = new List<string>();
+            for (int i = 0; i < 4; i++)
+            {
+                Vector3 p = PergolaAssets.PostPosition(i);
+                GameObject spot = CreateBox($"PierSpot_{i + 1}", site, new Vector3(p.x, 0.02f, p.z),
+                    new Vector3(0.3f, 0.02f, 0.3f), materials.PencilMark);
+                GameObject stake = CreateBox("Stake", spot.transform, new Vector3(0f, 6f, 0f), new Vector3(0.1f, 12f, 0.1f),
+                    materials.PencilRed);
+                Object.DestroyImmediate(stake.GetComponent<BoxCollider>());
+                GameObject gravel = CreateBox("Gravel", spot.transform, new Vector3(0f, 0.5f, 0f), new Vector3(1.1f, 1f, 1.1f),
+                    materials.Steel);
+                Object.DestroyImmediate(gravel.GetComponent<BoxCollider>());
+                gravel.SetActive(false);
+
+                // Steel U post base, anchored in the pier block: shown with the block (D-049).
+                bracketVisuals.Add(BuildBeamBracket(site, new Vector3(p.x, PergolaAssets.PierTop, p.z), materials.Steel,
+                    PergolaAssets.AnchorInner, PergolaAssets.AnchorFlangeHeight));
+                bracketSlots.Add($"pier-{i + 1}");
+
+                var siteSpot = spot.AddComponent<SiteSpot>();
+                spot.AddComponent<PersistentId>().Set($"PergolaPierSpot_{i + 1}");
+                var serializedSpot = new SerializedObject(siteSpot);
+                serializedSpot.FindProperty("site").objectReferenceValue = preparation;
+                serializedSpot.FindProperty("slotId").stringValue = $"pier-{i + 1}";
+                serializedSpot.FindProperty("stakeVisual").objectReferenceValue = stake;
+                serializedSpot.FindProperty("gravelVisual").objectReferenceValue = gravel;
+                serializedSpot.ApplyModifiedPropertiesWithoutUndo();
+                spots[i] = siteSpot;
+
+                // Angle bracket post-to-beam: foot on the post top inside the beam, shown with the beam.
+                float side = PergolaAssets.Inward(p.z);
+                bracketVisuals.Add(BuildAngleBracket(site, $"AngleBracket_post_{i + 1}",
+                    new Vector3(p.x, PergolaAssets.PostTop, p.z + side * 0.0225f), Vector3.forward * side, materials.Steel));
+                bracketSlots.Add(PergolaAssets.BeamIds[PergolaAssets.BeamOf(i)]);
+            }
+
+            for (int r = 0; r < PergolaAssets.RafterX.Length; r++)
+            {
+                float side = PergolaAssets.RafterSide(r);
+                foreach (float beamZ in PergolaAssets.PostZ)
+                {
+                    bracketVisuals.Add(BuildAngleBracket(site, $"AngleBracket_rafter_{r + 1}",
+                        new Vector3(PergolaAssets.RafterX[r] + side * 0.0225f, PergolaAssets.BeamTop, beamZ),
+                        Vector3.right * side, materials.Steel));
+                    bracketSlots.Add($"rafter-{r + 1}");
+                }
+            }
+
+            // Corner stake and the string line through the post centres (2.5 × 2.5 m).
+            GameObject marker = CreateBox("CornerStake", site, new Vector3(-1.55f, 0.25f, -1.55f), new Vector3(0.05f, 0.5f, 0.05f),
+                materials.PencilRed);
+            EnlargeGrabCollider(marker, marker.transform.localScale);
+            SetReference(marker.AddComponent<SiteMarker>(), "site", preparation);
+            var lineObject = new GameObject("StringLine");
+            lineObject.transform.SetParent(site, false);
+            var line = lineObject.AddComponent<LineRenderer>();
+            line.useWorldSpace = false;
+            line.loop = true;
+            line.positionCount = 4;
+            line.SetPositions(new[]
+            {
+                new Vector3(-1.25f, 0.3f, -1.25f), new Vector3(1.25f, 0.3f, -1.25f), new Vector3(1.25f, 0.3f, 1.25f),
+                new Vector3(-1.25f, 0.3f, 1.25f)
+            });
+            line.widthMultiplier = 0.006f;
+            line.sharedMaterial = materials.CutGuide;
+            line.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            line.enabled = false;
+
+            var serializedPreparation = new SerializedObject(preparation);
+            SetArray(serializedPreparation.FindProperty("spots"), spots);
+            serializedPreparation.FindProperty("stringLine").objectReferenceValue = line;
+            SetArray(serializedPreparation.FindProperty("bracketVisuals"), bracketVisuals);
+            SerializedProperty slotsProperty = serializedPreparation.FindProperty("bracketSlots");
+            slotsProperty.arraySize = bracketSlots.Count;
+            for (int i = 0; i < bracketSlots.Count; i++)
+            {
+                slotsProperty.GetArrayElementAtIndex(i).stringValue = bracketSlots[i];
+            }
+
+            (string prefix, string name, string nameTr)[] stages =
+            {
+                ("pier", "foundation (pier blocks)", "temel (beton ayaklar)"),
+                ("post", "posts (plumb and brace each)", "direkler (her birini şakülüne getir, destekle)"),
+                ("beam", "beams", "kirişler"),
+                ("rafter", "rafters", "aşıklar")
+            };
+            SerializedProperty stagesProperty = serializedPreparation.FindProperty("stages");
+            stagesProperty.arraySize = stages.Length;
+            for (int s = 0; s < stages.Length; s++)
+            {
+                SerializedProperty stage = stagesProperty.GetArrayElementAtIndex(s);
+                stage.FindPropertyRelative("slotPrefix").stringValue = stages[s].prefix;
+                stage.FindPropertyRelative("name").stringValue = stages[s].name;
+                stage.FindPropertyRelative("nameTurkish").stringValue = stages[s].nameTr;
+            }
+
+            serializedPreparation.ApplyModifiedPropertiesWithoutUndo();
+
+            var station = siteObject.AddComponent<AssemblyStation>();
+            siteObject.AddComponent<PersistentId>().Set("PergolaSite");
+            SetReference(station, "blueprint", PergolaAssets.Pergola());
+            SetReference(station, "ghostMaterial", materials.BlueprintGhost);
+            SetReference(station, "pointMarkerMaterial", materials.CutGuide);
+            SetReference(station, "pilotPointMaterial", materials.PilotPoint);
+            SetReference(station, "screwHeadMaterial", materials.Steel);
+            SetReference(station, "holeMaterial", materials.PencilMark);
+            SetReference(station, "braceMaterial", materials.Lumber);
+            SetReference(station, "waste", Object.FindFirstObjectByType<WorkshopWaste>());
+            SetReferences(station, "knownBlueprints", new Object[] { PergolaAssets.Pergola() });
+            SetReferences(station, "fasteners", Fasteners());
+            var serializedStation = new SerializedObject(station);
+            serializedStation.FindProperty("snapDistance").floatValue = 0.15f;
+            serializedStation.ApplyModifiedPropertiesWithoutUndo();
+
+            // Sawhorses to cut the posts, between the delivery area and the pergola.
+            BuildSawhorses(environment, materials.Workbench, PergolaSitePosition + new Vector3(-2.6f, 0f, -2.6f), setSawFloor: false);
+            BuildStepladder(environment, materials, PergolaSitePosition + new Vector3(-2.0f, 0f, 1.6f));
+        }
+
+        private static readonly Vector3 PergolaSitePosition = new Vector3(6.5f, 0f, -7f);
+
+        private static void SetArray(SerializedProperty property, IReadOnlyList<Object> values)
+        {
+            property.arraySize = values.Count;
+            for (int i = 0; i < values.Count; i++)
+            {
+                property.GetArrayElementAtIndex(i).objectReferenceValue = values[i];
+            }
+        }
+
+        /// <summary>
+        /// Portable A-frame stepladder (D-049), 1.4 m high with its top standing step at 0.95 m; the steps face −Z.
+        /// One box collider is its footprint (carried and placed like a board); rails, legs and steps are visual only.
+        /// </summary>
+        private static void BuildStepladder(Transform parent, GreyboxMaterials materials, Vector3 groundPosition)
+        {
+            const float width = 0.5f;
+            const float height = 1.4f;
+            const float depth = 0.8f;
+            var ladder = new GameObject("Stepladder");
+            ladder.transform.SetParent(parent, false);
+            ladder.transform.localPosition = groundPosition + Vector3.up * 0.001f;
+
+            var footprint = ladder.AddComponent<BoxCollider>();
+            footprint.size = new Vector3(width, height, depth);
+            footprint.center = new Vector3(0f, height / 2f, 0f);
+            var body = ladder.AddComponent<Rigidbody>();
+            body.isKinematic = true;
+            body.interpolation = RigidbodyInterpolation.Interpolate;
+            body.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
+            body.mass = 7f;
+            ladder.AddComponent<Carryable>();
+            ladder.AddComponent<Stepladder>();
+            ladder.AddComponent<PersistentId>().Set("Stepladder");
+
+            var visuals = new List<GameObject>();
+            foreach (float x in new[] { -width / 2f + 0.03f, width / 2f - 0.03f })
+            {
+                // Front rails (steps side) and rear legs meet under the top cap.
+                visuals.Add(CreateStrut("Rail", ladder.transform, new Vector3(x, 0f, -depth / 2f), new Vector3(x, height - 0.04f, -0.06f),
+                    new Vector2(0.025f, 0.06f), materials.Steel));
+                visuals.Add(CreateStrut("Leg", ladder.transform, new Vector3(x, 0f, depth / 2f), new Vector3(x, height - 0.04f, 0.06f),
+                    new Vector2(0.025f, 0.04f), materials.Steel));
+            }
+
+            foreach (float y in new[] { 0.32f, 0.64f, 0.95f })
+            {
+                float z = -depth / 2f + (depth / 2f - 0.06f) * (y / (height - 0.04f));
+                visuals.Add(CreateBox("Step", ladder.transform, new Vector3(0f, y - 0.0125f, z), new Vector3(width - 0.06f, 0.025f, 0.12f),
+                    materials.ToolYellow));
+            }
+
+            visuals.Add(CreateBox("TopCap", ladder.transform, new Vector3(0f, height - 0.02f, 0f), new Vector3(width, 0.04f, 0.2f),
+                materials.ToolYellow));
+            foreach (GameObject visual in visuals)
+            {
+                Object.DestroyImmediate(visual.GetComponent<BoxCollider>());
+            }
+        }
+
+        /// <summary>A box from <paramref name="from"/> to <paramref name="to"/> with the given cross-section (x, y).</summary>
+        private static GameObject CreateStrut(string name, Transform parent, Vector3 from, Vector3 to, Vector2 section, Material material)
+        {
+            Vector3 along = to - from;
+            GameObject strut = CreateBox(name, parent, (from + to) / 2f, new Vector3(section.x, section.y, along.magnitude), material);
+            strut.transform.localRotation = Quaternion.LookRotation(along, Vector3.Cross(along, Vector3.right));
+            return strut;
+        }
+
         /// <summary>
         /// Steel U beam bracket on top of a pier block (D-048): a base plate and two side flanges 45 mm apart, open
         /// along X so the beam on edge sits in it. Visual only (no collider); shown while the block is set.
         /// </summary>
-        private static GameObject BuildBeamBracket(Transform site, Vector3 basePosition, Material steel)
+        private static GameObject BuildBeamBracket(Transform site, Vector3 basePosition, Material steel,
+            float inner = 0.045f, float flangeHeight = TerraceAssets.BracketFlangeHeight)
         {
             const float length = 0.1f;
-            const float flangeHeight = TerraceAssets.BracketFlangeHeight;
             const float sheet = TerraceAssets.BracketSheet;
-            const float inner = 0.045f;
-            var bracket = new GameObject("UBeamBracket").transform;
+            var bracket = new GameObject("UBracket").transform;
             bracket.SetParent(site, false);
             bracket.localPosition = basePosition;
 
@@ -676,18 +901,31 @@ namespace WoodcraftSimulator.Editor
         /// </summary>
         private static GameObject BuildAngleBracket(Transform site, int joist, float beamZ, Material steel)
         {
+            float side = TerraceAssets.AngleBracketSide(joist);
+            // Origin: the joist's side face at the beam top, on the beam's centre line.
+            return BuildAngleBracket(site, $"AngleBracket_{joist + 1}",
+                new Vector3(TerraceAssets.JoistX[joist] + side * 0.0225f, TerraceAssets.BeamTop, beamZ), Vector3.right * side, steel);
+        }
+
+        /// <summary>
+        /// Steel angle bracket (D-048): <paramref name="origin"/> is the upper member's side face at the lower member's
+        /// top; the foot lies on the lower member towards <paramref name="side"/> (horizontal unit vector), the upright
+        /// leg stands against the upper member. Visual only (no collider), hidden until its part is set.
+        /// </summary>
+        private static GameObject BuildAngleBracket(Transform site, string name, Vector3 origin, Vector3 side, Material steel)
+        {
             const float leg = TerraceAssets.AngleLeg;
             const float sheet = TerraceAssets.BracketSheet;
-            float side = TerraceAssets.AngleBracketSide(joist);
-            var bracket = new GameObject($"AngleBracket_{joist + 1}").transform;
+            var bracket = new GameObject(name).transform;
             bracket.SetParent(site, false);
-            // Origin: the joist's side face at the beam top, on the beam's centre line.
-            bracket.localPosition = new Vector3(TerraceAssets.JoistX[joist] + side * 0.0225f, TerraceAssets.BeamTop, beamZ);
+            bracket.localPosition = origin;
+            // Local X = side (LookRotation: right = up × forward).
+            bracket.localRotation = Quaternion.LookRotation(Vector3.Cross(side, Vector3.up), Vector3.up);
 
             var parts = new[]
             {
-                CreateBox("Foot", bracket, new Vector3(side * leg / 2f, sheet / 2f, 0f), new Vector3(leg, sheet, leg), steel),
-                CreateBox("Upright", bracket, new Vector3(side * sheet / 2f, leg / 2f, 0f), new Vector3(sheet, leg, leg), steel)
+                CreateBox("Foot", bracket, new Vector3(leg / 2f, sheet / 2f, 0f), new Vector3(leg, sheet, leg), steel),
+                CreateBox("Upright", bracket, new Vector3(sheet / 2f, leg / 2f, 0f), new Vector3(sheet, leg, leg), steel)
             };
             foreach (GameObject part in parts)
             {
@@ -701,7 +939,7 @@ namespace WoodcraftSimulator.Editor
         private static Object[] Fasteners() => new Object[]
         {
             BlueprintAssets.WoodScrew5x80(), BlueprintAssets.WoodScrew4x40(), BlueprintAssets.Nail2_8x50(), BlueprintAssets.Dowel8x40(),
-            TerraceAssets.DeckScrew(), TerraceAssets.JoistHanger(), TerraceAssets.PostBase()
+            TerraceAssets.DeckScrew(), TerraceAssets.JoistHanger(), TerraceAssets.PostBase(), PergolaAssets.PostAnchor()
         };
 
         private static void SetReferences(Object target, string propertyName, IReadOnlyList<Object> values)
@@ -1212,7 +1450,7 @@ namespace WoodcraftSimulator.Editor
 
             SetReference(service, "economy", Object.FindFirstObjectByType<WorkshopEconomy>());
             SetReference(service, "upgrades", Object.FindFirstObjectByType<WorkshopUpgrades>());
-            SetReference(service, "site", Object.FindFirstObjectByType<SitePreparation>());
+            SetReferences(service, "sites", Object.FindObjectsByType<SitePreparation>(FindObjectsSortMode.None));
 
             return service;
         }

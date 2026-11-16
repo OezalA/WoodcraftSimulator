@@ -30,6 +30,7 @@ namespace WoodcraftSimulator.Handling
         private BoxCollider footprint;
         private Collider[] colliders;
         private IDescribable describable;
+        private ICarryCondition condition;
 
         private bool supportCheckPending;
         private bool settling;
@@ -55,7 +56,9 @@ namespace WoodcraftSimulator.Handling
             {
                 if (InstalledIn == null)
                 {
-                    return Localization.Loc.T($"Pick up {Description}", $"{Description} al");
+                    return condition != null && !condition.CanPickUp(out string blocked)
+                        ? blocked
+                        : Localization.Loc.T($"Pick up {Description}", $"{Description} al");
                 }
 
                 return InstalledIn.CanRelease(this, out string reason)
@@ -71,11 +74,13 @@ namespace WoodcraftSimulator.Handling
             footprint = GetComponent<BoxCollider>();
             colliders = GetComponentsInChildren<Collider>(true);
             describable = GetComponent<IDescribable>();
+            condition = GetComponent<ICarryCondition>();
         }
 
         public void Interact(PlayerInteractor interactor)
         {
-            if (!interactor.TryGetComponent(out PlayerCarrier carrier) || carrier.IsCarrying)
+            if (!interactor.TryGetComponent(out PlayerCarrier carrier) || carrier.IsCarrying ||
+                (condition != null && !condition.CanPickUp(out _)))
             {
                 return;
             }

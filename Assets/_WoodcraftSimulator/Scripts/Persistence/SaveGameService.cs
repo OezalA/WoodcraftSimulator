@@ -46,8 +46,8 @@ namespace WoodcraftSimulator.Persistence
         [Tooltip("Optional: equipment upgrades owned (D-044).")]
         [SerializeField] private Economy.WorkshopUpgrades upgrades;
 
-        [Tooltip("Optional: the terrace site preparation (D-046).")]
-        [SerializeField] private Workshop.SitePreparation site;
+        [Tooltip("Outdoor sites (terrace D-046, pergola D-049), each with a PersistentId.")]
+        [SerializeField] private Workshop.SitePreparation[] sites = Array.Empty<Workshop.SitePreparation>();
 
         private bool restarting;
 
@@ -190,7 +190,7 @@ namespace WoodcraftSimulator.Persistence
             {
                 version = SaveFormat.CurrentVersion,
                 savedAtUtc = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
-                player = new PlayerData { pose = ToPose(player.transform), pitch = player.Pitch }
+                player = new PlayerData { pose = ToPose(player.GroundPosition, player.transform.rotation), pitch = player.Pitch }
             };
 
             var boards = new List<BoardData>();
@@ -260,11 +260,28 @@ namespace WoodcraftSimulator.Persistence
                 data.upgrades = upgrades.Capture();
             }
 
-            if (site != null)
+            var siteData = new List<SiteData>();
+            foreach (Workshop.SitePreparation each in sites)
             {
-                data.site = site.Capture();
+                if (each != null && each.TryGetComponent(out PersistentId siteId))
+                {
+                    siteData.Add(new SiteData { id = siteId.Id, done = each.Capture() });
+                }
             }
 
+            data.sites = siteData.ToArray();
+
+            // Large movable things that are not timber (the stepladder, D-049).
+            var props = new List<PropData>();
+            foreach (KeyValuePair<string, Carryable> prop in ById<Carryable>())
+            {
+                if (!prop.Value.TryGetComponent(out TimberBoard _))
+                {
+                    props.Add(new PropData { id = prop.Key, pose = ToPose(prop.Value.transform) });
+                }
+            }
+
+            data.props = props.ToArray();
             return data;
         }
 
@@ -335,10 +352,8 @@ namespace WoodcraftSimulator.Persistence
             }
 
             // Before the assemblies: the site gates where piers may stand.
-            if (site != null)
-            {
-                site.Restore(data.site);
-            }
+            RestoreSites(data);
+            RestoreProps(data);
 
             // The job sets the station's blueprint and the cut list before the assembly is restored.
             if (jobBoard != null && data.job != null)
@@ -488,11 +503,51 @@ namespace WoodcraftSimulator.Persistence
                 ? time.ToLocalTime().ToString("dd.MM. HH:mm", CultureInfo.InvariantCulture)
                 : Loc.T("an unknown time", "bilinmeyen zaman");
 
-        private static PoseData ToPose(Transform target)
+        private static PoseData ToPose(Transform target) => ToPose(target.position, target.rotation);
+
+        private static PoseData ToPose(Vector3 p, Quaternion r) =>
+            new PoseData { px = p.x, py = p.y, pz = p.z, rx = r.x, ry = r.y, rz = r.z, rw = r.w };
+
+        /// <summary>
+        /// Site preparation by site id; a save from before D-049 has only the terrace's state in <c>site</c>.
+        /// </summary>
+        private void RestoreSites(SaveGameData data)
         {
-            Vector3 p = target.position;
-            Quaternion r = target.rotation;
-            return new PoseData { px = p.x, py = p.y, pz = p.z, rx = r.x, ry = r.y, rz = r.z, rw = r.w };
+            var byId = new Dictionary<string, string[]>();
+            foreach (SiteData siteData in data.sites ?? Array.Empty<SiteData>())
+            {
+                if (siteData != null && !string.IsNullOrEmpty(siteData.id))
+                {
+                    byId[siteData.id] = siteData.done ?? Array.Empty<string>();
+                }
+            }
+
+            if (byId.Count == 0 && data.site != null && data.site.Length > 0)
+            {
+                byId["TerraceSite"] = data.site;
+            }
+
+            foreach (Workshop.SitePreparation each in sites)
+            {
+                if (each != null && each.TryGetComponent(out PersistentId siteId))
+                {
+                    each.Restore(byId.TryGetValue(siteId.Id, out string[] done) ? done : Array.Empty<string>());
+                }
+            }
+        }
+
+        /// <summary>Puts the stepladder (and other props) back; one saved while carried falls to the ground.</summary>
+        private void RestoreProps(SaveGameData data)
+        {
+            Dictionary<string, Carryable> props = ById<Carryable>();
+            foreach (PropData prop in data.props ?? Array.Empty<PropData>())
+            {
+                if (props.TryGetValue(prop.id, out Carryable carryable) && !carryable.TryGetComponent(out TimberBoard _))
+                {
+                    carryable.transform.SetPositionAndRotation(ToPosition(prop.pose), ToRotation(prop.pose));
+                    carryable.RequestSupportCheck();
+                }
+            }
         }
 
         private static Vector3 ToPosition(PoseData pose) => new Vector3(pose.px, pose.py, pose.pz);

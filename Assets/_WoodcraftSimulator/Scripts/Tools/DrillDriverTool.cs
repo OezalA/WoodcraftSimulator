@@ -204,6 +204,15 @@ namespace WoodcraftSimulator.Tools
                 return;
             }
 
+            // Out of reach (ladder) or an unbraced post (D-049).
+            string blocked = station.WorkBlockedReason(connection, context.PlayerRoot.position);
+            if (blocked != null)
+            {
+                ClearTarget();
+                SetLines($"{ToolLine()}\n{blocked}", resultLine);
+                return;
+            }
+
             if (station != targetStation || connection != targetConnection || point != targetPoint)
             {
                 ClearTarget();

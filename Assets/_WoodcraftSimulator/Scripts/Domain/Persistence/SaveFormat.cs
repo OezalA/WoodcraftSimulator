@@ -123,6 +123,18 @@ namespace WoodcraftSimulator.Persistence
                 }
             }
 
+            var propIds = new HashSet<string>();
+            foreach (PropData prop in data.props ?? Array.Empty<PropData>())
+            {
+                if (prop == null || string.IsNullOrWhiteSpace(prop.id) || !propIds.Add(prop.id) || prop.pose == null)
+                {
+                    errors.Add($"Prop '{prop?.id}' has an empty or duplicated id, or no pose.");
+                    continue;
+                }
+
+                RequireFinite(prop.pose, $"prop '{prop.id}'", errors);
+            }
+
             var itemIds = new HashSet<string>();
             foreach (ItemData item in data.items ?? Array.Empty<ItemData>())
             {

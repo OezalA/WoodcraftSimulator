@@ -36,6 +36,9 @@ namespace WoodcraftSimulator.Construction
 
             [Tooltip("Ids of slots that must be filled first (assembly order). Optional.")]
             public string[] prerequisites = Array.Empty<string>();
+
+            [Tooltip("A standing post (D-049): leans when set; plumb it with the spirit level and brace it before fastening.")]
+            public bool requiresPlumb;
         }
 
         [Serializable]
@@ -88,7 +91,7 @@ namespace WoodcraftSimulator.Construction
             {
                 domainSlots.Add(new PartSlot(slot.id, Loc.Pick(slot.displayName, slot.displayNameTurkish),
                     BoardDimensions.FromMillimeters(slot.lengthMillimeters, slot.widthMillimeters, slot.thicknessMillimeters),
-                    slot.prerequisites));
+                    slot.prerequisites, slot.requiresPlumb));
             }
 
             var domainConnections = new List<ConnectionSpec>();

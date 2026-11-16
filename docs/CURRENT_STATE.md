@@ -17,6 +17,9 @@ next. D-042 (recommended clutch on the drill, owner request) implemented, awaiti
 - F1: a fallen, tilted offcut stayed tilted when picked up (and was placed tilted). First fix (nearest right angle) still held steeply fallen boards upright (owner re-test). Second fix: on pick-up the length is always horizontal, flat or on edge, never on end.
 - F2: laying boards on the sawhorses / on the ground was hard. Fixed (D-047): free placement lowers the object onto the highest support under its footprint (up to 0.75 m above the aim), moves away if only the player is in the way, then runs the D-031 support check.
 - F3: beam-to-pier fixing looked unreal (no steel part). Changed (D-048): a steel U beam bracket shows on each set pier block, the screw point is on its flange. Joists: steel angle brackets instead of "joist hangers" (owner: "as in reality"). Needs a scene rebuild. Static compile OK later.
+**Phase 11 (larger structures) started** (plan approved 2026-11-16, D-049): garden pergola 3 × 3 m, stepladder,
+spirit level for plumbing posts, temporary braces, working height; stage inspections (11e) after the interim test.
+11a-11d code done; **interim test MT-027 pending** (owner rebuilds the scene first).
 Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 
 ## Completed
@@ -82,6 +85,7 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 | D-042 recommended clutch: static compile + `dotnet test` | 0 errors, 0 warnings; 233/233 tests passed (Claude). Unity compile + play-test pending (MT-022) | 2026-11-15 |
 | Batch 7b-10 (D-040, D-043..D-046): static compile + `dotnet test` after every step | 0 errors, 0 warnings; 247/247 tests passed (Claude). Not compiled or played in Unity yet: batch test MT-023..MT-026 pending | 2026-11-15 |
 | Batch test 7b-10 (owner) | Played through terrace and tool tote; findings F1-F3 fixed (D-047, D-048; static compile + 247/247 tests by Claude). Accepted: "faz 10 kadar ok"; `main` fast-forwarded | 2026-11-16 |
+| Phase 11a-11d (D-049): static compile + `dotnet test` | 0 errors, 0 warnings; 263/263 tests passed (Claude). Not compiled or played in Unity yet: interim test MT-027 pending | 2026-11-16 |
 
 ## Known issues / limitations
 - **Carry feel not liked yet** (owner, 2026-11-13). Ideas for later: smooth follow (lerp/slerp) instead of rigid
@@ -112,5 +116,7 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 2. Done: MT-016, MT-017 passed.
 3. Done: Phase 6 + D-041 accepted, `main` fast-forwarded. Owner: MT-022 (recommended clutch) when convenient.
 4. Done: batch test up to Phase 10 accepted (2026-11-16), `main` fast-forwarded.
-5. Next: plan Phase 11 with the owner (MASTER_PROMPT roadmap). Open small idea: in the red slot preview, point out a
-   wrong thickness explicitly (owner used 28 mm larch for an 18 mm spruce part).
+5. Done: Phase 11 planned (D-049); 11a-11d implemented.
+6. Next: owner rebuilds the scene and runs the interim test MT-027 (stepladder, spirit level, braces, reach, pergola).
+   Then 11e stage inspections. Open small idea: in the red slot preview, point out a wrong thickness explicitly (owner
+   used 28 mm larch for an 18 mm spruce part).

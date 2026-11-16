@@ -7,10 +7,10 @@ using WoodcraftSimulator.Localization;
 namespace WoodcraftSimulator.Workshop
 {
     /// <summary>
-    /// Site preparation for the outdoor terrace (Phase 10, D-046): first the outline is set out with stakes and a
+    /// Site preparation for an outdoor site (terrace Phase 10, D-046; pergola D-049): first the outline is set out with stakes and a
     /// string line (<see cref="SiteMarker"/>), then each pier spot is dug, levelled and filled with gravel
     /// (<see cref="SiteSpot"/>). A pier block only goes onto a prepared spot (the station asks <see cref="CanPlace"/>).
-    /// Also names the construction stage of the terrace for the job sheet.
+    /// Also names the construction stage (configurable <see cref="Stage"/>s) for the job sheet.
     /// </summary>
     public sealed class SitePreparation : MonoBehaviour
     {
@@ -24,6 +24,24 @@ namespace WoodcraftSimulator.Workshop
         [SerializeField] private GameObject[] bracketVisuals = Array.Empty<GameObject>();
 
         [SerializeField] private string[] bracketSlots = Array.Empty<string>();
+
+        /// <summary>A construction stage: the parts whose slot ids start with <see cref="slotPrefix"/>.</summary>
+        [Serializable]
+        public sealed class Stage
+        {
+            public string slotPrefix = "pier";
+            public string name = "foundation";
+            public string nameTurkish = "temel";
+        }
+
+        [Tooltip("Construction stages after site preparation, bottom up (D-049). Default: the terrace.")]
+        [SerializeField] private Stage[] stages =
+        {
+            new Stage { slotPrefix = "pier", name = "foundation (pier blocks)", nameTurkish = "temel (beton ayaklar)" },
+            new Stage { slotPrefix = "beam", name = "beams", nameTurkish = "kirişler" },
+            new Stage { slotPrefix = "joist", name = "joists", nameTurkish = "döşeme altı kirişleri" },
+            new Stage { slotPrefix = "deck", name = "decking", nameTurkish = "döşeme tahtaları" }
+        };
 
         public bool Marked { get; private set; }
 
@@ -116,19 +134,13 @@ namespace WoodcraftSimulator.Workshop
                 }
             }
 
+            // Site preparation, then one stage per part group; fastening the rest counts with the last one.
+            int count = stages.Length + 1;
             if (!Marked || prepared < spots.Length)
             {
-                return Loc.T($"Stage 1/5: site preparation ({prepared}/{spots.Length} spots{(Marked ? string.Empty : ", set out first")})",
-                    $"Aşama 1/5: zemin hazırlığı ({prepared}/{spots.Length} yer{(Marked ? string.Empty : ", önce işaretle")})");
+                return Loc.T($"Stage 1/{count}: site preparation ({prepared}/{spots.Length} spots{(Marked ? string.Empty : ", set out first")})",
+                    $"Aşama 1/{count}: zemin hazırlığı ({prepared}/{spots.Length} yer{(Marked ? string.Empty : ", önce işaretle")})");
             }
-
-            (string prefix, string en, string tr)[] stages =
-            {
-                ("pier", "foundation (pier blocks)", "temel (beton ayaklar)"),
-                ("beam", "beams", "kirişler"),
-                ("joist", "joists", "döşeme altı kirişleri"),
-                ("deck", "decking", "döşeme tahtaları")
-            };
 
             for (int s = 0; s < stages.Length; s++)
             {
@@ -136,7 +148,7 @@ namespace WoodcraftSimulator.Workshop
                 int installed = 0;
                 foreach (PartSlot slot in build.Blueprint.Slots)
                 {
-                    if (slot.Id.StartsWith(stages[s].prefix, StringComparison.Ordinal))
+                    if (slot.Id.StartsWith(stages[s].slotPrefix, StringComparison.Ordinal))
                     {
                         total++;
                         if (build.GetPiece(slot.Id) != null)
@@ -148,14 +160,14 @@ namespace WoodcraftSimulator.Workshop
 
                 if (installed < total)
                 {
-                    return Loc.T($"Stage {s + 2}/5: {stages[s].en} ({installed}/{total})",
-                        $"Aşama {s + 2}/5: {stages[s].tr} ({installed}/{total})");
+                    return Loc.T($"Stage {s + 2}/{count}: {stages[s].name} ({installed}/{total})",
+                        $"Aşama {s + 2}/{count}: {stages[s].nameTurkish} ({installed}/{total})");
                 }
             }
 
             return build.IsComplete
                 ? Loc.T("All stages done", "Tüm aşamalar bitti")
-                : Loc.T("Stage 5/5: fasten everything", "Aşama 5/5: her şeyi sabitle");
+                : Loc.T($"Stage {count}/{count}: fasten everything", $"Aşama {count}/{count}: her şeyi sabitle");
         }
 
         /// <summary>Save state: "marked" and the slot ids of the prepared spots.</summary>

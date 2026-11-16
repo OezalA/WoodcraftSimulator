@@ -52,6 +52,8 @@ namespace WoodcraftSimulator.UI
         private string[] beltKeyLabels;
         private string interactKeyLabel;
         private string carryHint;
+        private string ladderLine;
+        private Player.PlayerController playerController;
 
         private void Awake()
         {
@@ -60,6 +62,8 @@ namespace WoodcraftSimulator.UI
             carryHint = $"[{KeyLabel("Player/Place")}]  {Loc.T("Place", "Bırak")}      " +
                         $"[{KeyLabel("Player/Rotate")}]  {Loc.T("Rotate", "Döndür")}      " +
                         $"[{KeyLabel("Player/Tilt")}]  {Loc.T("Tilt", "Eğ")}";
+            ladderLine = $"[{KeyLabel("Player/Jump")}]  {Loc.T("Climb down", "Merdivenden in")}";
+            playerController = interactor != null ? interactor.GetComponent<Player.PlayerController>() : null;
         }
 
         private void OnEnable()
@@ -267,7 +271,7 @@ namespace WoodcraftSimulator.UI
             {
                 crosshair.EnableInClassList(CrosshairFocusedClass, false);
                 string status = PlacementStatusText();
-                ShowPrompt(status == null ? carryHint : $"{carryHint}\n{status}");
+                ShowPrompt(WithLadderLine(status == null ? carryHint : $"{carryHint}\n{status}"));
                 return;
             }
 
@@ -276,7 +280,16 @@ namespace WoodcraftSimulator.UI
 
             if (target != null)
             {
-                ShowPrompt($"[{interactKeyLabel}]  {target.InteractionPrompt}");
+                // An optional second action on another key (e.g. climbing a stepladder, D-049).
+                string hint = target is Component component && component.TryGetComponent(out IInteractionHint extra)
+                    ? extra.InteractionHint
+                    : null;
+                string text = $"[{interactKeyLabel}]  {target.InteractionPrompt}";
+                ShowPrompt(WithLadderLine(hint == null ? text : $"{text}\n{hint}"));
+            }
+            else if (playerController != null && playerController.IsOnLadder)
+            {
+                ShowPrompt(ladderLine);
             }
             else
             {
@@ -316,6 +329,9 @@ namespace WoodcraftSimulator.UI
                     return null;
             }
         }
+
+        private string WithLadderLine(string text) =>
+            playerController != null && playerController.IsOnLadder ? $"{text}\n{ladderLine}" : text;
 
         private void ShowPrompt(string text)
         {

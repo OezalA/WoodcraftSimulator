@@ -109,19 +109,33 @@ calculated correctly.
   sheet buys the material instead of free delivery, drill uses screws from the stock, money in the HUD, inventory
   screen (Tab), result with pay / cost / profit, economy saved. Code done, awaiting batch test MT-023 (D-043)
 
-## Phase 8: Workshop Development (scope approved 2026-11-15, D-043) - code done, awaiting batch test MT-024 (D-044)
+## Phase 8: Workshop Development (scope approved 2026-11-15, D-043) - DONE, batch accepted 2026-11-16 (D-044)
 - [x] 8a: Tool wall with a hook per tool (hang back with E)
 - [x] 8b: Equipment upgrades bought with money (saw, drill, lamp)
 - [x] 8c: Sawhorse cutting station
 - [x] 8d: Placeholder sounds generated in code (saw, drill, screw, pick up / place, ambience)
 
-## Phase 9: Advanced Woodworking (scope approved 2026-11-15, D-043) - code done (tool tote job), awaiting batch test MT-025 (D-045)
+## Phase 9: Advanced Woodworking (scope approved 2026-11-15, D-043) - DONE, batch accepted 2026-11-16 (D-045)
 - [x] 9a: Rip cut (lengthwise)
 - [x] 9b: Hammer and nails (fastener type per joint)
 - [x] 9c: Sanding and surface finish (quality goal)
 - [x] 9d: Wood glue and dowels (clamping, drying time)
 
-## Phase 10: Outdoor Construction (scope approved 2026-11-15, D-043) - code done, awaiting batch test MT-026 (D-046)
+## Phase 10: Outdoor Construction (scope approved 2026-11-15, D-043) - DONE, batch accepted 2026-11-16 (D-046..D-048)
 - [x] 10a: Outdoor area next to the workshop, site preparation
 - [x] 10b: Terrace 2.4 × 1.8 m blueprint: pier blocks, beams, joists with connectors, decking; stage validation
 - [x] 10c: Terrace job (material, pay, deposit), batch test list
+
+## Phase 11: Larger Structures (plan approved 2026-11-16, D-049) - 11a-11d code done, interim test MT-027 pending
+First project: a garden pergola 3 × 3 m. Owner's choices: stepladder for height, a spirit level tool for plumbing
+posts, stage inspections at the end of each stage (block the next stage, affect pay). Test plan: interim test after
+11a-11d (ladder and spirit level are new feel), then 11e.
+- [x] 11a: Domain: plumb rule (posts lean 1-3° when set, plumb = within 0.5° both ways, brace only when plumb, only
+  braced posts can be fastened or carry a beam), working height (2.1 m above the feet), save data; 263 tests
+- [x] 11b: Stepladder: carried like a board, Space climbs onto it / down; reach +0.95 m; saved
+- [x] 11c: Spirit level tool: reads the lean of the aimed post face, wheel pushes the post upright, LMB nails a
+  temporary brace (visible battens, removed once the post's joints hold)
+- [x] 11d: Pergola site, blueprint (4 piers + U post bases, 4 posts 100 × 100 × 2200, 2 beams, 5 rafters, angle
+  brackets), job (€850, 50 % deposit), sawhorses, catalog entries
+- [ ] 11e: Stage inspections (customer checks each stage: parts, fastenings, plumb; problems block the next stage
+  until fixed; first-time passes count for pay)

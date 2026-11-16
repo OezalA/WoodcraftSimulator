@@ -61,6 +61,14 @@ namespace WoodcraftSimulator.Construction
         [Tooltip("Optional: the workshop's sawdust total, shown in the quality report.")]
         [SerializeField] private Cutting.WorkshopWaste waste;
 
+        [Tooltip("Material of the temporary braces that hold a plumbed post (D-049).")]
+        [SerializeField] private Material braceMaterial;
+
+        // Temporary brace (D-049): a 24 × 70 mm batten from 1.3 m up the post to the ground 1 m away.
+        private const float BraceHeight = 1.3f;
+        private const float BraceReach = 1.0f;
+        private static readonly Vector3 BraceSection = new Vector3(0.07f, 0.024f, 1f);
+
         // Visual sizes (meters): an 8 mm marker square, a 4 mm pilot hole, a 9 mm screw head 1.5 mm high.
         private const float MarkerSize = 0.008f;
         private const float HoleSize = 0.004f;
@@ -82,6 +90,7 @@ namespace WoodcraftSimulator.Construction
         private GameObject[][] holeMarkers;
         private GameObject[][] screwHeads;
         private GameObject drivingHead;
+        private GameObject[][] braces;
 
         public AssemblyBuild Build { get; private set; }
 
@@ -210,6 +219,7 @@ namespace WoodcraftSimulator.Construction
             installed = new Carryable[count];
             parentsBeforeInstall = new Transform[count];
             ghosts = new GameObject[count];
+            braces = new GameObject[count][];
             for (int i = 0; i < count; i++)
             {
                 ghosts[i] = CreateGhost(definition.Slots[i]);
@@ -232,6 +242,9 @@ namespace WoodcraftSimulator.Construction
                         MarkerSize, 0.0005f, 0f, pointMarkerMaterial);
                 }
             }
+
+            // Posts follow their lean and show their braces (D-049).
+            Build.Changed += UpdatePosts;
 
             // A structure loaded complete from a save must not announce itself again.
             Build.Completed += () =>
@@ -290,12 +303,25 @@ namespace WoodcraftSimulator.Construction
                 }
             }
 
+            var posts = new List<PostLeanData>();
+            foreach (BlueprintDefinition.Slot slot in active.Slots)
+            {
+                if (Build.TryGetLean(slot.id, out PostLean lean))
+                {
+                    posts.Add(new PostLeanData
+                    {
+                        slotId = slot.id, leanXTenths = lean.XTenths, leanZTenths = lean.ZTenths, braced = lean.Braced
+                    });
+                }
+            }
+
             return new AssemblyData
             {
                 stationId = stationId,
                 blueprintId = Build.Blueprint.Id,
                 parts = parts.ToArray(),
-                fastened = connections.ToArray()
+                fastened = connections.ToArray(),
+                posts = posts.ToArray()
             };
         }
 
@@ -317,7 +343,7 @@ namespace WoodcraftSimulator.Construction
             restoring = true;
             try
             {
-                RestoreParts(data.parts ?? Array.Empty<InstalledPartData>(), findBoard);
+                RestoreParts(data.parts ?? Array.Empty<InstalledPartData>(), data.posts ?? Array.Empty<PostLeanData>(), findBoard);
                 RestoreFasteners(data.fastened ?? Array.Empty<FastenedConnectionData>());
             }
             finally
@@ -326,7 +352,7 @@ namespace WoodcraftSimulator.Construction
             }
         }
 
-        private void RestoreParts(InstalledPartData[] parts, Func<string, Carryable> findBoard)
+        private void RestoreParts(InstalledPartData[] parts, PostLeanData[] posts, Func<string, Carryable> findBoard)
         {
             // Prerequisites must be installed first; the saved order doesn't matter, so repeat until nothing changes.
             var pending = new List<InstalledPartData>(parts);
@@ -340,6 +366,13 @@ namespace WoodcraftSimulator.Construction
                     Carryable board = findBoard(pending[i].boardId);
                     if (index >= 0 && board != null && TryInstallAt(index, board))
                     {
+                        // A post gets its saved lean and brace at once: the parts on it need it braced (D-049).
+                        PostLeanData post = Array.Find(posts, p => p != null && p.slotId == pending[i].slotId);
+                        if (post != null)
+                        {
+                            Build.RestoreLean(post.slotId, post.leanXTenths, post.leanZTenths, post.braced);
+                        }
+
                         pending.RemoveAt(i);
                         progress = true;
                     }
@@ -823,9 +856,169 @@ namespace WoodcraftSimulator.Construction
             carryable.SetInstalled(this);
             installed[index] = carryable;
             ghosts[index].SetActive(false);
+            UpdatePosts();
             UpdatePointMarkers();
             Changed?.Invoke();
             return true;
+        }
+
+        /// <summary>The installed post hit by a collider (its slot index), or false if it is no post of this station.</summary>
+        public bool TryGetPost(Collider hit, out int index)
+        {
+            index = -1;
+            Carryable part = hit != null ? hit.GetComponentInParent<Carryable>() : null;
+            if (part == null || installed == null)
+            {
+                return false;
+            }
+
+            index = Array.IndexOf(installed, part);
+            return index >= 0 && Build.TryGetLean(active.Slots[index].id, out _);
+        }
+
+        public string SlotId(int index) => active.Slots[index].id;
+
+        public string SlotName(int index) =>
+            Build.Blueprint.TryGetSlot(active.Slots[index].id, out PartSlot slot) ? slot.DisplayName : active.Slots[index].id;
+
+        /// <summary>World direction in which a positive lean along <paramref name="axis"/> tips a post's top.</summary>
+        public Vector3 LeanDirection(LeanAxis axis) => transform.TransformDirection(axis == LeanAxis.X ? Vector3.right : Vector3.forward);
+
+        /// <summary>
+        /// The lean a spirit level shows when held against a post face with this world normal (D-049): the level reads
+        /// the tilt within the face, i.e. along the horizontal direction lying in it.
+        /// </summary>
+        public LeanAxis AxisReadOnFace(Vector3 worldNormal)
+        {
+            Vector3 local = transform.InverseTransformDirection(worldNormal);
+            return Mathf.Abs(local.x) >= Mathf.Abs(local.z) ? LeanAxis.Z : LeanAxis.X;
+        }
+
+        public PlumbResult AdjustLean(int index, LeanAxis axis, int deltaTenths) =>
+            Build.TryAdjustLean(active.Slots[index].id, axis, deltaTenths);
+
+        public PlumbResult Brace(int index) => Build.TryBrace(active.Slots[index].id);
+
+        /// <summary>
+        /// Why the joint can't be worked on from where the player stands, or null (D-049): too high above the feet
+        /// (a ladder is needed), or a post of it is not plumbed and braced yet.
+        /// </summary>
+        public string WorkBlockedReason(int connection, Vector3 feet)
+        {
+            float height = PointPosition(connection, 0).y - feet.y;
+            if (!WorkReach.CanReach(Length.FromMeters(height)))
+            {
+                return Loc.T($"Too high to reach ({height:0.00} m above your feet): use the stepladder",
+                    $"Uzanamazsın (ayağından {height:0.00} m yukarıda): merdiven kullan");
+            }
+
+            string post = Build.UnbracedPost(active.Connections[connection].id);
+            if (post != null)
+            {
+                string name = Build.Blueprint.TryGetSlot(post, out PartSlot slot) ? slot.DisplayName : post;
+                return Loc.T($"{name} is not plumbed yet: check it with the spirit level, push it upright, brace it",
+                    $"{name} henüz şakülünde sabitlenmedi: su terazisiyle kontrol et, düzelt, geçici destek çak");
+            }
+
+            return null;
+        }
+
+        /// <summary>Puts every installed post into its leaning pose and shows the braces that hold them (D-049).</summary>
+        private void UpdatePosts()
+        {
+            if (installed == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < installed.Length; i++)
+            {
+                string slotId = active.Slots[i].id;
+                bool isPost = Build.TryGetLean(slotId, out PostLean lean) && installed[i] != null;
+                if (isPost)
+                {
+                    PostPose(i, lean, out Vector3 position, out Quaternion rotation);
+                    installed[i].transform.SetPositionAndRotation(position, rotation);
+                }
+
+                bool showBraces = isPost && lean.Braced && !AllJointsFastened(slotId);
+                if (braces[i] == null && showBraces)
+                {
+                    braces[i] = new[] { CreateBrace(i, LeanAxis.X), CreateBrace(i, LeanAxis.Z) };
+                }
+
+                if (braces[i] != null)
+                {
+                    foreach (GameObject brace in braces[i])
+                    {
+                        brace.SetActive(showBraces);
+                    }
+                }
+            }
+        }
+
+        /// <summary>The post stands on the lower end of its slot and is tipped about it by its lean.</summary>
+        private void PostPose(int index, PostLean lean, out Vector3 position, out Quaternion rotation)
+        {
+            BlueprintDefinition.Slot slot = active.Slots[index];
+            Quaternion slotRotation = Quaternion.Euler(slot.localEulerAngles);
+            Vector3 foot = PostFoot(slot);
+            Quaternion tilt = Quaternion.AngleAxis(lean.ZTenths / 10f, Vector3.right) *
+                              Quaternion.AngleAxis(-lean.XTenths / 10f, Vector3.forward);
+            position = transform.TransformPoint(foot + tilt * (slot.localPosition - foot));
+            rotation = transform.rotation * (tilt * slotRotation);
+        }
+
+        /// <summary>Centre of the lower end of a slot's piece (assembly space).</summary>
+        private static Vector3 PostFoot(BlueprintDefinition.Slot slot)
+        {
+            Vector3 along = Quaternion.Euler(slot.localEulerAngles) * Vector3.forward * (slot.lengthMillimeters / 2000f);
+            return along.y > 0f ? slot.localPosition - along : slot.localPosition + along;
+        }
+
+        private bool AllJointsFastened(string slotId)
+        {
+            foreach (BlueprintDefinition.Connection connection in active.Connections)
+            {
+                if (connection.partA != slotId && connection.partB != slotId)
+                {
+                    continue;
+                }
+
+                for (int p = 0; p < connection.points.Length; p++)
+                {
+                    if (!Build.IsFastened(connection.id, p))
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// A temporary brace on the post's −axis side: a batten from <see cref="BraceHeight"/> up the post down to the
+        /// ground <see cref="BraceReach"/> away. Visual only (no collider); it goes once all the post's joints hold.
+        /// </summary>
+        private GameObject CreateBrace(int index, LeanAxis axis)
+        {
+            BlueprintDefinition.Slot slot = active.Slots[index];
+            Vector3 foot = PostFoot(slot);
+            Vector3 away = axis == LeanAxis.X ? Vector3.left : Vector3.back;
+            float halfWidth = slot.widthMillimeters / 2000f;
+            Vector3 top = foot + Vector3.up * BraceHeight + away * (halfWidth + BraceSection.y / 2f);
+            Vector3 bottom = new Vector3(foot.x, 0.03f, foot.z) + away * BraceReach;
+            Vector3 along = top - bottom;
+
+            var brace = new GameObject($"Brace {slot.id} {axis}");
+            brace.transform.SetParent(transform, false);
+            brace.transform.localPosition = (top + bottom) / 2f;
+            brace.transform.localRotation = Quaternion.LookRotation(along, Vector3.Cross(along, axis == LeanAxis.X ? Vector3.forward : Vector3.right));
+            brace.transform.localScale = new Vector3(BraceSection.x, BraceSection.y, along.magnitude);
+            AddRenderer(brace, braceMaterial != null ? braceMaterial : screwHeadMaterial);
+            visuals.Add(brace);
+            return brace;
         }
 
         public bool CanRelease(Carryable carryable, out string reason)
@@ -850,6 +1043,7 @@ namespace WoodcraftSimulator.Construction
             carryable.SetInstalled(null);
             installed[index] = null;
             ghosts[index].SetActive(true);
+            UpdatePosts();
             UpdatePointMarkers();
             Changed?.Invoke();
         }
@@ -878,6 +1072,9 @@ namespace WoodcraftSimulator.Construction
 
                     return Loc.T($"{name}: place {string.Join(", ", first)} first",
                         $"{name}: önce {string.Join(", ", first)} takılmalı");
+                case PlaceResult.PrerequisiteNotBraced:
+                    return Loc.T($"{name}: plumb and brace the posts first (spirit level)",
+                        $"{name}: önce direkleri şakülüne getir ve geçici destek çak (su terazisi)");
                 default:
                     return $"{name}: {result}";
             }

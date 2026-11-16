@@ -34,6 +34,15 @@ namespace WoodcraftSimulator.Persistence
 
         /// <summary>Terrace site preparation done ("marked" and prepared pier slot ids, D-046).</summary>
         public string[] site = Array.Empty<string>();
+
+        /// <summary>
+        /// Every outdoor site by id (D-049, terrace and pergola). When empty (older saves), <see cref="site"/> is the
+        /// terrace's state.
+        /// </summary>
+        public SiteData[] sites = Array.Empty<SiteData>();
+
+        /// <summary>Movable non-timber objects (the stepladder, D-049). Older saves have none: they stay put.</summary>
+        public PropData[] props = Array.Empty<PropData>();
     }
 
     [Serializable]
@@ -184,6 +193,36 @@ namespace WoodcraftSimulator.Persistence
         public string blueprintId;
         public InstalledPartData[] parts = Array.Empty<InstalledPartData>();
         public FastenedConnectionData[] fastened = Array.Empty<FastenedConnectionData>();
+
+        /// <summary>Lean and brace of the installed posts (D-049). Older saves have none.</summary>
+        public PostLeanData[] posts = Array.Empty<PostLeanData>();
+    }
+
+    [Serializable]
+    public sealed class PostLeanData
+    {
+        public string slotId;
+        public int leanXTenths;
+        public int leanZTenths;
+        public bool braced;
+    }
+
+    /// <summary>Preparation state of one outdoor site (D-046, D-049): "marked" and the prepared pier slot ids.</summary>
+    [Serializable]
+    public sealed class SiteData
+    {
+        /// <summary>Scene id of the site.</summary>
+        public string id;
+
+        public string[] done = Array.Empty<string>();
+    }
+
+    /// <summary>A large movable object that is not timber, e.g. the stepladder (D-049).</summary>
+    [Serializable]
+    public sealed class PropData
+    {
+        public string id;
+        public PoseData pose = new PoseData();
     }
 
     [Serializable]
