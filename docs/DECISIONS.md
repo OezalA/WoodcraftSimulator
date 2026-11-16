@@ -562,8 +562,9 @@ Risk accepted by the owner: errors found late may touch several phases. Scope ch
   screws of a bracket are not counted separately); concrete blocks are listed as "boards" in texts.
 
 ## D-047: Carrying fixes from the batch test: squared pick-up, lowering onto supports (Accepted, 2026-11-16, owner test feedback)
-- F1: a piece that fell and lies tilted is squared to the nearest right angle (relative to the view) when picked up, so
-  it is held and placed level.
+- F1: a piece that fell and lies tilted is held level when picked up: its length always horizontal (nearest quarter
+  of the view), lying flat or on edge, whichever it was closer to, never standing on its end. (A first version
+  snapped every axis to the nearest right angle; a board that fell steeper than 45° then came up standing upright.)
 - F2: laying boards on the sawhorses or on the ground was hard (the 9 cm sawhorse beams had to be hit exactly; a long
   board aimed at the floor overlapped the sawhorses or the player). Free placement now lowers the carried object from
   0.75 m above the aimed point onto the highest support under its footprint (never higher, so not onto the workbench

@@ -143,9 +143,9 @@ namespace WoodcraftSimulator.Handling
             carryable.RequestSupportCheckAbove();
 
             carried = carryable;
-            // Held level: a piece that fell and lies tilted (e.g. an offcut half on the sawhorse, half on the ground)
-            // comes up squared to the nearest right angle, relative to the view.
-            carryRotation = SnapToRightAngles(Quaternion.Inverse(YawRotation()) * carryable.transform.rotation);
+            // Held level: a piece that fell and lies tilted or upright (e.g. an offcut half on the sawhorse, half on
+            // the ground) comes up with its length horizontal, flat or on edge (D-047).
+            carryRotation = LevelForCarrying(Quaternion.Inverse(YawRotation()) * carryable.transform.rotation);
             carried.SetCarried(true);
             CreatePreview();
 
@@ -426,15 +426,30 @@ namespace WoodcraftSimulator.Handling
         /// <summary>Camera heading without pitch, so carried objects stay level when looking up or down.</summary>
         private Quaternion YawRotation() => Quaternion.Euler(0f, cameraTransform.eulerAngles.y, 0f);
 
-        /// <summary>The orientation with every axis turned to the nearest of ±X, ±Y, ±Z (multiples of 90°).</summary>
-        private static Quaternion SnapToRightAngles(Quaternion rotation)
+        /// <summary>
+        /// The orientation a picked-up piece is held in (D-047): its length (local Z) always horizontal, turned to the
+        /// nearest quarter of the view; lying flat (thickness up) or on edge (width up), whichever it was closer to.
+        /// Never standing on its end, however it fell.
+        /// </summary>
+        private static Quaternion LevelForCarrying(Quaternion rotation)
         {
-            Vector3 forward = NearestAxis(rotation * Vector3.forward);
-            Vector3 up = NearestAxis(rotation * Vector3.up);
-            if (Mathf.Abs(Vector3.Dot(forward, up)) > 0.5f)
+            Vector3 length = rotation * Vector3.forward;
+            var horizontal = new Vector3(length.x, 0f, length.z);
+            // Standing on its end: no heading to keep, hold it pointing away.
+            Vector3 forward = horizontal.sqrMagnitude > 0.01f ? NearestAxis(horizontal) : Vector3.forward;
+
+            Vector3 thickness = rotation * Vector3.up;
+            Vector3 width = rotation * Vector3.right;
+            Vector3 up;
+            if (Mathf.Abs(thickness.y) >= Mathf.Abs(width.y))
             {
-                // Both closest to the same axis (about 45° off): up takes the nearest of the remaining axes.
-                up = NearestAxis(Vector3.ProjectOnPlane(rotation * Vector3.up, forward));
+                up = thickness.y >= 0f ? Vector3.up : Vector3.down;
+            }
+            else
+            {
+                // On edge: the thickness points sideways, across the length.
+                Vector3 across = Vector3.Cross(Vector3.up, forward);
+                up = Vector3.Dot(thickness, across) >= 0f ? across : -across;
             }
 
             return Quaternion.LookRotation(forward, up);
