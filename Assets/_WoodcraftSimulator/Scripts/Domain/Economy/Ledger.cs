@@ -7,7 +7,10 @@ namespace WoodcraftSimulator.Economy
     {
         StartingFunds,
         Purchase,
-        JobIncome
+        JobIncome,
+
+        /// <summary>Weekly rent and wages (D-054); may take the balance below zero.</summary>
+        RunningCost
     }
 
     /// <summary>One booking: a positive amount is money in, a negative one money out.</summary>
@@ -29,7 +32,8 @@ namespace WoodcraftSimulator.Economy
 
     /// <summary>
     /// The workshop's money (master prompt §6.13): every booking is kept, so expenses, income and purchases can be
-    /// shown. The balance never goes below zero: a purchase that can't be paid is refused (no credit).
+    /// shown. A purchase that can't be paid is refused (no credit); only the weekly running costs may take the balance
+    /// below zero (debt, D-054: the game goes on, nothing can be bought until jobs pay it back).
     /// </summary>
     public sealed class Ledger
     {
@@ -48,6 +52,11 @@ namespace WoodcraftSimulator.Economy
 
         /// <summary>Money spent on purchases, as a positive amount.</summary>
         public Money TotalPurchases => -Sum(TransactionKind.Purchase);
+
+        /// <summary>Rent and wages paid, as a positive amount (D-054).</summary>
+        public Money TotalRunningCosts => -Sum(TransactionKind.RunningCost);
+
+        public bool IsInDebt => Balance.IsNegative;
 
         public void Start(Money funds)
         {
@@ -78,7 +87,15 @@ namespace WoodcraftSimulator.Economy
             Book(new Transaction(TransactionKind.JobIncome, amount, description));
         }
 
-        /// <summary>Replaces the history (loading a save). Throws if it would leave a negative balance.</summary>
+        /// <summary>Books a running cost (rent, wage) whether or not the balance covers it (D-054).</summary>
+        public void Charge(Money amount, string description)
+        {
+            if (amount.IsNegative) throw new ArgumentOutOfRangeException(nameof(amount), "A cost must not be negative.");
+
+            Book(new Transaction(TransactionKind.RunningCost, -amount, description));
+        }
+
+        /// <summary>Replaces the history (loading a save); a balance in debt is allowed (D-054).</summary>
         public void Restore(IEnumerable<Transaction> history)
         {
             if (history == null) throw new ArgumentNullException(nameof(history));
@@ -90,8 +107,6 @@ namespace WoodcraftSimulator.Economy
                 if (entry == null) throw new ArgumentException("The history contains an empty entry.", nameof(history));
                 balance += entry.Amount;
             }
-
-            if (balance.IsNegative) throw new ArgumentException("The history ends with a negative balance.", nameof(history));
 
             entries.Clear();
             entries.AddRange(restored);

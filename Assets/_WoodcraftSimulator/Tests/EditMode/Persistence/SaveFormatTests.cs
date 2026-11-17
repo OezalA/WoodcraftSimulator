@@ -148,7 +148,8 @@ namespace WoodcraftSimulator.Tests.Persistence
                     new FastenerCountData { fastenerId = "s", count = 2 }
                 }
             };
-            Assert.That(SaveFormat.Validate(save).Count, Is.EqualTo(2));
+            // A balance in debt is allowed (D-054); only the duplicated fastener id is an error.
+            Assert.That(SaveFormat.Validate(save).Count, Is.EqualTo(1));
 
             save.economy = new EconomyData { started = true, transactions = new[] { new TransactionData { kind = 7 } } };
             Assert.That(SaveFormat.Validate(save).Count, Is.EqualTo(1));

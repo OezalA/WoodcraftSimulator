@@ -438,7 +438,6 @@ namespace WoodcraftSimulator.Persistence
             }
 
             Require(transactions.Length > 0, "Economy: started, but has no transactions.", errors);
-            Require(balance >= 0, $"Economy: the balance is negative ({Money.FromCents(balance)}).", errors);
 
             var ids = new HashSet<string>();
             foreach (FastenerCountData entry in fasteners)

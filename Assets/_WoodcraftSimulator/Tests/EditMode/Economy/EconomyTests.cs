@@ -55,15 +55,21 @@ namespace WoodcraftSimulator.Tests.Economy
         }
 
         [Test]
-        public void Ledger_Restore_RejectsNegativeBalance()
+        public void Ledger_RunningCosts_MayMakeDebt_PurchasesNever()
         {
+            // D-054: weekly costs are charged even when the money doesn't cover them; the game goes on in debt.
             var ledger = new Ledger();
-            Assert.Throws<ArgumentException>(() => ledger.Restore(new[]
-            {
-                new Transaction(TransactionKind.StartingFunds, Eur(5m), "Start"),
-                new Transaction(TransactionKind.Purchase, -Eur(6m), "Board")
-            }));
-            Assert.That(ledger.IsStarted, Is.False);
+            ledger.Start(Eur(10m));
+            ledger.Charge(Eur(15m), "Rent");
+
+            Assert.That(ledger.Balance, Is.EqualTo(-Eur(5m)));
+            Assert.That(ledger.IsInDebt, Is.True);
+            Assert.That(ledger.TotalRunningCosts, Is.EqualTo(Eur(15m)));
+            Assert.That(ledger.TrySpend(Eur(1m), "Board"), Is.False, "No purchases on credit.");
+
+            var restored = new Ledger();
+            restored.Restore(ledger.Entries);
+            Assert.That(restored.Balance, Is.EqualTo(-Eur(5m)), "A save in debt loads.");
         }
 
         [Test]
