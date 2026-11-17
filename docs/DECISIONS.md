@@ -756,3 +756,25 @@ roadmap; inserted as Phase 12.5 (recommended split, accepted):
 - Order: MT-030 and MT-031 first (the market and weekly costs are its basis), then a detailed 12.5 plan for approval.
 - Architectural note: the code finds most things scene-wide (`FindObjectsByType`, static registries); 12.5 has to
   decide what lives across scenes (a persistent "game" object) before any location is built.
+
+## D-056: Phase 12.5 plan: additive scenes, van, location rules (Accepted, 2026-11-17, owner choices)
+Owner choices (all recommended options): additive scenes; material for a location job is delivered there by the
+merchant (tools and offcuts go in the van); each trip costs fuel / ferry money; one test at the end.
+- **Scenes**: `Core` (persistent: player, HUD, pause menu, save system, economy, career, job service) + content scenes
+  loaded additively: `Workshop` (today's workshop, yard, terrace and pergola sites) and one per customer location.
+  Unity can't keep serialized references between scenes, so content-scene objects find the core services at runtime
+  (`GameServices`), and core services find content objects through registries (stations, deliveries, bins already
+  register themselves). Pressing Play with only a content scene open loads Core first (bootstrap).
+- **Build Settings** (ProjectSettings) are not touched: in the Editor, scenes are loaded by path
+  (`EditorSceneManager.LoadSceneAsyncInPlayMode`); adding them to Build Settings is left to release preparation
+  (Phase 14) with the owner's approval.
+- **Save** format 3: a global part (player, belt, economy, career, jobs, upgrades, current location) and one state per
+  content scene (boards, items, assemblies, sites, props, bins, ...). A scene's state is captured when it unloads and
+  applied when it loads. Format 2 saves migrate into the Workshop's state.
+- **Travel**: a van in the workshop yard and at each location; what lies in its cargo bed travels along; the belt's
+  tools always come along; tools lying at a location are packed into the van when leaving (they are never left
+  behind; boards stay). Trip cost per location (mountain fuel €12, island ferry €25) charged when leaving.
+- **Location jobs**: bound to a location; the merchant delivers their material there (island: delivery fee, dearer
+  material); delivered to the customer at the location; offered from rank Usta.
+- Steps: 12.5a scenes + services + save v3 (no visible change), 12.5b van and travel, 12.5c location rules and jobs,
+  12.5d mountain house terrace, 12.5e island balcony with ready-made glass panels.
