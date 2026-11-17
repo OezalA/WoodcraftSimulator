@@ -332,6 +332,39 @@
     white-space: normal;
 }
 
+/* Offcut bin card (D-052): right side, middle; same look as the job card. */
+.bin-anchor {
+    position: absolute;
+    right: 24px;
+    top: 38%;
+}
+
+.bin-card {
+    width: 330px;
+}
+
+.bin-row {
+    flex-direction: row;
+    align-items: center;
+    height: 22px;
+    padding-left: 4px;
+    border-radius: 3px;
+}
+
+.bin-row--selected {
+    background-color: rgba(230, 180, 90, 0.28);
+}
+
+.job-card .bin-row__size {
+    flex-grow: 1;
+}
+
+.job-card .bin-card__hint {
+    margin-top: 8px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.55);
+}
+
 .money-anchor {
     position: absolute;
     right: 24px;

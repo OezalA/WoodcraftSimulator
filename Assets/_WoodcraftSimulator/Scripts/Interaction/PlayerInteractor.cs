@@ -25,6 +25,7 @@ namespace WoodcraftSimulator.Interaction
 
         private readonly RaycastHit[] hitBuffer = new RaycastHit[16];
         private InputAction interactAction;
+        private InputAction adjustAction;
         private bool isBlocked;
 
         /// <summary>
@@ -63,6 +64,7 @@ namespace WoodcraftSimulator.Interaction
             }
 
             interactAction = InputSystem.actions.FindAction("Player/Interact", throwIfNotFound: true);
+            adjustAction = InputSystem.actions.FindAction("Player/AdjustTool", throwIfNotFound: true);
         }
 
         private void OnDisable() => SetFocus(null);
@@ -83,6 +85,17 @@ namespace WoodcraftSimulator.Interaction
             {
                 CurrentTarget.Interact(this);
                 TargetChanged?.Invoke(CurrentTarget);
+            }
+
+            // The wheel goes to a looked-at object that uses it (an offcut bin's list, D-052).
+            if (CurrentTarget is IScrollable scrollable && adjustAction.WasPerformedThisFrame())
+            {
+                float value = adjustAction.ReadValue<float>();
+                if (!Mathf.Approximately(value, 0f))
+                {
+                    scrollable.Scroll(value > 0f ? 1 : -1);
+                    TargetChanged?.Invoke(CurrentTarget);
+                }
             }
         }
 
@@ -122,6 +135,7 @@ namespace WoodcraftSimulator.Interaction
             }
 
             CurrentTarget = target;
+            WheelFocus.HeldByTarget = target is IScrollable;
             TargetChanged?.Invoke(target);
         }
     }

@@ -24,6 +24,10 @@
         <ui:VisualElement name="inventory-anchor" class="inventory-anchor" picking-mode="Ignore">
             <ui:Label name="inventory" class="inventory hidden" picking-mode="Ignore" text="" />
         </ui:VisualElement>
+        <!-- Contents of the offcut bin looked at or nearby (built from code by OffcutBinPanel, D-052). -->
+        <ui:VisualElement name="bin-anchor" class="bin-anchor" picking-mode="Ignore">
+            <ui:VisualElement name="bin-card" class="job-card bin-card hidden" picking-mode="Ignore" />
+        </ui:VisualElement>
         <!-- Job card of the active job (built from code by JobPanel, D-051), or the offer of the sheet being looked at. -->
         <ui:VisualElement name="job-anchor" class="job-anchor" picking-mode="Ignore">
             <ui:VisualElement name="job-card" class="job-card hidden" picking-mode="Ignore" />

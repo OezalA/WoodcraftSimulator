@@ -654,3 +654,32 @@ Owner: the job information after accepting a job helps a lot, but looks scattere
   style next if the owner wants. `JobText.Sheet` (domain, tested) stays as the plain-text form; the unused
   `JobBoard.SheetText` / `SitePreparation.StageText` were removed.
 - No scene rebuild needed (UXML/USS assets).
+
+## D-052: Crouching, an apprentice who sorts offcuts into bins by species (Accepted, 2026-11-17, owner request)
+Owner: a crouch for work on the ground; an apprentice who sorts the cut pieces by species into a place (a bin per
+species); near a bin its contents show; offcuts can be taken from it when needed. Choices (all recommended options):
+tidying on command, wheel + E to take, crouch as a toggle, before 11e.
+- **Crouch**: C (the template's unused `Player/Crouch`) toggles. Eyes 1.0 m (smoothly), capsule 1.15 m, walk 1.3 m/s,
+  no sprint or jump. Standing up needs headroom (stays crouched under a sawhorse). Not on the ladder; climbing or
+  loading stands up. HUD line `[C] Ayağa kalk`. **Working reach is unchanged** (planned ~1.4 m crouched, dropped:
+  it would only add "stand up" refusals, i.e. difficulty nobody asked for). The HUD now follows the player's posture
+  (`PostureChanged`, was ladder only, and the HUD hadn't subscribed).
+- **Offcut bins**: one per timber species (7, sorted by id) in a row along the front wall right of the door; a plastic
+  bin with a band in the species colour, a pile that grows with the count. Pieces are kept as data
+  (`OffcutStock`, domain, tested: species only, grouped by size + surface, longest first, take one), not as physics
+  objects. Looking at a bin: wheel chooses a size, E takes one (it becomes a board in the hands, surface kept). A HUD
+  card (right side) lists the bin looked at or the nearest within 2 m. Bin pieces count as the workshop's timber
+  (cut list "ready", inventory). Saved (`bins`, additive; old saves: empty bins).
+- **Wheel sharing**: a looked-at `IScrollable` gets the wheel; the tool in hand ignores it meanwhile (`WheelFocus`), so
+  the drill's clutch doesn't turn while choosing in a bin.
+- **Apprentice**: a greybox figure near the bins. E: "Artıkları toparla": walks to the nearest offcut, carries it to
+  its species' bin, repeats, then goes back; E again stops after the piece in hand. An offcut = loose timber (not
+  carried, not installed), no pencil marks (work in progress), not a full catalog stock size, not needed by the active
+  job (fits a part not installed yet), not lying on the timber rack (`KeepPiecesHere`). A piece he can't reach in 30 s
+  is skipped. Saving: a piece in his hands goes into its bin first; loading puts him back at his place.
+- **Walking**: Unity's NavMesh (AI module + the already installed AI Navigation package, no package change), built
+  at scene start from the fixed colliders (`RuntimeNavMesh`; movable objects, player, apprentice left out; agent
+  radius 0.3, climb 0.25 so not onto benches). No baked asset in the repository. He walks through boards lying around
+  (they are not obstacles; greybox simplification).
+- Not done (later if wanted): wages / working hours, the apprentice doing other jobs, labels with text on the bins.
+- Needs a scene rebuild.

@@ -517,6 +517,24 @@ Rebuild the scene first (*WoodcraftSimulator > Build Test Workshop Scene*).
 | Long part names | Cut off with `...` in the row, the card does not get wider |
 | Look at a job sheet on the board with no job active | The offer text as before |
 
+### MT-029: Crouch, apprentice, offcut bins (D-052)
+Rebuild the scene first.
+| Step | Expected |
+|---|---|
+| C | Eyes go down smoothly (~1 m), slow walk, line `[C] Ayağa kalk`; Space does not jump |
+| C under the sawhorses / bench | You stay crouched until you move out |
+| Crouched: drill-driver on a pier base screw, mark a board on the floor | Works as standing (reach unchanged) |
+| Front wall right of the door | Seven dark bins with coloured bands; walking up to one shows a card on the right: `ARTIK KOVASI`, species, `Boş` |
+| Cut a few short pieces (no pencil marks left), leave them on the floor / sawhorses | |
+| Look at the apprentice (blue overalls, yellow cap), E | `Çırak: artıkları toparla`; he walks to the nearest piece, carries it to the bin of its species, goes on, then back to his place |
+| While he works: E | `Elindekini bırakıp duruyor`; he puts the piece away and goes back |
+| Nothing to tidy, E | `Toparlanacak artık yok` |
+| He leaves alone | Full boards (delivered stock, rack), boards with pencil marks, parts the active job still needs, installed parts, the piece in your hands |
+| Look at a bin with pieces, wheel | The highlighted row moves; the drill in hand does not change its clutch |
+| E on the bin | The chosen piece is in your hands (sanded / oiled stays so); the card counts down |
+| Tab inventory / job card | Bin pieces count (e.g. `1 hazır` when one fits the job) |
+| Save while he carries a piece, quit, Play | The piece is in its bin; he stands at his place; bin contents kept |
+
 ## Game view setup (corrects the earlier tip)
 A fixed resolution such as *Full HD (1920x1080)* at `Scale 1x` **crops** the image when the Game view window is
 smaller than 1920×1080: the bottom (tool belt bar) and the lower right (tool in hand) are cut off.

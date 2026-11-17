@@ -143,6 +143,15 @@ namespace WoodcraftSimulator.Economy
                 }
             }
 
+            // Offcuts put away in the bins are still the workshop's (D-052).
+            foreach (Workshop.OffcutBin bin in Workshop.OffcutBin.All)
+            {
+                foreach (StoredPiece stored in bin.Stock.Pieces)
+                {
+                    loose.Add(stored.Piece);
+                }
+            }
+
             return loose;
         }
 

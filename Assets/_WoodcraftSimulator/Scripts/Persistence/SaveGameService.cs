@@ -193,6 +193,12 @@ namespace WoodcraftSimulator.Persistence
                 player = new PlayerData { pose = ToPose(player.GroundPosition, player.transform.rotation), pitch = player.Pitch }
             };
 
+            // A piece in the apprentice's hands goes into its bin first (D-052).
+            foreach (Workshop.Apprentice apprentice in FindObjectsByType<Workshop.Apprentice>(FindObjectsSortMode.None))
+            {
+                apprentice.FinishNow();
+            }
+
             var boards = new List<BoardData>();
             foreach (TimberBoard board in FindObjectsByType<TimberBoard>(FindObjectsSortMode.None))
             {
@@ -282,6 +288,23 @@ namespace WoodcraftSimulator.Persistence
             }
 
             data.props = props.ToArray();
+
+            // Offcut bins and their pieces (D-052).
+            var bins = new List<BinData>();
+            foreach (KeyValuePair<string, Workshop.OffcutBin> bin in ById<Workshop.OffcutBin>())
+            {
+                var pieces = new List<BoardData>();
+                foreach (StoredPiece stored in bin.Value.Stock.Pieces)
+                {
+                    BoardData piece = SaveFormat.ToData(string.Empty, stored.Piece, new BoardMarks(stored.Piece.Dimensions.Length));
+                    piece.surface = (int)stored.Surface;
+                    pieces.Add(piece);
+                }
+
+                bins.Add(new BinData { id = bin.Key, pieces = pieces.ToArray() });
+            }
+
+            data.bins = bins.ToArray();
             return data;
         }
 
@@ -318,6 +341,11 @@ namespace WoodcraftSimulator.Persistence
 
         private void Apply(SaveGameData data)
         {
+            foreach (Workshop.Apprentice apprentice in FindObjectsByType<Workshop.Apprentice>(FindObjectsSortMode.None))
+            {
+                apprentice.ResetToHome();
+            }
+
             // The builder's boards are replaced by the saved ones (cut pieces included).
             foreach (TimberBoard existing in FindObjectsByType<TimberBoard>(FindObjectsSortMode.None))
             {
@@ -354,6 +382,7 @@ namespace WoodcraftSimulator.Persistence
             // Before the assemblies: the site gates where piers may stand.
             RestoreSites(data);
             RestoreProps(data);
+            RestoreBins(data);
 
             // The job sets the station's blueprint and the cut list before the assembly is restored.
             if (jobBoard != null && data.job != null)
@@ -533,6 +562,34 @@ namespace WoodcraftSimulator.Persistence
                 {
                     each.Restore(byId.TryGetValue(siteId.Id, out string[] done) ? done : Array.Empty<string>());
                 }
+            }
+        }
+
+        /// <summary>Fills the offcut bins (D-052); bins missing from the save (older saves) start empty.</summary>
+        private void RestoreBins(SaveGameData data)
+        {
+            var saved = new Dictionary<string, BinData>();
+            foreach (BinData bin in data.bins ?? Array.Empty<BinData>())
+            {
+                saved[bin.id] = bin;
+            }
+
+            foreach (KeyValuePair<string, Workshop.OffcutBin> bin in ById<Workshop.OffcutBin>())
+            {
+                var pieces = new List<StoredPiece>();
+                if (saved.TryGetValue(bin.Key, out BinData binData))
+                {
+                    foreach (BoardData pieceData in binData.pieces ?? Array.Empty<BoardData>())
+                    {
+                        if (boardFactory.TryGetSpecies(pieceData.speciesId, out WoodSpeciesDefinition definition))
+                        {
+                            TimberPiece piece = SaveFormat.ToPiece(pieceData, definition.ToDomain(), out _);
+                            pieces.Add(new StoredPiece(piece, (BoardSurface)pieceData.surface));
+                        }
+                    }
+                }
+
+                bin.Value.Stock.Restore(pieces);
             }
         }
 

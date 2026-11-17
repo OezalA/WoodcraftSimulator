@@ -43,6 +43,9 @@ namespace WoodcraftSimulator.Persistence
 
         /// <summary>Movable non-timber objects (the stepladder, D-049). Older saves have none: they stay put.</summary>
         public PropData[] props = Array.Empty<PropData>();
+
+        /// <summary>Offcut bins by id with the pieces in them (D-052). Older saves have none: the bins start empty.</summary>
+        public BinData[] bins = Array.Empty<BinData>();
     }
 
     [Serializable]
@@ -223,6 +226,14 @@ namespace WoodcraftSimulator.Persistence
     {
         public string id;
         public PoseData pose = new PoseData();
+    }
+
+    /// <summary>An offcut bin (D-052): its pieces as board data (no id, pose or marks needed).</summary>
+    [Serializable]
+    public sealed class BinData
+    {
+        public string id;
+        public BoardData[] pieces = Array.Empty<BoardData>();
     }
 
     [Serializable]

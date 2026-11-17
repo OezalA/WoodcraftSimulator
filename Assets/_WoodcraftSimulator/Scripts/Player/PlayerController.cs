@@ -37,6 +37,18 @@ namespace WoodcraftSimulator.Player
         [Tooltip("How far from the eyes (m) a stepladder can be climbed with Jump.")]
         [SerializeField, Min(0.5f)] private float climbRange = 2f;
 
+        [Header("Crouch (toggle with Player/Crouch, D-052)")]
+        [Tooltip("Capsule height while crouching (standing height comes from the CharacterController).")]
+        [SerializeField, Min(0.6f)] private float crouchHeight = 1.15f;
+
+        [Tooltip("Eye height while crouching (standing eye height comes from the camera's position).")]
+        [SerializeField, Min(0.4f)] private float crouchEyeHeight = 1.0f;
+
+        [SerializeField, Min(0f)] private float crouchSpeed = 1.3f;
+
+        [Tooltip("How fast the eyes move down / up, in meters per second.")]
+        [SerializeField, Min(0.5f)] private float crouchTransitionSpeed = 4f;
+
         // Small constant downward speed while grounded so isGrounded stays reliable on slopes/steps.
         private const float GroundedStickVelocity = -2f;
 
@@ -46,6 +58,12 @@ namespace WoodcraftSimulator.Player
         private InputAction sprintAction;
         private InputAction jumpAction;
         private InputAction precisionLookAction;
+        private InputAction crouchAction;
+
+        private float standHeight;
+        private float standEyeHeight;
+        private bool crouched;
+        private readonly Collider[] headroomBuffer = new Collider[16];
 
         private Camera viewCamera;
         private float normalFieldOfView;
@@ -66,8 +84,11 @@ namespace WoodcraftSimulator.Player
         /// </summary>
         public Vector3 GroundPosition => ladder != null ? groundPosition : transform.position;
 
-        /// <summary>Raised after climbing onto or down from a ladder.</summary>
-        public event System.Action LadderChanged;
+        /// <summary>Crouching (lower eyes and capsule, slow walk); toggled with Player/Crouch (C).</summary>
+        public bool IsCrouching => crouched;
+
+        /// <summary>Raised after climbing onto or down from a ladder, and after crouching or standing up.</summary>
+        public event System.Action PostureChanged;
 
         /// <summary>Degrees of rotation per pixel of mouse movement. Initialized from <see cref="UserPreferences"/>.</summary>
         public float LookSensitivity
@@ -95,6 +116,10 @@ namespace WoodcraftSimulator.Player
             sprintAction = actions.FindAction("Player/Sprint", throwIfNotFound: true);
             jumpAction = actions.FindAction("Player/Jump", throwIfNotFound: true);
             precisionLookAction = actions.FindAction("Player/PrecisionLook", throwIfNotFound: true);
+            crouchAction = actions.FindAction("Player/Crouch", throwIfNotFound: true);
+
+            standHeight = characterController.height;
+            standEyeHeight = cameraTransform.localPosition.y;
 
             viewCamera = cameraTransform.GetComponent<Camera>();
             normalFieldOfView = viewCamera != null ? viewCamera.fieldOfView : 70f;
@@ -110,6 +135,7 @@ namespace WoodcraftSimulator.Player
         public void Teleport(Vector3 position, float yawDegrees, float pitchDegrees)
         {
             LeaveLadder();
+            SetCrouched(false);
             bool wasEnabled = characterController.enabled;
             characterController.enabled = false;
             transform.SetPositionAndRotation(position, Quaternion.Euler(0f, yawDegrees, 0f));
@@ -127,7 +153,67 @@ namespace WoodcraftSimulator.Player
         {
             HandlePrecisionLook();
             HandleLook();
+            HandleCrouch();
             HandleMovement();
+        }
+
+        /// <summary>
+        /// C toggles crouching (D-052): for work low down (screws at a pier, a board on the floor). Standing up needs
+        /// headroom (not under a sawhorse or the bench). The eyes move smoothly; not on a ladder.
+        /// </summary>
+        private void HandleCrouch()
+        {
+            if (ladder == null && crouchAction.WasPressedThisFrame())
+            {
+                if (!crouched)
+                {
+                    SetCrouched(true);
+                }
+                else if (HasHeadroom())
+                {
+                    SetCrouched(false);
+                }
+            }
+
+            float eye = crouched ? crouchEyeHeight : standEyeHeight;
+            Vector3 local = cameraTransform.localPosition;
+            if (!Mathf.Approximately(local.y, eye))
+            {
+                local.y = Mathf.MoveTowards(local.y, eye, crouchTransitionSpeed * Time.deltaTime);
+                cameraTransform.localPosition = local;
+            }
+        }
+
+        private void SetCrouched(bool value)
+        {
+            bool changed = crouched != value;
+            crouched = value;
+            float height = value ? crouchHeight : standHeight;
+            characterController.height = height;
+            characterController.center = new Vector3(0f, height / 2f, 0f);
+            if (changed)
+            {
+                PostureChanged?.Invoke();
+            }
+        }
+
+        /// <summary>Whether the standing capsule fits here (only the player's own colliders may overlap it).</summary>
+        private bool HasHeadroom()
+        {
+            float radius = characterController.radius;
+            Vector3 feet = transform.position;
+            int count = Physics.OverlapCapsuleNonAlloc(feet + Vector3.up * (crouchHeight - radius),
+                feet + Vector3.up * (standHeight - radius), radius * 0.95f, headroomBuffer, Physics.DefaultRaycastLayers,
+                QueryTriggerInteraction.Ignore);
+            for (int i = 0; i < count; i++)
+            {
+                if (!headroomBuffer[i].transform.IsChildOf(transform))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         /// <summary>
@@ -170,7 +256,7 @@ namespace WoodcraftSimulator.Player
             ladder.SetOccupied(false);
             ladder = null;
             characterController.enabled = true;
-            LadderChanged?.Invoke();
+            PostureChanged?.Invoke();
         }
 
         private void HandleLook()
@@ -208,12 +294,13 @@ namespace WoodcraftSimulator.Player
             if (jumpAction.WasPressedThisFrame() && TryFindLadder(out IClimbable target))
             {
                 groundPosition = transform.position;
+                SetCrouched(false); // on the ladder there is room to stand
                 ladder = target;
                 ladder.SetOccupied(true);
                 characterController.enabled = false;
                 transform.position = target.StandPosition;
                 verticalVelocity = 0f;
-                LadderChanged?.Invoke();
+                PostureChanged?.Invoke();
                 return;
             }
 
@@ -228,9 +315,9 @@ namespace WoodcraftSimulator.Player
             Vector3 direction = transform.right * input.x + transform.forward * input.y;
             direction = Vector3.ClampMagnitude(direction, 1f);
 
-            float speed = sprintAction.IsPressed() ? sprintSpeed : walkSpeed;
+            float speed = crouched ? crouchSpeed : sprintAction.IsPressed() ? sprintSpeed : walkSpeed;
 
-            if (isGrounded && jumpAction.WasPressedThisFrame())
+            if (isGrounded && !crouched && jumpAction.WasPressedThisFrame())
             {
                 // v = sqrt(2 * g * h)
                 verticalVelocity = Mathf.Sqrt(2f * -gravity * jumpHeight);

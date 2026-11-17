@@ -178,6 +178,11 @@ namespace WoodcraftSimulator.Editor
             BuildJobBoard(workshop, materials, species);
             BuildToolWall(workshop, materials);
             BuildSawhorses(workshop, materials.Workbench, new Vector3(-1.6f, FloorTop, 0f));
+            BuildOffcutBins(workshop, materials, species);
+            BuildApprentice(workshop, materials);
+
+            // The apprentice's walkable area, built when the scene starts (D-052).
+            environment.gameObject.AddComponent<RuntimeNavMesh>();
         }
 
         /// <summary>
@@ -857,6 +862,131 @@ namespace WoodcraftSimulator.Editor
             }
         }
 
+        /// <summary>
+        /// Offcut bins (D-052): one per timber species, in a row along the front wall right of the door. Each is a
+        /// plastic bin with a band in the colour of its species; a pile inside grows with the pieces; the apprentice
+        /// stands at its service point (in front, room side) to put a piece in. The board factory is assigned later.
+        /// </summary>
+        private static void BuildOffcutBins(Transform parent, GreyboxMaterials materials,
+            IReadOnlyDictionary<string, WoodSpeciesDefinition> species)
+        {
+            const float width = 0.38f;
+            const float height = 0.5f;
+            const float depth = 0.45f;
+            const float wall = 0.015f;
+            var timber = new List<WoodSpeciesDefinition>();
+            foreach (WoodSpeciesDefinition definition in species.Values)
+            {
+                if (definition != null && definition.ToDomain().IsTimber)
+                {
+                    timber.Add(definition);
+                }
+            }
+
+            timber.Sort((a, b) => string.CompareOrdinal(a.Id, b.Id));
+            var bins = new GameObject("OffcutBins").transform;
+            bins.SetParent(parent, false);
+            float z = -InteriorDepth / 2f + depth / 2f + 0.03f;
+            for (int i = 0; i < timber.Count; i++)
+            {
+                WoodSpeciesDefinition definition = timber[i];
+                var bin = new GameObject($"OffcutBin_{definition.Id}");
+                bin.transform.SetParent(bins, false);
+                bin.transform.localPosition = new Vector3(1.0f + i * 0.44f, FloorTop, z);
+
+                var footprint = bin.AddComponent<BoxCollider>();
+                footprint.size = new Vector3(width, height, depth);
+                footprint.center = new Vector3(0f, height / 2f, 0f);
+
+                Material colour = materials.Colored($"Offcut_{definition.Id}", definition.GreyboxColor);
+                var parts = new List<GameObject>
+                {
+                    CreateBox("Bottom", bin.transform, new Vector3(0f, wall / 2f, 0f), new Vector3(width, wall, depth), materials.BinPlastic),
+                    CreateBox("Front", bin.transform, new Vector3(0f, height / 2f, depth / 2f - wall / 2f), new Vector3(width, height, wall), materials.BinPlastic),
+                    CreateBox("Back", bin.transform, new Vector3(0f, height / 2f, -depth / 2f + wall / 2f), new Vector3(width, height, wall), materials.BinPlastic),
+                    CreateBox("Left", bin.transform, new Vector3(-width / 2f + wall / 2f, height / 2f, 0f), new Vector3(wall, height, depth), materials.BinPlastic),
+                    CreateBox("Right", bin.transform, new Vector3(width / 2f - wall / 2f, height / 2f, 0f), new Vector3(wall, height, depth), materials.BinPlastic),
+                    // Species band on the front (room side), so the bins are told apart at a glance.
+                    CreateBox("Band", bin.transform, new Vector3(0f, height - 0.07f, depth / 2f + 0.002f), new Vector3(width - 0.04f, 0.08f, 0.004f), colour)
+                };
+                GameObject pile = CreateBox("Pile", bin.transform, new Vector3(0f, 0.04f, 0f),
+                    new Vector3(width - 2f * wall - 0.02f, 0.02f, depth - 2f * wall - 0.02f), colour);
+                parts.Add(pile);
+                foreach (GameObject part in parts)
+                {
+                    Object.DestroyImmediate(part.GetComponent<BoxCollider>());
+                }
+
+                var servicePoint = new GameObject("ServicePoint").transform;
+                servicePoint.SetParent(bin.transform, false);
+                servicePoint.localPosition = new Vector3(0f, 0f, depth / 2f + 0.45f);
+
+                var offcutBin = bin.AddComponent<OffcutBin>();
+                SetReference(offcutBin, "species", definition);
+                SetReference(offcutBin, "pile", pile.transform);
+                SetReference(offcutBin, "servicePoint", servicePoint);
+                bin.AddComponent<PersistentId>().Set($"OffcutBin_{definition.Id}");
+            }
+        }
+
+        /// <summary>
+        /// The apprentice (D-052): a greybox figure (overalls, head, cap) standing near the offcut bins. One capsule
+        /// collider (aimed at for E, blocks like a person); its NavMesh agent starts off and is switched on once the
+        /// runtime walkable area exists. Carries a piece at hip height along his forward direction.
+        /// </summary>
+        private static void BuildApprentice(Transform parent, GreyboxMaterials materials)
+        {
+            var root = new GameObject("Apprentice");
+            root.transform.SetParent(parent, false);
+            root.transform.localPosition = new Vector3(2.4f, FloorTop, -1.7f);
+            root.transform.localRotation = Quaternion.LookRotation(new Vector3(-1f, 0f, 1f));
+
+            var capsule = root.AddComponent<CapsuleCollider>();
+            capsule.center = new Vector3(0f, 0.85f, 0f);
+            capsule.height = 1.7f;
+            capsule.radius = 0.25f;
+            var body = root.AddComponent<Rigidbody>();
+            body.isKinematic = true;
+
+            var agent = root.AddComponent<UnityEngine.AI.NavMeshAgent>();
+            agent.radius = 0.3f;
+            agent.height = 1.7f;
+            agent.speed = 2.0f;
+            agent.angularSpeed = 400f;
+            agent.acceleration = 8f;
+            agent.stoppingDistance = 0.3f;
+            agent.enabled = false;
+
+            var visuals = new List<GameObject>
+            {
+                CreateBox("Legs", root.transform, new Vector3(0f, 0.42f, 0f), new Vector3(0.32f, 0.84f, 0.2f), materials.Overalls),
+                CreateBox("Torso", root.transform, new Vector3(0f, 1.15f, 0f), new Vector3(0.42f, 0.62f, 0.24f), materials.Overalls),
+                CreateBox("ArmLeft", root.transform, new Vector3(-0.27f, 1.08f, 0f), new Vector3(0.1f, 0.6f, 0.12f), materials.Overalls),
+                CreateBox("ArmRight", root.transform, new Vector3(0.27f, 1.08f, 0f), new Vector3(0.1f, 0.6f, 0.12f), materials.Overalls),
+                CreateBox("Cap", root.transform, new Vector3(0f, 1.71f, 0.02f), new Vector3(0.22f, 0.06f, 0.26f), materials.ToolYellow)
+            };
+            GameObject head = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            head.name = "Head";
+            head.transform.SetParent(root.transform, false);
+            head.transform.localPosition = new Vector3(0f, 1.58f, 0f);
+            head.transform.localScale = Vector3.one * 0.22f;
+            head.GetComponent<Renderer>().sharedMaterial = materials.Skin;
+            Object.DestroyImmediate(head.GetComponent<SphereCollider>());
+            foreach (GameObject visual in visuals)
+            {
+                Object.DestroyImmediate(visual.GetComponent<BoxCollider>());
+            }
+
+            var carryPoint = new GameObject("CarryPoint").transform;
+            carryPoint.SetParent(root.transform, false);
+            carryPoint.localPosition = new Vector3(0.38f, 0.95f, 0f);
+
+            var apprentice = root.AddComponent<Apprentice>();
+            SetReference(apprentice, "carryPoint", carryPoint);
+            SetReference(apprentice, "jobBoard", Object.FindFirstObjectByType<JobBoard>());
+            SetReference(apprentice, "economy", Object.FindFirstObjectByType<WorkshopEconomy>());
+        }
+
         /// <summary>A box from <paramref name="from"/> to <paramref name="to"/> with the given cross-section (x, y).</summary>
         private static GameObject CreateStrut(string name, Transform parent, Vector3 from, Vector3 to, Vector2 section, Material material)
         {
@@ -1218,6 +1348,7 @@ namespace WoodcraftSimulator.Editor
         {
             var rack = new GameObject("TimberRack").transform;
             rack.SetParent(parent, false);
+            rack.gameObject.AddComponent<KeepPiecesHere>(); // the apprentice leaves timber on the rack alone (D-052)
 
             float wallX = -InteriorWidth / 2f;
             float shelfCenterX = RackFrontOfUprightsX + RackDepth / 2f;
@@ -1402,6 +1533,10 @@ namespace WoodcraftSimulator.Editor
                 SetReference(jobPanel, "interactor", interactor);
             }
 
+            // Contents of the offcut bin nearby (D-052).
+            var binPanel = hudObject.AddComponent<OffcutBinPanel>();
+            SetReference(binPanel, "interactor", interactor);
+
             // Money and inventory (D-040).
             var economy = Object.FindFirstObjectByType<WorkshopEconomy>();
             if (economy != null)
@@ -1447,6 +1582,11 @@ namespace WoodcraftSimulator.Editor
             foreach (StockDelivery delivery in Object.FindObjectsByType<StockDelivery>(FindObjectsSortMode.None))
             {
                 SetReference(delivery, "boardFactory", factory);
+            }
+
+            foreach (OffcutBin bin in Object.FindObjectsByType<OffcutBin>(FindObjectsSortMode.None))
+            {
+                SetReference(bin, "boardFactory", factory);
             }
 
             SetReference(service, "economy", Object.FindFirstObjectByType<WorkshopEconomy>());
@@ -1610,6 +1750,13 @@ namespace WoodcraftSimulator.Editor
                 EditorUtility.SetDirty(material);
                 return material;
             }
+
+            public Material BinPlastic { get; } = GetOrCreate("BinPlastic", new Color(0.22f, 0.24f, 0.27f));
+            public Material Overalls { get; } = GetOrCreate("ApprenticeOveralls", new Color(0.16f, 0.28f, 0.52f));
+            public Material Skin { get; } = GetOrCreate("ApprenticeSkin", new Color(0.87f, 0.70f, 0.56f));
+
+            /// <summary>A plain lit material of this colour (created once, then reused).</summary>
+            public Material Colored(string name, Color color) => GetOrCreate(name, color);
 
             private static Material GetOrCreate(string name, Color color)
             {

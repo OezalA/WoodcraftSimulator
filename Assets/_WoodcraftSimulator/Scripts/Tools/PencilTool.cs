@@ -157,7 +157,7 @@ namespace WoodcraftSimulator.Tools
             }
 
             // Performed once per wheel notch event / d-pad press (a held d-pad doesn't repeat every frame).
-            if (adjustAction.WasPerformedThisFrame())
+            if (adjustAction.WasPerformedThisFrame() && !Interaction.WheelFocus.HeldByTarget)
             {
                 float value = adjustAction.ReadValue<float>();
                 if (value != 0f)

@@ -135,6 +135,26 @@ namespace WoodcraftSimulator.Persistence
                 RequireFinite(prop.pose, $"prop '{prop.id}'", errors);
             }
 
+            var binIds = new HashSet<string>();
+            foreach (BinData bin in data.bins ?? Array.Empty<BinData>())
+            {
+                if (bin == null || string.IsNullOrWhiteSpace(bin.id) || !binIds.Add(bin.id))
+                {
+                    errors.Add($"Bin id '{bin?.id}' is empty or duplicated.");
+                    continue;
+                }
+
+                foreach (BoardData piece in bin.pieces ?? Array.Empty<BoardData>())
+                {
+                    if (piece == null || string.IsNullOrWhiteSpace(piece.speciesId) ||
+                        (isKnownSpecies != null && !isKnownSpecies(piece.speciesId)) ||
+                        piece.lengthTenths <= 0 || piece.widthTenths <= 0 || piece.thicknessTenths <= 0)
+                    {
+                        errors.Add($"Bin '{bin.id}': a piece has no known species or no size.");
+                    }
+                }
+            }
+
             var itemIds = new HashSet<string>();
             foreach (ItemData item in data.items ?? Array.Empty<ItemData>())
             {

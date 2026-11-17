@@ -262,6 +262,31 @@ namespace WoodcraftSimulator.Jobs
                 ? CutListProgress.Evaluate(ActivePlan, Active.Build, WorkshopEconomy.LooseTimber())
                 : Array.Empty<CutListLineProgress>();
 
+        /// <summary>
+        /// Whether a loose piece fits a part of the active job that is not installed yet (D-052: the apprentice leaves
+        /// such pieces where they are).
+        /// </summary>
+        public bool NeedsPiece(TimberPiece piece)
+        {
+            if (!HasActiveJob || piece == null)
+            {
+                return false;
+            }
+
+            foreach (CutListLine line in ActivePlan.Lines)
+            {
+                foreach (PartSlot slot in line.Slots)
+                {
+                    if (Active.Build.GetPiece(slot.Id) == null && Active.Build.CheckFit(slot, piece).Fits)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
         /// <summary>The construction stage of an outdoor job (D-046); false for a bench job.</summary>
         public bool TryGetStage(out Workshop.SitePreparation.StageState stage)
         {

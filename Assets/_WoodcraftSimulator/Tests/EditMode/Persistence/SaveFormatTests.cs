@@ -49,6 +49,28 @@ namespace WoodcraftSimulator.Tests.Persistence
         }
 
         [Test]
+        public void Bins_ValidPiecesPass_UnknownSpeciesOrDuplicateIdFail()
+        {
+            SaveGameData save = ValidSave();
+            BoardData piece = SaveFormat.ToData(string.Empty,
+                new TimberPiece(new WoodSpecies("spruce", "Spruce", 450), BoardDimensions.FromMillimeters(450, 145, 18)),
+                new BoardMarks(Length.FromMillimeters(450)));
+            save.bins = new[] { new BinData { id = "OffcutBin_spruce", pieces = new[] { piece } } };
+            Assert.That(SaveFormat.Validate(save, id => id == "spruce"), Is.Empty, "A bin piece needs no id or pose.");
+
+            save.bins = new[]
+            {
+                new BinData { id = "OffcutBin_spruce", pieces = new[] { piece } },
+                new BinData { id = "OffcutBin_spruce" }
+            };
+            Assert.That(SaveFormat.Validate(save, id => id == "spruce"), Has.Count.EqualTo(1));
+
+            piece.speciesId = "unobtainium";
+            save.bins = new[] { new BinData { id = "OffcutBin_spruce", pieces = new[] { piece } } };
+            Assert.That(SaveFormat.Validate(save, id => id == "spruce"), Has.Count.EqualTo(1));
+        }
+
+        [Test]
         public void Migrate_CurrentVersion_IsAccepted()
         {
             Assert.That(SaveFormat.TryMigrate(ValidSave(), out string error), Is.True);

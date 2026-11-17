@@ -53,6 +53,7 @@ namespace WoodcraftSimulator.UI
         private string interactKeyLabel;
         private string carryHint;
         private string ladderLine;
+        private string crouchLine;
         private Player.PlayerController playerController;
 
         private void Awake()
@@ -63,6 +64,7 @@ namespace WoodcraftSimulator.UI
                         $"[{KeyLabel("Player/Rotate")}]  {Loc.T("Rotate", "Döndür")}      " +
                         $"[{KeyLabel("Player/Tilt")}]  {Loc.T("Tilt", "Eğ")}";
             ladderLine = $"[{KeyLabel("Player/Jump")}]  {Loc.T("Climb down", "Merdivenden in")}";
+            crouchLine = $"[{KeyLabel("Player/Crouch")}]  {Loc.T("Stand up", "Ayağa kalk")}";
             playerController = interactor != null ? interactor.GetComponent<Player.PlayerController>() : null;
         }
 
@@ -91,6 +93,11 @@ namespace WoodcraftSimulator.UI
             interactor.TargetChanged += OnTargetChanged;
             carrier.CarryingChanged += OnCarryingChanged;
             carrier.PlacementStatusChanged += Refresh;
+            if (playerController != null)
+            {
+                playerController.PostureChanged += Refresh;
+            }
+
             toolBelt.Changed += OnBeltChanged;
 
             // Optional element: older layouts without it simply show no report.
@@ -234,6 +241,10 @@ namespace WoodcraftSimulator.UI
             {
                 carrier.CarryingChanged -= OnCarryingChanged;
                 carrier.PlacementStatusChanged -= Refresh;
+                if (playerController != null)
+                {
+                    playerController.PostureChanged -= Refresh;
+                }
             }
 
             if (toolBelt != null)
@@ -271,7 +282,7 @@ namespace WoodcraftSimulator.UI
             {
                 crosshair.EnableInClassList(CrosshairFocusedClass, false);
                 string status = PlacementStatusText();
-                ShowPrompt(WithLadderLine(status == null ? carryHint : $"{carryHint}\n{status}"));
+                ShowPrompt(WithPostureLine(status == null ? carryHint : $"{carryHint}\n{status}"));
                 return;
             }
 
@@ -285,11 +296,11 @@ namespace WoodcraftSimulator.UI
                     ? extra.InteractionHint
                     : null;
                 string text = $"[{interactKeyLabel}]  {target.InteractionPrompt}";
-                ShowPrompt(WithLadderLine(hint == null ? text : $"{text}\n{hint}"));
+                ShowPrompt(WithPostureLine(hint == null ? text : $"{text}\n{hint}"));
             }
-            else if (playerController != null && playerController.IsOnLadder)
+            else if (PostureLine() != null)
             {
-                ShowPrompt(ladderLine);
+                ShowPrompt(PostureLine());
             }
             else
             {
@@ -330,8 +341,14 @@ namespace WoodcraftSimulator.UI
             }
         }
 
-        private string WithLadderLine(string text) =>
-            playerController != null && playerController.IsOnLadder ? $"{text}\n{ladderLine}" : text;
+        private string WithPostureLine(string text) => PostureLine() is string line ? $"{text}\n{line}" : text;
+
+        /// <summary>How to get back to normal standing: down from the ladder, or up from crouching (D-052); else null.</summary>
+        private string PostureLine() =>
+            playerController == null ? null
+            : playerController.IsOnLadder ? ladderLine
+            : playerController.IsCrouching ? crouchLine
+            : null;
 
         private void ShowPrompt(string text)
         {

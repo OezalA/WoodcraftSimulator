@@ -139,5 +139,7 @@ posts, stage inspections at the end of each stage (block the next stage, affect 
   brackets), job (€850, 50 % deposit), sawhorses, catalog entries
 - [x] MT-027 finding (D-050): parts could hardly be set from the ladder (aim needed a collider, ladder too short):
   ghost aim, stepladder 2.0 m with the standing step at 1.45 m, carried at the side
+- [x] Owner requests before 11e (D-051, D-052): job card; crouch (C); apprentice who sorts offcuts into one bin per
+  species; bin contents on approach, take with wheel + E. MT-028, MT-029 pending
 - [ ] 11e: Stage inspections (customer checks each stage: parts, fastenings, plumb; problems block the next stage
   until fixed; first-time passes count for pay)

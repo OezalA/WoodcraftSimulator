@@ -278,7 +278,7 @@ namespace WoodcraftSimulator.Tools
                 ClearTarget();
             }
 
-            if (adjustAction.WasPerformedThisFrame())
+            if (adjustAction.WasPerformedThisFrame() && !Interaction.WheelFocus.HeldByTarget)
             {
                 float value = adjustAction.ReadValue<float>();
                 if (value != 0f)

@@ -88,7 +88,7 @@ namespace WoodcraftSimulator.Tools
             float facing = Vector3.Dot(station.LeanDirection(axis), context.Eyes.right);
             int toRight = facing >= 0f ? 1 : -1;
 
-            if (adjustAction.WasPerformedThisFrame())
+            if (adjustAction.WasPerformedThisFrame() && !Interaction.WheelFocus.HeldByTarget)
             {
                 float value = adjustAction.ReadValue<float>();
                 if (value != 0f)
