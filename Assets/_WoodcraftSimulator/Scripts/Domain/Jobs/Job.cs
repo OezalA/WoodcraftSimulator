@@ -256,8 +256,10 @@ namespace WoodcraftSimulator.Jobs
         }
 
         /// <param name="finishedParts">Installed parts that are sanded and oiled (only counted if the job asks for it).</param>
+        /// <param name="inspectedStages">Stages the customer inspects (outdoor jobs, D-053); 0 = no such goal.</param>
+        /// <param name="passedFirstTime">Of those, the stages that passed at their first inspection.</param>
         public static JobResult Create(Job job, AssemblyQualityReport report, MaterialUsage material, double seconds,
-            int finishedParts = 0)
+            int finishedParts = 0, int inspectedStages = 0, int passedFirstTime = 0)
         {
             if (job == null) throw new ArgumentNullException(nameof(job));
             if (report == null) throw new ArgumentNullException(nameof(report));
@@ -287,6 +289,13 @@ namespace WoodcraftSimulator.Jobs
                 goals.Add(new QualityGoal(Loc.T("Every part sanded and oiled", "Her parça zımparalı ve yağlı"),
                     finishedParts >= report.PartsRequired,
                     Loc.T($"{finishedParts}/{report.PartsRequired} parts", $"{finishedParts}/{report.PartsRequired} parça")));
+            }
+
+            if (inspectedStages > 0)
+            {
+                goals.Add(new QualityGoal(Loc.T("Every stage passed its first inspection", "Her aşama ilk denetimde geçti"),
+                    passedFirstTime >= inspectedStages,
+                    Loc.T($"{passedFirstTime}/{inspectedStages} stages", $"{passedFirstTime}/{inspectedStages} aşama")));
             }
 
             return new JobResult(job, report, material, seconds, goals.AsReadOnly());

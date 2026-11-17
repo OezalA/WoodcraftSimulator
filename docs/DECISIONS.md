@@ -683,3 +683,24 @@ tidying on command, wheel + E to take, crouch as a toggle, before 11e.
   (they are not obstacles; greybox simplification).
 - Not done (later if wanted): wages / working hours, the apprentice doing other jobs, labels with text on the bins.
 - Needs a scene rebuild.
+
+## D-053: Phase 11e stage inspections (Accepted, 2026-11-17, owner choices)
+Plan from D-049 (customer checks each stage; problems block the next stage; first-time passes count for pay). Owner
+choices: the player asks for the inspection; a new quality goal for first-time passes (recommended options).
+- **Which stages**: a connection belongs to the stage of the later of its two parts (the beam-to-post bracket is part
+  of the beams). A stage is inspected before the next one when it has joints and is not the last stage (the job's
+  completion report covers the last). Pergola: posts, beams. Terrace: beams, joists. Piers pass by themselves.
+- **Asking**: E on the site's corner stake (after setting out): "Müşteriden denetim iste: direkler". Only when every
+  part of the stage is set. No customer figure; the answer shows under the prompt and on the job card.
+- **Checks** (`StageInspection`, domain, tested): problems that can be fixed and **block** the next stage: a joint
+  not (fully) fastened, a screw head standing out, glue still drying. Flaws that can't be fixed any more are only
+  **noted** (they already cost money through the existing goals): a part outside the accuracy tolerance, a split, a
+  screw driven too deep. So an approval is always reachable.
+- **Blocking**: a part of a later stage can't be set until the earlier inspected stages are approved (red snap with
+  the reason).
+- **Pay**: new quality goal "Her aşama ilk denetimde geçti (n/m)" for outdoor jobs, like the others all or nothing
+  (with five goals each is a fifth of the 30 % bonus). The first inspection of a stage decides (`InspectionLog`).
+- **Save**: in the site's existing list as "passed:<stage>" / "failed-first:<stage>" (no format change). Older saves:
+  nothing approved yet; the player asks once (stages already finished pass if fastened).
+- Fix on the way: the pergola's corner stake said "set out the terrace (2.4 × 1.8 m)"; each stake now has its own text.
+- Job tips of the terrace and pergola mention the inspections. Needs a scene rebuild.

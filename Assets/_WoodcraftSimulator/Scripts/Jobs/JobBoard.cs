@@ -202,9 +202,19 @@ namespace WoodcraftSimulator.Jobs
                     }
 
                     double sawdust = waste != null ? Math.Max(0.0, waste.Log.TotalVolumeCubicMeters - sawdustAtStart) : 0.0;
+
+                    // Outdoor jobs: stages the customer inspected, and those approved at the first try (D-053).
+                    int inspected = 0;
+                    int firstTime = 0;
+                    if (Active.TryGetComponent(out Workshop.SitePreparation site))
+                    {
+                        inspected = site.InspectedStageCount(Active.Build);
+                        firstTime = site.Inspections.PassedFirstTime;
+                    }
+
                     cachedResult = JobResult.Create(ActiveJob, report,
                         new MaterialUsage(boardsDelivered, boardsOrderedExtra, delivered, installed, sawdust), ElapsedSeconds,
-                        FinishedParts());
+                        FinishedParts(), inspected, firstTime);
                 }
 
                 return cachedResult;

@@ -263,6 +263,7 @@ namespace WoodcraftSimulator.Editor
                 "Outside, in front of the door. Set out the site at the corner stake, then dig and gravel each pier spot.",
                 "Build bottom up: pier blocks, beams, joists (cut 1800 mm on the sawhorses outside), deck boards.",
                 "Beams and joists are fixed with steel connectors (drill-driver); deck screws at the board ends need pilot holes.",
+                "The customer inspects each stage before the next (E on the corner stake): every joint fastened, no screw head standing out. Passing every first inspection pays a bonus.",
                 "The customer paid half as a deposit for the material; the rest comes on delivery."
             });
             SetStrings(serialized.FindProperty("tipsTurkish"), new[]
@@ -270,6 +271,7 @@ namespace WoodcraftSimulator.Editor
                 "Dışarıda, kapının önünde. Köşe kazığında alanı işaretle, sonra her ayak yerini kaz ve çakıl dök.",
                 "Aşağıdan yukarı kur: beton ayaklar, kirişler, döşeme altı kirişleri (dışarıdaki sehpalarda 1800 mm kes), döşeme tahtaları.",
                 "Kirişler ve döşeme altı kirişleri çelik bağlantı elemanlarıyla sabitlenir (şarjlı matkap); tahta uçlarındaki vidalar pilot delik ister.",
+                "Müşteri her aşamayı bir sonrakinden önce denetler (köşe kazığında E): her bağlantı sabit, taşan vida başı yok. Her aşama ilk denetimde geçerse prim var.",
                 "Müşteri malzeme için yarısını avans olarak ödedi; kalanı teslimde gelir."
             });
             serialized.ApplyModifiedPropertiesWithoutUndo();

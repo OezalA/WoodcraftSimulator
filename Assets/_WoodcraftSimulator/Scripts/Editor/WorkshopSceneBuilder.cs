@@ -597,7 +597,7 @@ namespace WoodcraftSimulator.Editor
             GameObject marker = CreateBox("CornerStake", site, new Vector3(-1.25f, 0.25f, -0.95f), new Vector3(0.05f, 0.5f, 0.05f),
                 materials.PencilRed);
             EnlargeGrabCollider(marker, marker.transform.localScale);
-            SetReference(marker.AddComponent<SiteMarker>(), "site", preparation);
+            SetReference(marker.AddComponent<SiteMarker>(), "site", preparation); // default text: the terrace
             var lineObject = new GameObject("StringLine");
             lineObject.transform.SetParent(site, false);
             var line = lineObject.AddComponent<LineRenderer>();
@@ -732,7 +732,12 @@ namespace WoodcraftSimulator.Editor
             GameObject marker = CreateBox("CornerStake", site, new Vector3(-1.55f, 0.25f, -1.55f), new Vector3(0.05f, 0.5f, 0.05f),
                 materials.PencilRed);
             EnlargeGrabCollider(marker, marker.transform.localScale);
-            SetReference(marker.AddComponent<SiteMarker>(), "site", preparation);
+            var siteMarker = marker.AddComponent<SiteMarker>();
+            SetReference(siteMarker, "site", preparation);
+            var serializedMarker = new SerializedObject(siteMarker);
+            serializedMarker.FindProperty("outline").stringValue = "the pergola (3 × 3 m)";
+            serializedMarker.FindProperty("outlineTurkish").stringValue = "pergolayı (3 × 3 m)";
+            serializedMarker.ApplyModifiedPropertiesWithoutUndo();
             var lineObject = new GameObject("StringLine");
             lineObject.transform.SetParent(site, false);
             var line = lineObject.AddComponent<LineRenderer>();

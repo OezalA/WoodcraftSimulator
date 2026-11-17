@@ -19,11 +19,10 @@ next. D-042 (recommended clutch on the drill, owner request) implemented, awaiti
 - F3: beam-to-pier fixing looked unreal (no steel part). Changed (D-048): a steel U beam bracket shows on each set pier block, the screw point is on its flange. Joists: steel angle brackets instead of "joist hangers" (owner: "as in reality"). Needs a scene rebuild. Static compile OK later.
 **Phase 11 (larger structures) started** (plan approved 2026-11-16, D-049): garden pergola 3 × 3 m, stepladder,
 spirit level for plumbing posts, temporary braces, working height; stage inspections (11e) after the interim test.
-11a-11d code done; **interim test MT-027 in progress**. Finding fixed (D-050): setting parts from the ladder was very
-hard ("merdiven kısa"): parts now also snap when aiming at the ghost itself; stepladder 2.0 m, standing step 1.45 m,
-carried at the side. Needs a scene rebuild, then MT-027 continues.
-Owner request (D-051): the job information is now a structured job card (stage with progress bar, cut list table, material per stock, tips); test MT-028.
-Owner request (D-052): crouch (C toggle), an apprentice who tidies offcuts on command into one bin per species, bin contents shown nearby, wheel + E takes a piece; test MT-029 (scene rebuild).
+11a-11d, D-050 (ladder finding), D-051 (job card) and D-052 (crouch, apprentice, offcut bins) **accepted by the owner on
+2026-11-17 after MT-027..MT-029; `main` fast-forwarded to `develop` (e5e32c2).**
+**11e stage inspections code done (D-053)**: E on the corner stake asks the customer; loose joints / proud screws block
+the next stage, flaws are only noted; goal "every stage passed its first inspection". **MT-030 pending** (scene rebuild).
 Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 
 ## Completed
@@ -93,6 +92,8 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 | MT-027 finding D-050 (ghost aim, taller ladder): static compile + `dotnet test` | 0 errors, 0 warnings; 263/263 (Claude). Not compiled or played in Unity yet | 2026-11-16 |
 | D-051 job card: static compile + `dotnet test` | 0 errors, 0 warnings; 263/263 (Claude). Not compiled or seen in Unity yet: MT-028 pending | 2026-11-17 |
 | D-052 crouch, apprentice, offcut bins: static compile + `dotnet test` | 0 errors, 0 warnings; 268/268 (Claude). Not compiled or played in Unity yet: MT-029 pending | 2026-11-17 |
+| D-050..D-052 (owner) | MT-027..MT-029 accepted ("Evet, main'i ileri al"); compiled in Unity (no `error CS`); `main` fast-forwarded to e5e32c2 | 2026-11-17 |
+| Phase 11e (D-053): static compile + `dotnet test` | 0 errors, 0 warnings; 272/272 (Claude). Not compiled or played in Unity yet: MT-030 pending | 2026-11-17 |
 
 ## Known issues / limitations
 - **Carry feel not liked yet** (owner, 2026-11-13). Ideas for later: smooth follow (lerp/slerp) instead of rigid
@@ -124,8 +125,8 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 3. Done: Phase 6 + D-041 accepted, `main` fast-forwarded. Owner: MT-022 (recommended clutch) when convenient.
 4. Done: batch test up to Phase 10 accepted (2026-11-16), `main` fast-forwarded.
 5. Done: Phase 11 planned (D-049); 11a-11d implemented.
-6. In progress: MT-027. Finding D-050 fixed; owner rebuilds the scene and continues MT-027 (from the ladder rows).
-   Also MT-028 (job card, D-051): no scene rebuild needed.
-   And MT-029 (crouch, apprentice, offcut bins, D-052) after the scene rebuild. Then 11e stage inspections.
-   Then 11e stage inspections. Open small idea: in the red slot preview, point out a wrong thickness explicitly (owner
+6. Done: MT-027..MT-029 accepted, `main` fast-forwarded (2026-11-17).
+7. Next: owner rebuilds the scene and runs MT-030 (stage inspections, D-053). Then Phase 11 is complete; next phase per
+   the roadmap (Phase 12).
+   Open small idea: in the red slot preview, point out a wrong thickness explicitly (owner
    used 28 mm larch for an 18 mm spruce part).

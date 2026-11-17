@@ -119,8 +119,119 @@ namespace WoodcraftSimulator.Workshop
                 return false;
             }
 
+            // A part of a later stage only after the customer passed the earlier ones (D-053).
+            int stage = StageIndexOf(slotId);
+            AssemblyBuild build = station != null ? station.Build : null;
+            for (int earlier = 0; build != null && earlier < stage; earlier++)
+            {
+                if (NeedsInspection(build, earlier) && !Inspections.IsPassed(stages[earlier].slotPrefix))
+                {
+                    reason = Loc.T($"the customer inspects the {stages[earlier].name} first (E on the corner stake)",
+                        $"önce müşteri {stages[earlier].nameTurkish} aşamasını denetlemeli (köşe kazığında E)");
+                    return false;
+                }
+            }
+
             return true;
         }
+
+        /// <summary>Stages passed by the customer and first-time results (D-053).</summary>
+        public InspectionLog Inspections { get; } = new InspectionLog();
+
+        /// <summary>The result of the last inspection asked for, until the next one (for the job card).</summary>
+        public InspectionResult LastInspection { get; private set; }
+
+        /// <summary>Stage (index into the stages) a slot belongs to, or -1.</summary>
+        public int StageIndexOf(string slotId)
+        {
+            for (int s = 0; s < stages.Length; s++)
+            {
+                if (slotId != null && slotId.StartsWith(stages[s].slotPrefix, StringComparison.Ordinal))
+                {
+                    return s;
+                }
+            }
+
+            return -1;
+        }
+
+        /// <summary>
+        /// Whether the customer inspects this stage before the next one: every stage with joints except the last
+        /// (the job's own completion report covers that one).
+        /// </summary>
+        public bool NeedsInspection(AssemblyBuild build, int stage) =>
+            stage >= 0 && stage < stages.Length - 1 && StageInspection.HasChecks(build.Blueprint, stage, StageIndexOf);
+
+        /// <summary>Stages the customer inspects in this build (for the pay goal).</summary>
+        public int InspectedStageCount(AssemblyBuild build)
+        {
+            int count = 0;
+            for (int s = 0; s < stages.Length; s++)
+            {
+                if (NeedsInspection(build, s))
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        /// <summary>The first stage still waiting for the customer's approval, or -1.</summary>
+        public int PendingInspection(AssemblyBuild build)
+        {
+            for (int s = 0; s < stages.Length; s++)
+            {
+                if (NeedsInspection(build, s) && !Inspections.IsPassed(stages[s].slotPrefix))
+                {
+                    return s;
+                }
+            }
+
+            return -1;
+        }
+
+        public string StageName(int stage) => Loc.T(stages[stage].name, stages[stage].nameTurkish);
+
+        /// <summary>
+        /// The customer inspects the pending stage (E on the corner stake): its parts must all be set. Returns what he
+        /// says. A failed inspection can be asked for again once fixed; only the first one counts for "first time".
+        /// </summary>
+        public string RequestInspection()
+        {
+            AssemblyBuild build = station != null ? station.Build : null;
+            int stage = build != null ? PendingInspection(build) : -1;
+            if (stage < 0)
+            {
+                return Loc.T("Nothing to inspect: every stage so far is approved", "Denetlenecek aşama yok: şimdiye kadarkiler onaylı");
+            }
+
+            string name = StageName(stage);
+            if (!StageInspection.AllPartsSet(build, stage, StageIndexOf))
+            {
+                return Loc.T($"The {name} are not finished yet: set every part first", $"{Capital(name)} henüz bitmedi: önce tüm parçaları tak");
+            }
+
+            InspectionResult result = StageInspection.Inspect(build, stage, StageIndexOf);
+            Inspections.Record(stages[stage].slotPrefix, result);
+            LastInspection = result;
+            Changed?.Invoke();
+
+            if (result.Passed)
+            {
+                string notes = result.Notes.Count > 0
+                    ? Loc.T($" ({result.Notes.Count} flaw(s) noted: {result.Notes[0]})", $" ({result.Notes.Count} kusur not edildi: {result.Notes[0]})")
+                    : string.Empty;
+                return Loc.T($"Customer: the {name} are approved, go on{notes}", $"Müşteri: {name} onaylandı, devam{notes}");
+            }
+
+            string more = result.Problems.Count > 1 ? Loc.T($" (+{result.Problems.Count - 1} more)", $" (+{result.Problems.Count - 1} tane daha)") : string.Empty;
+            return Loc.T($"Customer: {result.Problems.Count} problem(s) to fix: {result.Problems[0]}{more}",
+                $"Müşteri: {result.Problems.Count} sorun düzeltilmeli: {result.Problems[0]}{more}");
+        }
+
+        private static string Capital(string text) =>
+            string.IsNullOrEmpty(text) ? text : (Loc.IsTurkish && text[0] == 'i' ? 'İ' : char.ToUpperInvariant(text[0])) + text.Substring(1);
 
         /// <summary>Where the work stands: stage number of count, its name and progress (for the job card).</summary>
         public readonly struct StageState
@@ -195,6 +306,16 @@ namespace WoodcraftSimulator.Workshop
                 {
                     return new StageState(s + 2, count, Loc.T(stages[s].name, stages[s].nameTurkish), installed, total);
                 }
+
+                // All set: the stage is done once the customer approved it (D-053).
+                if (NeedsInspection(build, s) && !Inspections.IsPassed(stages[s].slotPrefix))
+                {
+                    string note = Inspections.WasRequested(stages[s].slotPrefix) && LastInspection != null && !LastInspection.Passed
+                        ? Loc.T($"Inspection: {LastInspection.Problems.Count} problem(s): {string.Join("; ", LastInspection.Problems)}",
+                            $"Denetim: {LastInspection.Problems.Count} sorun: {string.Join("; ", LastInspection.Problems)}")
+                        : Loc.T("Ready: ask for the inspection (E on the corner stake)", "Hazır: denetim iste (köşe kazığında E)");
+                    return new StageState(s + 2, count, Loc.T(stages[s].name, stages[s].nameTurkish), installed, total, note);
+                }
             }
 
             AssemblyQualityReport report = build.CreateReport();
@@ -204,7 +325,13 @@ namespace WoodcraftSimulator.Workshop
                     report.FastenersRequired);
         }
 
-        /// <summary>Save state: "marked" and the slot ids of the prepared spots.</summary>
+        private const string PassedPrefix = "passed:";
+        private const string FailedFirstPrefix = "failed-first:";
+
+        /// <summary>
+        /// Save state: "marked", the slot ids of the prepared spots, and the inspections ("passed:post",
+        /// "failed-first:post"; D-053).
+        /// </summary>
         public string[] Capture()
         {
             var done = new List<string>();
@@ -221,6 +348,17 @@ namespace WoodcraftSimulator.Workshop
                 }
             }
 
+            // Inspections (D-053) in the same list, by prefix (the save format needs no new field).
+            foreach (string stage in Inspections.Passed)
+            {
+                done.Add(PassedPrefix + stage);
+            }
+
+            foreach (string stage in Inspections.FailedFirst)
+            {
+                done.Add(FailedFirstPrefix + stage);
+            }
+
             return done.ToArray();
         }
 
@@ -235,6 +373,23 @@ namespace WoodcraftSimulator.Workshop
                     spot.Prepared = set.Contains(spot.SlotId);
                 }
             }
+
+            var passed = new List<string>();
+            var failedFirst = new List<string>();
+            foreach (string entry in set)
+            {
+                if (entry.StartsWith(PassedPrefix, StringComparison.Ordinal))
+                {
+                    passed.Add(entry.Substring(PassedPrefix.Length));
+                }
+                else if (entry.StartsWith(FailedFirstPrefix, StringComparison.Ordinal))
+                {
+                    failedFirst.Add(entry.Substring(FailedFirstPrefix.Length));
+                }
+            }
+
+            Inspections.Restore(passed, failedFirst);
+            LastInspection = null;
 
             Refresh();
         }

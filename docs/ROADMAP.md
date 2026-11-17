@@ -126,7 +126,7 @@ calculated correctly.
 - [x] 10b: Terrace 2.4 × 1.8 m blueprint: pier blocks, beams, joists with connectors, decking; stage validation
 - [x] 10c: Terrace job (material, pay, deposit), batch test list
 
-## Phase 11: Larger Structures (plan approved 2026-11-16, D-049) - 11a-11d code done, interim test MT-027 pending
+## Phase 11: Larger Structures (plan approved 2026-11-16, D-049) - 11a-11d accepted (MT-027..029, 2026-11-17), 11e code done, MT-030 pending
 First project: a garden pergola 3 × 3 m. Owner's choices: stepladder for height, a spirit level tool for plumbing
 posts, stage inspections at the end of each stage (block the next stage, affect pay). Test plan: interim test after
 11a-11d (ladder and spirit level are new feel), then 11e.
@@ -141,5 +141,5 @@ posts, stage inspections at the end of each stage (block the next stage, affect 
   ghost aim, stepladder 2.0 m with the standing step at 1.45 m, carried at the side
 - [x] Owner requests before 11e (D-051, D-052): job card; crouch (C); apprentice who sorts offcuts into one bin per
   species; bin contents on approach, take with wheel + E. MT-028, MT-029 pending
-- [ ] 11e: Stage inspections (customer checks each stage: parts, fastenings, plumb; problems block the next stage
-  until fixed; first-time passes count for pay)
+- [x] 11e: Stage inspections (D-053): E on the corner stake; loose joints / proud screws block the next stage,
+  flaws are noted; goal "every stage passed its first inspection". MT-030 pending

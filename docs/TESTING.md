@@ -535,6 +535,21 @@ Rebuild the scene first.
 | Tab inventory / job card | Bin pieces count (e.g. `1 hazır` when one fits the job) |
 | Save while he carries a piece, quit, Play | The piece is in its bin; he stands at his place; bin contents kept |
 
+### MT-030: Stage inspections (Phase 11e, D-053)
+Rebuild the scene first. Pergola job (terrace works the same way: beams, joists).
+| Step | Expected |
+|---|---|
+| Corner stake before setting out | `Pergolayı (3 × 3 m) kazık ve iple işaretle` (no longer "terası") |
+| After setting out, E on the stake | `Müşteriden denetim iste: direkler`; E: `Direkler henüz bitmedi: önce tüm parçaları tak` |
+| Set, plumb and brace all four posts, fasten only some post bases | Job card stage `Direkler 4/4`, note `Hazır: denetim iste (köşe kazığında E)` |
+| Carry a beam to the posts | Red: `... önce müşteri direkler aşamasını denetlemeli (köşe kazığında E)` |
+| E on the stake | `Müşteri: n sorun düzeltilmeli: Direk 1 - Beton ayak 1: 1/1 sabitlenmedi ...`; job card lists the problems |
+| Fasten the rest (leave one head proud on purpose), E again | Problem `... 1 vida başı taşıyor` |
+| Drive it flush, E | `Müşteri: direkler onaylandı, devam`; beams can now be set |
+| Beams, brackets, E on the stake | Beams approved; rafters can be set |
+| Finish | Result has the goal `Her aşama ilk denetimde geçti` with `1/2 aşama` (posts failed first) |
+| Save after a failed inspection, quit, Play | Approved stages stay approved; the first-time result is kept |
+
 ## Game view setup (corrects the earlier tip)
 A fixed resolution such as *Full HD (1920x1080)* at `Scale 1x` **crops** the image when the Game view window is
 smaller than 1920×1080: the bottom (tool belt bar) and the lower right (tool in hand) are cut off.

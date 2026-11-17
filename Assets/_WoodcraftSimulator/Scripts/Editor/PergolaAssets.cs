@@ -237,6 +237,7 @@ namespace WoodcraftSimulator.Editor
                 "Outside, right of the terrace. Set out the site at the corner stake, then dig and gravel the four pier spots.",
                 "Cut the posts to 2200 mm on the sawhorses. A post never goes in exactly vertical: hold the spirit level against two neighbouring faces, push it upright with the wheel, then nail a temporary brace (left mouse button).",
                 "Only braced posts can be fastened or carry a beam. Beams and rafters are higher than you can reach: carry the stepladder there, climb it with Space.",
+                "The customer inspects each stage before the next (E on the corner stake): every joint fastened, no screw head standing out. Passing every first inspection pays a bonus.",
                 "The customer paid half as a deposit for the material; the rest comes on delivery."
             });
             SetStrings(serialized.FindProperty("tipsTurkish"), new[]
@@ -244,6 +245,7 @@ namespace WoodcraftSimulator.Editor
                 "Dışarıda, terasın sağında. Köşe kazığında alanı işaretle, sonra dört ayak yerini kaz ve çakıl dök.",
                 "Direkleri sehpalarda 2200 mm kes. Direk hiçbir zaman tam dik oturmaz: su terazisini iki komşu yüze tut, tekerlekle düzelt, sonra geçici destek çak (sol tık).",
                 "Sadece destekli direk sabitlenebilir ve kiriş taşır. Kirişler ve aşıklar uzanamayacağın yükseklikte: merdiveni oraya taşı, Space ile çık.",
+                "Müşteri her aşamayı bir sonrakinden önce denetler (köşe kazığında E): her bağlantı sabit, taşan vida başı yok. Her aşama ilk denetimde geçerse prim var.",
                 "Müşteri malzeme için yarısını avans olarak ödedi; kalanı teslimde gelir."
             });
             serialized.ApplyModifiedPropertiesWithoutUndo();
