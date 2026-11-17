@@ -76,6 +76,34 @@ MonoBehaviour:
     thicknessMillimeters: 100
     priceEuros: 22
     deliverOutdoors: 1
+  - id: pine-2400x95x45
+    species: {fileID: 11400000, guid: abae4c535ca4ac44ebddfb4def796695, type: 2}
+    lengthMillimeters: 2400
+    widthMillimeters: 95
+    thicknessMillimeters: 45
+    priceEuros: 8.5
+    deliverOutdoors: 0
+  - id: beech-2000x145x18
+    species: {fileID: 11400000, guid: 691f2e814adb738448cf9d85cc309f54, type: 2}
+    lengthMillimeters: 2000
+    widthMillimeters: 145
+    thicknessMillimeters: 18
+    priceEuros: 19
+    deliverOutdoors: 0
+  - id: oak-2000x145x18
+    species: {fileID: 11400000, guid: 4ab2f364762bf4c438e81ac089a8cc14, type: 2}
+    lengthMillimeters: 2000
+    widthMillimeters: 145
+    thicknessMillimeters: 18
+    priceEuros: 26
+    deliverOutdoors: 0
+  - id: walnut-2000x145x18
+    species: {fileID: 11400000, guid: 744243c295bd82c429d7fab9cec34726, type: 2}
+    lengthMillimeters: 2000
+    widthMillimeters: 145
+    thicknessMillimeters: 18
+    priceEuros: 38
+    deliverOutdoors: 0
   fastenerBoxes:
   - id: screws-4x40-200
     fastener: {fileID: 11400000, guid: a24339b0500c9b647bd1ed790096f860, type: 2}

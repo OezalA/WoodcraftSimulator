@@ -34,6 +34,16 @@ MonoBehaviour:
   requiresFinish: 1
   extraStocks: []
   depositShare: 0
+  requiredRank: 1
+  needsSkill: 0
+  requiredSkill: 0
+  requiredSkillLevel: 1
+  woodOptions:
+  - species: {fileID: 11400000, guid: 4ab2f364762bf4c438e81ac089a8cc14, type: 2}
+    payFactor: 1.6
+  - species: {fileID: 11400000, guid: 691f2e814adb738448cf9d85cc309f54, type: 2}
+    payFactor: 1.4
+  finishOptional: 0
   displayNameTurkish: "Alet sand\u0131\u011F\u0131"
   descriptionTurkish: "18 mm ladinden a\xE7\u0131k alet sand\u0131\u011F\u0131: kavelal\u0131
     ve tutkall\u0131 taban, \xE7ivili yanlar, vidal\u0131 sap; z\u0131mparal\u0131

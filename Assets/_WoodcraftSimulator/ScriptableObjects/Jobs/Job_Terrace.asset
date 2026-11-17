@@ -46,6 +46,12 @@ MonoBehaviour:
     widthMillimeters: 200
     thicknessMillimeters: 200
   depositShare: 0.5
+  requiredRank: 1
+  needsSkill: 0
+  requiredSkill: 0
+  requiredSkillLevel: 1
+  woodOptions: []
+  finishOptional: 0
   displayNameTurkish: "K\xFC\xE7\xFCk teras"
   descriptionTurkish: "At\xF6lyenin \xF6n\xFCnde zemine yak\u0131n 2,4 \xD7 1,8 m
     teras: beton ayaklar, kiri\u015Fler, d\xF6\u015Feme alt\u0131 kiri\u015Fleri,

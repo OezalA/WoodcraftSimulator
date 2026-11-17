@@ -31,6 +31,14 @@ MonoBehaviour:
   requiresFinish: 0
   extraStocks: []
   depositShare: 0
+  requiredRank: 0
+  needsSkill: 0
+  requiredSkill: 0
+  requiredSkillLevel: 1
+  woodOptions:
+  - species: {fileID: 11400000, guid: abae4c535ca4ac44ebddfb4def796695, type: 2}
+    payFactor: 1
+  finishOptional: 1
   displayNameTurkish: "Al\u0131\u015Ft\u0131rma \xE7er\xE7evesi"
   descriptionTurkish: "Yap\u0131 kerestesinden 600 \xD7 300 mm \xE7er\xE7eve: iki
     kay\u0131t, aralar\u0131nda iki yan, her k\xF6\u015Fede iki adet 5 \xD7 80 mm

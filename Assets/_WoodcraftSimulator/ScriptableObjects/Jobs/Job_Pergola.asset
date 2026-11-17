@@ -47,6 +47,12 @@ MonoBehaviour:
     widthMillimeters: 200
     thicknessMillimeters: 200
   depositShare: 0.5
+  requiredRank: 2
+  needsSkill: 1
+  requiredSkill: 3
+  requiredSkillLevel: 2
+  woodOptions: []
+  finishOptional: 0
   displayNameTurkish: "Bah\xE7e pergolas\u0131"
   descriptionTurkish: "Teras\u0131n yan\u0131nda serbest duran 3 \xD7 3 m pergola:
     beton ayaklar, \u015Fak\xFCl\xFCnde d\xF6rt direk, iki kiri\u015F, be\u015F a\u015F\u0131k."

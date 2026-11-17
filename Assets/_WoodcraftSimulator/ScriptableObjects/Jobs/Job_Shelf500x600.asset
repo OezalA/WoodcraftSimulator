@@ -30,6 +30,18 @@ MonoBehaviour:
   requiresFinish: 0
   extraStocks: []
   depositShare: 0
+  requiredRank: 0
+  needsSkill: 0
+  requiredSkill: 0
+  requiredSkillLevel: 1
+  woodOptions:
+  - species: {fileID: 11400000, guid: 4ab2f364762bf4c438e81ac089a8cc14, type: 2}
+    payFactor: 1.6
+  - species: {fileID: 11400000, guid: 691f2e814adb738448cf9d85cc309f54, type: 2}
+    payFactor: 1.4
+  - species: {fileID: 11400000, guid: 744243c295bd82c429d7fab9cec34726, type: 2}
+    payFactor: 2
+  finishOptional: 1
   displayNameTurkish: "K\xFC\xE7\xFCk raf"
   descriptionTurkish: "18 mm ladin tahtadan 500 geni\u015Flik, 600 y\xFCkseklik,
     145 derinlikte ayakl\u0131 raf: iki yan, aralar\u0131nda \xFC\xE7 raf, her ba\u011Flant\u0131da
