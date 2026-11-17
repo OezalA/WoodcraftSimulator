@@ -52,6 +52,9 @@ namespace WoodcraftSimulator.Jobs
         [Tooltip("Share of the pay the customer pays on acceptance, for the material (0..0.7, D-046).")]
         [SerializeField, Range(0f, 0.7f)] private float depositShare;
 
+        [Tooltip("The customer's place where it is built (Phase 12.5, D-056); empty = at the workshop or its yard.")]
+        [SerializeField] private World.LocationDefinition location;
+
         [Header("Career (Phase 12, D-054)")]
         [Tooltip("Rank needed to take this job.")]
         [SerializeField] private Career.CareerRank requiredRank = Career.CareerRank.Novice;
@@ -85,6 +88,11 @@ namespace WoodcraftSimulator.Jobs
         [SerializeField] private string[] tipsTurkish = Array.Empty<string>();
 
         public string Id => id;
+
+        /// <summary>The place where the job is built (null = the workshop and its yard).</summary>
+        public World.LocationDefinition Location => location;
+
+        public string LocationId => location != null ? location.Id : World.LocationDefinition.WorkshopId;
 
         public string DisplayName => Loc.Pick(displayName, displayNameTurkish);
 

@@ -434,7 +434,8 @@ namespace WoodcraftSimulator.Jobs
 
             string jobName = template.DisplayName;
             JobOffer offer = offers[index];
-            string who = string.IsNullOrEmpty(offer.Customer) ? jobName : $"{jobName}, {offer.Customer}";
+            string at = template.Location != null ? $" ({template.Location.DisplayName})" : string.Empty;
+            string who = string.IsNullOrEmpty(offer.Customer) ? jobName + at : $"{jobName}{at}, {offer.Customer}";
             if (offer.IsLocked)
             {
                 string reason = TemplateInfoAt(index).LockReason(CareerState) ?? offer.LockReason;
@@ -456,7 +457,8 @@ namespace WoodcraftSimulator.Jobs
                 }
 
                 Money pay = domainJobs[index].Pay;
-                Money cost = Shopping(index).TotalCost;
+                Money material = Shopping(index).TotalCost;
+                Money cost = material + PlaceExtra(template.Location, material);
                 Money deposit = domainJobs[index].Deposit;
                 string depositText = deposit > Money.Zero ? Loc.T($", deposit {deposit} now", $", avans {deposit} hemen") : string.Empty;
                 return Loc.T($"Accept job: {who}   (pay {pay}{depositText}; material to buy {cost}, money {economy.Ledger.Balance})",
@@ -466,6 +468,13 @@ namespace WoodcraftSimulator.Jobs
             if (index != activeIndex)
             {
                 return Loc.T($"Job in progress: {TemplateAt(activeIndex).DisplayName}", $"Devam eden iş: {TemplateAt(activeIndex).DisplayName}");
+            }
+
+            if (ActiveJobElsewhere)
+            {
+                string place = ActiveJobPlace != null ? ActiveJobPlace.DisplayName : jobName;
+                return Loc.T($"{jobName} is built at {place}: drive there with the van (E here: one more board delivered there)",
+                    $"{jobName} {place} yerinde yapılıyor: kamyonetle git (burada E: oraya 1 tahta daha)");
             }
 
             if (IsComplete)
@@ -523,12 +532,16 @@ namespace WoodcraftSimulator.Jobs
                 }
             }
 
+            // A customer's place may cost more to supply (island: dearer, a delivery fee, D-056).
+            World.LocationDefinition place = TemplateAt(index).Location;
+            Money extra = PlaceExtra(place, shopping.TotalCost);
+
             // A deposit from the customer (D-046) helps to pay for the material.
             Money deposit = domainJobs[index].Deposit;
-            if (economy.Ledger.Balance + deposit < shopping.TotalCost)
+            if (economy.Ledger.Balance + deposit < shopping.TotalCost + extra)
             {
-                ShowMessage(Loc.T($"Not enough money for the material ({shopping.TotalCost})",
-                    $"Malzeme için para yetmiyor ({shopping.TotalCost})"));
+                ShowMessage(Loc.T($"Not enough money for the material ({shopping.TotalCost + extra})",
+                    $"Malzeme için para yetmiyor ({shopping.TotalCost + extra})"));
                 return;
             }
 
@@ -544,6 +557,8 @@ namespace WoodcraftSimulator.Jobs
             }
 
             depositPaid = deposit;
+            // The merchant brings a customer's material to the customer's place (D-056).
+            economy.DeliveryOverride = place != null ? place.Id : null;
             foreach (ShoppingLine line in shopping.Lines)
             {
                 if (line.UnitsToBuy > 0)
@@ -551,6 +566,12 @@ namespace WoodcraftSimulator.Jobs
                     economy.Buy(line.Item, line.UnitsToBuy);
                 }
             }
+            economy.DeliveryOverride = null;
+            if (extra > Money.Zero)
+            {
+                economy.Ledger.TrySpend(extra, Loc.T($"Delivery to {place.DisplayName}", $"Teslimat: {place.DisplayName}"));
+            }
+
 
             activeIndex = index;
             ElapsedSeconds = 0.0;
@@ -581,7 +602,11 @@ namespace WoodcraftSimulator.Jobs
                 return;
             }
 
+            // An extra board for a job at a customer's place goes there too (D-056).
+            World.LocationDefinition place = TemplateAt(activeIndex).Location;
+            economy.DeliveryOverride = place != null ? place.Id : null;
             PurchaseResult result = economy.Buy(board, 1);
+            economy.DeliveryOverride = null;
             if (result != PurchaseResult.Bought)
             {
                 ShowMessage(WorkshopEconomy.PurchaseText(result));
@@ -593,6 +618,41 @@ namespace WoodcraftSimulator.Jobs
             OnStationChanged();
             ShowMessage(Loc.T("Bought: see the delivery area", "Satın alındı: teslim alanına bak"));
             Changed?.Invoke();
+        }
+
+        /// <summary>Where the active job is built (a location id), or null without a job (D-056).</summary>
+        public string ActiveJobLocation => HasActiveJob ? TemplateAt(activeIndex).LocationId : null;
+
+        /// <summary>The place of the active job, or null (no job, or the workshop and its yard).</summary>
+        public World.LocationDefinition ActiveJobPlace => HasActiveJob ? TemplateAt(activeIndex).Location : null;
+
+        /// <summary>
+        /// Hands the finished structure over at the customer's place (D-056: the job sheet is in the workshop, the
+        /// structure at the customer's); false if it isn't complete or not here.
+        /// </summary>
+        public bool TryDeliverHere()
+        {
+            if (!IsComplete)
+            {
+                return false;
+            }
+
+            Deliver();
+            return true;
+        }
+
+        /// <summary>The last message of the job service (shown by the sheets and the customer).</summary>
+        public string LastMessage => lastMessage != null && Time.unscaledTime < lastMessageUntil ? lastMessage : null;
+
+        /// <summary>A customer's place costs more to supply: the material price factor and the merchant's fee.</summary>
+        private static Money PlaceExtra(World.LocationDefinition place, Money material)
+        {
+            if (place == null || material <= Money.Zero)
+            {
+                return Money.Zero;
+            }
+
+            return material.Scale(place.MaterialPriceFactor - 1.0) + place.DeliveryFee;
         }
 
         /// <summary>The finished structure goes to the customer: the job is paid, the station is cleared.</summary>

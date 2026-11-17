@@ -87,8 +87,9 @@ namespace WoodcraftSimulator.World
             player.enabled = false;
 
             Scene leaving = content;
-            saveService.CaptureLocation(CurrentLocationId, leaving);
+            // First what leaves with the van (it must not stay in this place's state), then the place is captured.
             beforeUnload?.Invoke(leaving);
+            saveService.CaptureLocation(CurrentLocationId, leaving);
             if (leaving.IsValid() && leaving.isLoaded)
             {
                 yield return SceneManager.UnloadSceneAsync(leaving);

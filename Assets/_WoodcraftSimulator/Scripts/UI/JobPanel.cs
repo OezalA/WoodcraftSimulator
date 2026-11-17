@@ -132,7 +132,12 @@ namespace WoodcraftSimulator.UI
 
             // Header: what this is, the time; then the job's name and one line about it.
             VisualElement header = Add(card, new VisualElement(), "job-card__header");
-            Add(header, new Label(Loc.T("ACTIVE JOB", "AKTİF İŞ")), "job-card__eyebrow");
+            // A job at a customer's place names it (D-056).
+            string placeName = jobBoard.ActiveJobPlace != null ? jobBoard.ActiveJobPlace.DisplayName : null;
+            string place = placeName != null
+                ? "  ·  " + (Loc.IsTurkish ? placeName.Replace('i', 'İ') : placeName).ToUpperInvariant() // Turkish i → İ
+                : string.Empty;
+            Add(header, new Label(Loc.T("ACTIVE JOB", "AKTİF İŞ") + place), "job-card__eyebrow");
             timeLabel = Add(header, new Label(), "job-card__time");
             Add(card, new Label(job.DisplayName), "job-card__title");
             if (job.Description.Length > 0)
