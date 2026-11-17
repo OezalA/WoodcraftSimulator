@@ -124,6 +124,9 @@ namespace WoodcraftSimulator.Editor
             TurkishNames.Apply();
 
             // Phase 12.5 (D-056): what lasts across places goes into the core scene; the workshop stays a content scene.
+            // Unity opens a second scene only next to saved ones (MT-032 finding): save the workshop first, then again
+            // after the core objects have moved out of it.
+            EditorSceneManager.SaveScene(scene, ScenePath);
             Scene core = SplitIntoCoreScene(player, saveService);
 
             // Intentionally does not touch Build Settings (ProjectSettings): add the scenes there manually when needed.

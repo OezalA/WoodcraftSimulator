@@ -265,6 +265,12 @@ namespace WoodcraftSimulator.UI
             }
 
             IInteractable target = interactor.CurrentTarget;
+            // A target destroyed meanwhile (a board taken away, a place unloaded) counts as none (MT-032 finding).
+            if (target is Object unityObject && unityObject == null)
+            {
+                target = null;
+            }
+
             crosshair.EnableInClassList(CrosshairFocusedClass, target != null);
 
             if (target != null)
