@@ -140,7 +140,7 @@ namespace WoodcraftSimulator.Tools
             double area = 2.0 * (size.Length.Meters * size.Width.Meters + size.Length.Meters * size.Thickness.Meters +
                                  size.Width.Meters * size.Thickness.Meters);
             float seconds = Mathf.Max(minimumSeconds, (float)(area * secondsPerSquareMeter));
-            progress += Time.deltaTime / seconds;
+            progress += Time.deltaTime * Career.WorkshopCareer.SpeedFactor(Career.Skill.Finishing) / seconds; // skill (D-054)
             workingNow = true;
             pickup.HandOffset = Vector3.right * (0.03f * Mathf.Sin(Time.time * 14f));
             if (progress < 1f)

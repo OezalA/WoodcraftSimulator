@@ -196,6 +196,7 @@ namespace WoodcraftSimulator.Tools
             BoardDimensions size = board.Piece.Dimensions;
             float seconds = 2f + 2.5f * (float)size.Length.Meters * (float)(size.Thickness.Millimeters / 18.0);
             float speed = upgrades != null && upgrades.Has(Economy.WorkshopUpgrades.PullSaw) ? upgradedSpeedFactor : 1f;
+            speed *= Career.WorkshopCareer.SpeedFactor(Career.Skill.Cutting); // skill (D-054)
             ripProgress += Time.deltaTime * speed / seconds;
             strokeTime += Time.deltaTime;
             sawingNow = true;
@@ -391,6 +392,7 @@ namespace WoodcraftSimulator.Tools
             double crossSectionCm2 = dimensions.Width.Centimeters * dimensions.Thickness.Centimeters;
             // The pull-saw upgrade (D-044) cuts faster.
             float speed = upgrades != null && upgrades.Has(Economy.WorkshopUpgrades.PullSaw) ? upgradedSpeedFactor : 1f;
+            speed *= Career.WorkshopCareer.SpeedFactor(Career.Skill.Cutting); // skill (D-054)
             progress += Time.deltaTime * speed / definition.SawingSeconds(crossSectionCm2);
             strokeTime += Time.deltaTime;
             sawingNow = true;

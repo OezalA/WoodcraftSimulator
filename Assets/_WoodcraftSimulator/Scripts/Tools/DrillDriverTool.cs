@@ -37,7 +37,8 @@ namespace WoodcraftSimulator.Tools
         [SerializeField, Min(1f)] private float upgradedSpeedFactor = 1.6f;
 
         private float SpeedFactor =>
-            upgrades != null && upgrades.Has(Economy.WorkshopUpgrades.BrushlessDrill) ? upgradedSpeedFactor : 1f;
+            upgrades != null && upgrades.Has(Economy.WorkshopUpgrades.BrushlessDrill) ? upgradedSpeedFactor : 1f
+            * Career.WorkshopCareer.SpeedFactor(Career.Skill.Joining); // skill: a little quicker (D-054)
 
         [SerializeField, Min(0.1f)] private float range = 2f;
 

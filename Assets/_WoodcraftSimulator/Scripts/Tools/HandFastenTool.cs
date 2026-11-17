@@ -166,7 +166,7 @@ namespace WoodcraftSimulator.Tools
                 return;
             }
 
-            progress += Time.deltaTime / seconds;
+            progress += Time.deltaTime * Career.WorkshopCareer.SpeedFactor(Career.Skill.Joining) / seconds; // skill (D-054)
             if (kind == FastenerKind.Nail)
             {
                 // Three blows per nail: the hand swings and each blow knocks.

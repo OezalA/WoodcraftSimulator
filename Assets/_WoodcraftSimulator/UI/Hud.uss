@@ -98,7 +98,7 @@
 .report-anchor {
     position: absolute;
     right: 40px;
-    top: 18%;
+    top: 26%;
     width: 560px;
 }
 
@@ -380,6 +380,91 @@
     border-radius: 6px;
     border-left-width: 4px;
     border-left-color: rgb(120, 180, 230);
+}
+
+.money--debt {
+    color: rgb(255, 120, 110);
+    border-left-color: rgb(230, 90, 80);
+}
+
+/* Career card under the money (D-054): rank, week, experience bar, reputation bars, skills. */
+.career {
+    margin-top: 6px;
+    width: 300px;
+    padding: 8px 12px;
+    background-color: rgba(16, 14, 12, 0.72);
+    border-radius: 6px;
+    border-left-width: 4px;
+    border-left-color: rgb(230, 180, 90);
+}
+
+.career Label {
+    margin: 0px;
+    padding: 0px;
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 12px;
+}
+
+.career__row {
+    flex-direction: row;
+    align-items: center;
+}
+
+.career__spacer {
+    flex-grow: 1;
+}
+
+.career .career__rank {
+    font-size: 16px;
+    -unity-font-style: bold;
+    color: rgb(255, 255, 255);
+}
+
+.career .career__week {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.career__bar {
+    height: 6px;
+    margin-top: 5px;
+    margin-bottom: 2px;
+    border-radius: 3px;
+    background-color: rgba(255, 255, 255, 0.12);
+    overflow: hidden;
+}
+
+.career__bar-fill {
+    height: 100%;
+    width: 0%;
+    background-color: rgb(120, 180, 230);
+}
+
+.career .career__small {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.6);
+    margin-right: 6px;
+}
+
+.career__star {
+    width: 18px;
+    height: 7px;
+    margin-right: 3px;
+    border-radius: 2px;
+    background-color: rgba(255, 255, 255, 0.12);
+    overflow: hidden;
+}
+
+.career__star-fill {
+    height: 100%;
+    width: 0%;
+    background-color: rgb(230, 180, 90);
+}
+
+.career .career__skills {
+    margin-top: 4px;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.55);
+    white-space: normal;
 }
 
 .inventory-anchor {

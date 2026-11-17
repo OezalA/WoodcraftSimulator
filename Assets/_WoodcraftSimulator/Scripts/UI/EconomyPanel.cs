@@ -75,6 +75,8 @@ namespace WoodcraftSimulator.UI
             if (moneyLabel != null && economy.Ledger.IsStarted)
             {
                 moneyLabel.text = Loc.T($"Money {economy.Ledger.Balance}   [Tab] inventory", $"Para {economy.Ledger.Balance}   [Tab] envanter");
+                // In debt (D-054): the amount turns red.
+                moneyLabel.EnableInClassList("money--debt", economy.Ledger.IsInDebt);
             }
         }
     }

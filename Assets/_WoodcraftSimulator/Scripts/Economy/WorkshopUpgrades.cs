@@ -26,6 +26,12 @@ namespace WoodcraftSimulator.Economy
             public string effectTurkish = string.Empty;
             [Min(0.01f)] public float priceEuros = 10f;
 
+            [Tooltip("Rank needed to buy it (D-054).")]
+            public Career.CareerRank requiredRank = Career.CareerRank.Novice;
+
+            [Tooltip("Shown once owned (a workshop expansion, e.g. a second pair of sawhorses, D-054).")]
+            public GameObject reveal;
+
             public string Name => Loc.Pick(displayName, displayNameTurkish);
 
             public string Effect => Loc.Pick(effect, effectTurkish);
@@ -66,6 +72,11 @@ namespace WoodcraftSimulator.Economy
             }
 
             Upgrade upgrade = upgrades[index];
+            if (!RankAllows(upgrade))
+            {
+                return PurchaseResult.InvalidQuantity;
+            }
+
             if (!economy.Ledger.TrySpend(upgrade.Price, upgrade.Name))
             {
                 return PurchaseResult.NotEnoughMoney;
@@ -84,6 +95,13 @@ namespace WoodcraftSimulator.Economy
             }
 
             Upgrade upgrade = upgrades[index];
+            if (!Has(upgrade.id) && !RankAllows(upgrade))
+            {
+                string rank = Career.CareerNames.Rank(upgrade.requiredRank);
+                return Loc.T($"{upgrade.Name} ({upgrade.Effect}), {upgrade.Price}: needs rank {rank}",
+                    $"{upgrade.Name} ({upgrade.Effect}), {upgrade.Price}: {rank} seviyesi gerekli");
+            }
+
             return Has(upgrade.id)
                 ? Loc.T($"Owned: {upgrade.Name} ({upgrade.Effect})", $"Sende var: {upgrade.Name} ({upgrade.Effect})")
                 : Loc.T($"Upgrade: {upgrade.Name}, {upgrade.Effect}   {upgrade.Price}   (money {economy.Ledger.Balance})",
@@ -111,8 +129,20 @@ namespace WoodcraftSimulator.Economy
             Apply();
         }
 
+        /// <summary>Whether the career's rank allows buying it (without a career: always).</summary>
+        private static bool RankAllows(Upgrade upgrade) =>
+            Career.WorkshopCareer.Active == null || Career.WorkshopCareer.Active.Progress.Rank >= upgrade.requiredRank;
+
         private void Apply()
         {
+            foreach (Upgrade upgrade in upgrades)
+            {
+                if (upgrade.reveal != null)
+                {
+                    upgrade.reveal.SetActive(Has(upgrade.id));
+                }
+            }
+
             float factor = Has(LedLamp) ? lampIntensityFactor : 1f;
             for (int i = 0; i < lamps.Length; i++)
             {

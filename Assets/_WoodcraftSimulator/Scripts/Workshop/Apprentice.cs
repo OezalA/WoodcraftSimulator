@@ -34,6 +34,9 @@ namespace WoodcraftSimulator.Workshop
         [SerializeField] private JobBoard jobBoard;
         [SerializeField] private WorkshopEconomy economy;
 
+        [Tooltip("The career (D-054): he works only once hired, for a weekly wage.")]
+        [SerializeField] private Career.WorkshopCareer career;
+
         [Tooltip("How close (m, horizontally) he must get to a piece or bin to reach it.")]
         [SerializeField, Min(0.3f)] private float reach = 1.0f;
 
@@ -60,10 +63,20 @@ namespace WoodcraftSimulator.Workshop
 
         public bool IsWorking => state != State.Idle && state != State.Home;
 
+        /// <summary>Hired (D-054); without a career (older scenes) he simply works.</summary>
+        public bool IsHired => career == null || career.ApprenticeHired;
+
         public string InteractionPrompt
         {
             get
             {
+                if (!IsHired)
+                {
+                    string offer = Loc.T($"Apprentice: hire him (wage {Career.RunningCosts.ApprenticeWage} a week)",
+                        $"Çırak: işe al (haftalık {Career.RunningCosts.ApprenticeWage} maaş)");
+                    return message != null && Time.unscaledTime < messageUntil ? $"{offer}\n{message}" : offer;
+                }
+
                 string text = IsWorking
                     ? Loc.T($"Apprentice: tidying up ({stored} put away) - stop", $"Çırak: toparlıyor ({stored} parça kaldırdı) - dur")
                     : Loc.T("Apprentice: tidy up the offcuts", "Çırak: artıkları toparla");
@@ -94,6 +107,13 @@ namespace WoodcraftSimulator.Workshop
 
         public void Interact(PlayerInteractor interactor)
         {
+            if (!IsHired)
+            {
+                career.HireApprentice();
+                Say(Loc.T("Hired: the wage is paid with the rent each week", "İşe alındı: maaş her hafta kirayla birlikte ödenir"));
+                return;
+            }
+
             if (!agent.enabled)
             {
                 Say(Loc.T("He can't move from here", "Buradan hareket edemiyor"));

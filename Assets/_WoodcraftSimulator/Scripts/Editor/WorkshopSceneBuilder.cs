@@ -5,6 +5,7 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
+using WoodcraftSimulator.Career;
 using WoodcraftSimulator.Construction;
 using WoodcraftSimulator.Core;
 using WoodcraftSimulator.Cutting;
@@ -225,6 +226,14 @@ namespace WoodcraftSimulator.Editor
             EconomyAssets.EnsurePay(jobs[0], 35f);
             EconomyAssets.EnsurePay(jobs[1], 60f);
 
+            // Career (Phase 12, D-054): which rank opens each job, the woods a customer may ask for, optional finish.
+            SetCareer(jobs[0], CareerRank.Novice, null, 1, true, (species["pine"], 1.0f));
+            SetCareer(jobs[1], CareerRank.Novice, null, 1, true, (species["oak"], 1.6f), (species["beech"], 1.4f),
+                (species["walnut"], 2.0f));
+            SetCareer(jobs[2], CareerRank.Journeyman, null, 1, false, (species["oak"], 1.6f), (species["beech"], 1.4f));
+            SetCareer(jobs[3], CareerRank.Journeyman, null, 1, false);
+            SetCareer(jobs[4], CareerRank.Master, Skill.Outdoor, 2, false);
+
             // Stock delivery: on the floor in front of the timber rack, boards along Z, side by side towards +X.
             // Its board factory is assigned later (it lives on the save system).
             var deliveryObject = new GameObject("StockDelivery");
@@ -235,6 +244,12 @@ namespace WoodcraftSimulator.Editor
             WorkshopEconomy economy = BuildEconomy(parent, materials, species, delivery);
 
             SetReferences(jobBoard, "jobs", jobs);
+            var career = economy.gameObject.AddComponent<WorkshopCareer>();
+            SetReference(career, "economy", economy);
+            SetReference(jobBoard, "career", career);
+            var serializedBoard = new SerializedObject(jobBoard);
+            serializedBoard.FindProperty("slots").intValue = jobs.Length; // one offer per sheet
+            serializedBoard.ApplyModifiedPropertiesWithoutUndo();
             SetReference(jobBoard, "station", Object.FindFirstObjectByType<AssemblyStation>());
             SetReference(jobBoard, "cutList", Object.FindFirstObjectByType<CutList>());
             SetReference(jobBoard, "waste", Object.FindFirstObjectByType<WorkshopWaste>());
@@ -444,13 +459,20 @@ namespace WoodcraftSimulator.Editor
             var serialized = new SerializedObject(upgrades);
             serialized.FindProperty("economy").objectReferenceValue = economy;
             SerializedProperty list = serialized.FindProperty("upgrades");
-            list.arraySize = 3;
+            list.arraySize = 4;
             SetUpgrade(list.GetArrayElementAtIndex(0), WorkshopUpgrades.PullSaw, "Japanese pull saw", "Japon çekme testere",
-                "cuts 70 % faster", "%70 daha hızlı keser", 45f);
+                "cuts 70 % faster", "%70 daha hızlı keser", 45f, CareerRank.Journeyman);
             SetUpgrade(list.GetArrayElementAtIndex(1), WorkshopUpgrades.BrushlessDrill, "Brushless drill-driver",
-                "Fırçasız şarjlı matkap", "drills and drives 60 % faster", "%60 daha hızlı deler ve vidalar", 80f);
+                "Fırçasız şarjlı matkap", "drills and drives 60 % faster", "%60 daha hızlı deler ve vidalar", 80f, CareerRank.Journeyman);
             SetUpgrade(list.GetArrayElementAtIndex(2), WorkshopUpgrades.LedLamp, "LED workshop lamp", "LED atölye lambası",
                 "brighter bench light", "tezgahta daha parlak ışık", 30f);
+            // Workshop expansion (D-054): a second pair of sawhorses, hidden until bought.
+            Transform secondHorses = BuildSawhorses(parent, materials.Workbench, new Vector3(0.4f, FloorTop, 0.5f), setSawFloor: false);
+            secondHorses.name = "Sawhorses2";
+            secondHorses.gameObject.SetActive(false);
+            SetUpgrade(list.GetArrayElementAtIndex(3), "sawhorses-2", "Second pair of sawhorses", "İkinci sehpa takımı",
+                "cut and lay out two boards at once", "aynı anda iki tahtayla çalış", 40f, CareerRank.Journeyman,
+                secondHorses.gameObject);
             Light lamp = GameObject.Find("Environment/Workshop/WorkbenchLamp")?.GetComponent<Light>();
             SerializedProperty lamps = serialized.FindProperty("lamps");
             lamps.arraySize = lamp != null ? 1 : 0;
@@ -462,9 +484,9 @@ namespace WoodcraftSimulator.Editor
             serialized.ApplyModifiedPropertiesWithoutUndo();
 
             var sheetSize = new Vector3(0.21f, 0.297f, 0.002f);
-            for (int i = 0; i < 3; i++)
+            for (int i = 0; i < 4; i++)
             {
-                float x = centerX + (i - 1f) * 0.3f;
+                float x = centerX + (i - 1.5f) * 0.3f;
                 GameObject sheet = CreateBox($"UpgradeSheet_{i}", parent, new Vector3(x, rowY, wallZ - 0.021f),
                     sheetSize, materials.Paper);
                 EnlargeGrabCollider(sheet, sheetSize);
@@ -489,7 +511,7 @@ namespace WoodcraftSimulator.Editor
         }
 
         private static void SetUpgrade(SerializedProperty entry, string id, string name, string nameTurkish,
-            string effect, string effectTurkish, float price)
+            string effect, string effectTurkish, float price, CareerRank rank = CareerRank.Novice, GameObject reveal = null)
         {
             entry.FindPropertyRelative("id").stringValue = id;
             entry.FindPropertyRelative("displayName").stringValue = name;
@@ -497,6 +519,8 @@ namespace WoodcraftSimulator.Editor
             entry.FindPropertyRelative("effect").stringValue = effect;
             entry.FindPropertyRelative("effectTurkish").stringValue = effectTurkish;
             entry.FindPropertyRelative("priceEuros").floatValue = price;
+            entry.FindPropertyRelative("requiredRank").enumValueIndex = (int)rank;
+            entry.FindPropertyRelative("reveal").objectReferenceValue = reveal;
         }
 
         /// <summary>
@@ -504,7 +528,7 @@ namespace WoodcraftSimulator.Editor
         /// room's Z axis 1.2 m apart, so a long board laid along Z rests on both. Boards are sawn at work height only
         /// (bench, sawhorses, table), not on the floor; the saw is told where the floor is.
         /// </summary>
-        private static void BuildSawhorses(Transform parent, Material wood, Vector3 baseCenter, bool setSawFloor = true)
+        private static Transform BuildSawhorses(Transform parent, Material wood, Vector3 baseCenter, bool setSawFloor = true)
         {
             const float height = 0.65f;
             const float beamLength = 0.9f;
@@ -537,6 +561,8 @@ namespace WoodcraftSimulator.Editor
                 serialized.FindProperty("floorY").floatValue = FloorTop;
                 serialized.ApplyModifiedPropertiesWithoutUndo();
             }
+
+            return horses;
         }
 
         /// <summary>Placeholder feedback sounds around the player (Phase 8d, D-044); tool sounds live on the tools.</summary>
@@ -807,6 +833,28 @@ namespace WoodcraftSimulator.Editor
 
         private static readonly Vector3 PergolaSitePosition = new Vector3(6.5f, 0f, -7f);
 
+        /// <summary>Career settings of a job (D-054), written on every build so the assets follow the code.</summary>
+        private static void SetCareer(JobDefinition job, CareerRank rank, Skill? skill, int skillLevel, bool finishOptional,
+            params (WoodSpeciesDefinition species, float payFactor)[] woods)
+        {
+            var serialized = new SerializedObject(job);
+            serialized.FindProperty("requiredRank").enumValueIndex = (int)rank;
+            serialized.FindProperty("needsSkill").boolValue = skill.HasValue;
+            serialized.FindProperty("requiredSkill").enumValueIndex = (int)(skill ?? Skill.Cutting);
+            serialized.FindProperty("requiredSkillLevel").intValue = skillLevel;
+            serialized.FindProperty("finishOptional").boolValue = finishOptional;
+            SerializedProperty options = serialized.FindProperty("woodOptions");
+            options.arraySize = woods.Length;
+            for (int i = 0; i < woods.Length; i++)
+            {
+                options.GetArrayElementAtIndex(i).FindPropertyRelative("species").objectReferenceValue = woods[i].species;
+                options.GetArrayElementAtIndex(i).FindPropertyRelative("payFactor").floatValue = woods[i].payFactor;
+            }
+
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            AssetDatabase.SaveAssetIfDirty(job);
+        }
+
         private static void SetArray(SerializedProperty property, IReadOnlyList<Object> values)
         {
             property.arraySize = values.Count;
@@ -990,6 +1038,7 @@ namespace WoodcraftSimulator.Editor
             SetReference(apprentice, "carryPoint", carryPoint);
             SetReference(apprentice, "jobBoard", Object.FindFirstObjectByType<JobBoard>());
             SetReference(apprentice, "economy", Object.FindFirstObjectByType<WorkshopEconomy>());
+            SetReference(apprentice, "career", Object.FindFirstObjectByType<WorkshopCareer>());
         }
 
         /// <summary>A box from <paramref name="from"/> to <paramref name="to"/> with the given cross-section (x, y).</summary>
@@ -1512,6 +1561,8 @@ namespace WoodcraftSimulator.Editor
             document.visualTreeAsset = layout;
 
             var hud = hudObject.AddComponent<GameplayHud>();
+            var careerPanel = hudObject.AddComponent<CareerPanel>();
+            SetReference(careerPanel, "career", Object.FindFirstObjectByType<WorkshopCareer>());
             SetReference(hud, "interactor", interactor);
             SetReference(hud, "carrier", carrier);
             SetReference(hud, "toolBelt", carrier.GetComponent<PlayerToolBelt>());

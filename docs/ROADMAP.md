@@ -143,3 +143,12 @@ posts, stage inspections at the end of each stage (block the next stage, affect 
   species; bin contents on approach, take with wheel + E. MT-028, MT-029 pending
 - [x] 11e: Stage inspections (D-053): E on the corner stake; loose joints / proud screws block the next stage,
   flaws are noted; goal "every stage passed its first inspection". MT-030 pending
+
+## Phase 12: Progression and Career (plan approved 2026-11-17, D-054) - code done, test MT-031 pending
+Owner's choices: one delivered job = one week; skills open jobs and make work a little quicker; debt allowed; one
+test at the end.
+- [x] 12a: Domain: career (experience, ranks, reputation, skills), running costs, debt in the ledger; tests
+- [x] 12b: Job market: weekly offers from templates with customers, woods, finish; locked goal sheet; save
+- [x] 12c: Unlocks: jobs by rank / skill, upgrades by rank, apprentice hired for a wage, second sawhorses
+- [x] 12d: Finances: weekly rent and wage, Tab summary, debt shown
+- [x] 12e: Career card on the HUD, delivery message with experience and reputation

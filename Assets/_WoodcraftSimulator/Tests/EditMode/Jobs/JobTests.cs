@@ -313,5 +313,23 @@ namespace WoodcraftSimulator.Tests.Jobs
             Assert.That(settlement.MaterialCost, Is.EqualTo(Money.Zero));
             Assert.That(settlement.Unpriced.Count, Is.EqualTo(2));
         }
+
+        [Test]
+        public void WoodAsked_IsAGoal_EveryPartOfThatWood()
+        {
+            var oak = new WoodSpecies("oak", "Oak", 710);
+            var job = new Job("shelf-job", "Wall shelf", "Oak, please.", Shelf(), new StockSpec("oak", "Oak", Size(2000)));
+            var build = new AssemblyBuild(job.Blueprint);
+            build.TryPlace("left", new TimberPiece(oak, Size(600)));
+            build.TryPlace("right", new TimberPiece(Spruce, Size(600))); // a spruce part in an oak shelf
+
+            JobResult result = JobResult.Create(job, build.CreateReport(), ShelfUsage(2, 0), 600, woodAsked: true);
+            QualityGoal wood = result.Goals.Single(g => g.Name.Contains("Oak"));
+            Assert.That(wood.Met, Is.False);
+            Assert.That(wood.Detail, Is.EqualTo("1/2 parts"));
+
+            Assert.That(JobResult.Create(job, build.CreateReport(), ShelfUsage(2, 0), 600).Goals.Count, Is.EqualTo(4),
+                "No wood goal when the customer didn't ask for one.");
+        }
     }
 }

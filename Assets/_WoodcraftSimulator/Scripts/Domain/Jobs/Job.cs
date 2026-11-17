@@ -258,8 +258,11 @@ namespace WoodcraftSimulator.Jobs
         /// <param name="finishedParts">Installed parts that are sanded and oiled (only counted if the job asks for it).</param>
         /// <param name="inspectedStages">Stages the customer inspects (outdoor jobs, D-053); 0 = no such goal.</param>
         /// <param name="passedFirstTime">Of those, the stages that passed at their first inspection.</param>
+        /// <param name="woodAsked">
+        /// The customer asked for this wood (D-054): a goal that every timber part is of it (the job's main stock wood).
+        /// </param>
         public static JobResult Create(Job job, AssemblyQualityReport report, MaterialUsage material, double seconds,
-            int finishedParts = 0, int inspectedStages = 0, int passedFirstTime = 0)
+            int finishedParts = 0, int inspectedStages = 0, int passedFirstTime = 0, bool woodAsked = false)
         {
             if (job == null) throw new ArgumentNullException(nameof(job));
             if (report == null) throw new ArgumentNullException(nameof(report));
@@ -289,6 +292,27 @@ namespace WoodcraftSimulator.Jobs
                 goals.Add(new QualityGoal(Loc.T("Every part sanded and oiled", "Her parça zımparalı ve yağlı"),
                     finishedParts >= report.PartsRequired,
                     Loc.T($"{finishedParts}/{report.PartsRequired} parts", $"{finishedParts}/{report.PartsRequired} parça")));
+            }
+
+            if (woodAsked)
+            {
+                int timber = 0;
+                int right = 0;
+                foreach (PartQuality part in report.Parts)
+                {
+                    if (part.Piece != null && part.Piece.Species.IsTimber)
+                    {
+                        timber++;
+                        if (part.Piece.Species.Id == job.Stock.SpeciesId)
+                        {
+                            right++;
+                        }
+                    }
+                }
+
+                goals.Add(new QualityGoal(Loc.T($"Made of {job.Stock.SpeciesName} as asked", $"İstendiği gibi {job.Stock.SpeciesName}"),
+                    timber > 0 && right == timber,
+                    Loc.T($"{right}/{timber} parts", $"{right}/{timber} parça")));
             }
 
             if (inspectedStages > 0)

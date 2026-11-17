@@ -135,6 +135,20 @@ namespace WoodcraftSimulator.Persistence
                 RequireFinite(prop.pose, $"prop '{prop.id}'", errors);
             }
 
+            foreach (OfferData offer in data.offers ?? Array.Empty<OfferData>())
+            {
+                if (offer == null || string.IsNullOrWhiteSpace(offer.templateId) || offer.payCents < 0)
+                {
+                    errors.Add("An offer has no job or a negative pay.");
+                }
+            }
+
+            if (data.career != null && data.career.started && (data.career.experience < 0 || data.career.week < 1 ||
+                    double.IsNaN(data.career.reputation) || data.career.reputation < 0.0 || data.career.reputation > 5.0))
+            {
+                errors.Add("Career: experience, week or reputation out of range.");
+            }
+
             var binIds = new HashSet<string>();
             foreach (BinData bin in data.bins ?? Array.Empty<BinData>())
             {

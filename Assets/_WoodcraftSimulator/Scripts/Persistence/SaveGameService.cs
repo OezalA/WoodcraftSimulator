@@ -254,6 +254,8 @@ namespace WoodcraftSimulator.Persistence
             if (jobBoard != null)
             {
                 data.job = jobBoard.Capture();
+                data.offers = jobBoard.CaptureOffers();
+                data.career = jobBoard.CaptureCareer() ?? new CareerData();
             }
 
             if (economy != null)
@@ -387,7 +389,7 @@ namespace WoodcraftSimulator.Persistence
             // The job sets the station's blueprint and the cut list before the assembly is restored.
             if (jobBoard != null && data.job != null)
             {
-                jobBoard.Restore(data.job);
+                jobBoard.Restore(data.job, data.offers, data.career);
             }
 
             Dictionary<string, AssemblyStation> stations = ById<AssemblyStation>();

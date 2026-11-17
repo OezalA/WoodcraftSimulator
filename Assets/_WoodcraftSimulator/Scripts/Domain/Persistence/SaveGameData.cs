@@ -46,6 +46,12 @@ namespace WoodcraftSimulator.Persistence
 
         /// <summary>Offcut bins by id with the pieces in them (D-052). Older saves have none: the bins start empty.</summary>
         public BinData[] bins = Array.Empty<BinData>();
+
+        /// <summary>Career (D-054). Not started (older saves): rebuilt from the completed jobs.</summary>
+        public CareerData career = new CareerData();
+
+        /// <summary>The offers on the job board, one per sheet (D-054). Empty (older saves): new offers are drawn.</summary>
+        public OfferData[] offers = Array.Empty<OfferData>();
     }
 
     [Serializable]
@@ -185,6 +191,9 @@ namespace WoodcraftSimulator.Persistence
 
         /// <summary>Completed and delivered job ids, oldest first (a job may appear more than once).</summary>
         public string[] completedJobIds = Array.Empty<string>();
+
+        /// <summary>Board slot (sheet) of the active job's offer (D-054); older saves: 0 with their template.</summary>
+        public int activeSlot;
     }
 
     [Serializable]
@@ -226,6 +235,39 @@ namespace WoodcraftSimulator.Persistence
     {
         public string id;
         public PoseData pose = new PoseData();
+    }
+
+    /// <summary>Experience, reputation, week, skills (D-054).</summary>
+    [Serializable]
+    public sealed class CareerData
+    {
+        public bool started;
+        public int experience;
+        public double reputation;
+        public int week;
+        public int jobsDelivered;
+
+        /// <summary>Points per skill in the order of <c>Skill</c> (cutting, joining, finishing, outdoor).</summary>
+        public int[] skillPoints = Array.Empty<int>();
+
+        public bool apprenticeHired;
+    }
+
+    /// <summary>One job offer on the board (D-054).</summary>
+    [Serializable]
+    public sealed class OfferData
+    {
+        public string templateId;
+        public string customer;
+
+        /// <summary>Wood asked for; empty = the template's own.</summary>
+        public string speciesId;
+
+        public bool requiresFinish;
+        public long payCents;
+
+        /// <summary>Shown as a goal, not yet takeable (the reason is worked out again when loaded).</summary>
+        public bool locked;
     }
 
     /// <summary>An offcut bin (D-052): its pieces as board data (no id, pose or marks needed).</summary>

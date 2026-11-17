@@ -156,8 +156,31 @@ namespace WoodcraftSimulator.Economy
         }
 
         /// <summary>The inventory screen text (money, timber by species and section, fasteners).</summary>
-        public string InventoryText() =>
-            WorkshopInventory.Format(Ledger, WorkshopInventory.Summarize(LooseTimber(), Catalog), Fasteners, FastenerName);
+        public string InventoryText()
+        {
+            string text = WorkshopInventory.Format(Ledger, WorkshopInventory.Summarize(LooseTimber(), Catalog), Fasteners, FastenerName);
+            Career.WorkshopCareer career = Career.WorkshopCareer.Active;
+            if (career == null)
+            {
+                return text;
+            }
+
+            // Running costs (D-054): what a week costs, what was paid so far, and a debt warning.
+            Money weekly = Career.RunningCosts.Weekly(career.ApprenticeHired);
+            string wage = career.ApprenticeHired
+                ? Loc.T($" + wage {Career.RunningCosts.ApprenticeWage}", $" + maaş {Career.RunningCosts.ApprenticeWage}")
+                : string.Empty;
+            text += Loc.T(
+                $"\nWeek {career.Progress.Week}: costs {weekly} a week (rent {Career.RunningCosts.Rent}{wage}), paid when a job is delivered; paid so far {Ledger.TotalRunningCosts}",
+                $"\n{career.Progress.Week}. hafta: haftalık gider {weekly} (kira {Career.RunningCosts.Rent}{wage}), iş teslim edilince ödenir; şimdiye kadar {Ledger.TotalRunningCosts}");
+            if (Ledger.IsInDebt)
+            {
+                text += Loc.T("\nIn debt: nothing can be bought until a job pays (jobs with a deposit help)",
+                    "\nBorçtasın: bir iş ödeyene kadar satın alma yok (avanslı işler yardım eder)");
+            }
+
+            return text;
+        }
 
         public static string PurchaseText(PurchaseResult result) => result switch
         {

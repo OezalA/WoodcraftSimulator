@@ -52,6 +52,31 @@ namespace WoodcraftSimulator.Jobs
         [Tooltip("Share of the pay the customer pays on acceptance, for the material (0..0.7, D-046).")]
         [SerializeField, Range(0f, 0.7f)] private float depositShare;
 
+        [Header("Career (Phase 12, D-054)")]
+        [Tooltip("Rank needed to take this job.")]
+        [SerializeField] private Career.CareerRank requiredRank = Career.CareerRank.Novice;
+
+        [Tooltip("A skill level needed as well (e.g. outdoor building for the pergola).")]
+        [SerializeField] private bool needsSkill;
+
+        [SerializeField] private Career.Skill requiredSkill = Career.Skill.Cutting;
+        [SerializeField, Range(1, 5)] private int requiredSkillLevel = 1;
+
+        [Serializable]
+        public sealed class WoodOption
+        {
+            public WoodSpeciesDefinition species;
+
+            [Tooltip("Pay factor when the customer wants this wood (hardwoods cost more and are harder to work).")]
+            [Min(0.1f)] public float payFactor = 1.3f;
+        }
+
+        [Tooltip("Other woods a customer may ask for (the catalog must sell the main stock size in them).")]
+        [SerializeField] private WoodOption[] woodOptions = Array.Empty<WoodOption>();
+
+        [Tooltip("A customer may ask for a sanded and oiled finish (pays more).")]
+        [SerializeField] private bool finishOptional;
+
         [Header("Turkish (D-041)")]
         [SerializeField] private string displayNameTurkish = string.Empty;
         [SerializeField, TextArea] private string descriptionTurkish = string.Empty;
@@ -69,6 +94,70 @@ namespace WoodcraftSimulator.Jobs
 
         public BoardDimensions StockDimensions =>
             BoardDimensions.FromMillimeters(stockLengthMillimeters, stockWidthMillimeters, stockThicknessMillimeters);
+
+        /// <summary>What the job market needs to know (D-054).</summary>
+        public JobTemplateInfo ToTemplate()
+        {
+            var options = new List<SpeciesOption>();
+            foreach (WoodOption option in woodOptions)
+            {
+                if (option?.species != null && option.species != stockSpecies)
+                {
+                    options.Add(new SpeciesOption(option.species.Id, option.species.DisplayName, option.payFactor));
+                }
+            }
+
+            return new JobTemplateInfo(id, DisplayName, Pay, requiredRank, needsSkill ? requiredSkill : (Career.Skill?)null,
+                requiredSkillLevel, options, finishOptional && !requiresFinish);
+        }
+
+        /// <summary>The wood asset of an offer (the template's own when not asked for another).</summary>
+        public WoodSpeciesDefinition WoodFor(JobOffer offer)
+        {
+            foreach (WoodOption option in woodOptions)
+            {
+                if (option?.species != null && offer?.SpeciesId == option.species.Id)
+                {
+                    return option.species;
+                }
+            }
+
+            return stockSpecies;
+        }
+
+        /// <summary>
+        /// The job of a market offer (D-054): the customer and his wish in the description, the wood asked for as the main
+        /// stock, the finish if asked for, the offer's pay.
+        /// </summary>
+        public Job ToDomain(JobOffer offer)
+        {
+            if (offer == null)
+            {
+                return ToDomain();
+            }
+
+            WoodSpeciesDefinition wood = WoodFor(offer);
+            bool finish = requiresFinish || offer.RequiresFinish;
+            var wishes = new List<string>();
+            if (wood != stockSpecies)
+            {
+                wishes.Add(Loc.T($"made of {wood.DisplayName}", $"{wood.DisplayName} olsun"));
+            }
+
+            if (offer.RequiresFinish && !requiresFinish)
+            {
+                wishes.Add(Loc.T("sanded and oiled", "zımparalı ve yağlı"));
+            }
+
+            string wish = wishes.Count > 0 ? $" ({string.Join(", ", wishes)})" : string.Empty;
+            string text = Loc.Pick(description, descriptionTurkish);
+            string customer = string.IsNullOrEmpty(offer.Customer) ? text : Loc.T($"{offer.Customer}{wish}: {text}", $"{offer.Customer}{wish}: {text}");
+            return new Job(id, DisplayName, customer, blueprint.ToDomain(),
+                new StockSpec(wood.Id, wood.DisplayName, StockDimensions), spareBoards, Tips(), offer.Pay, finish,
+                ExtraStocks(), depositShare);
+        }
+
+        private Economy.Money Pay => Economy.Money.FromEuros((decimal)Math.Round(payEuros, 2));
 
         public Job ToDomain() => new Job(id, DisplayName, Loc.Pick(description, descriptionTurkish), blueprint.ToDomain(),
             new StockSpec(stockSpecies.Id, stockSpecies.DisplayName, StockDimensions), spareBoards, Tips(),

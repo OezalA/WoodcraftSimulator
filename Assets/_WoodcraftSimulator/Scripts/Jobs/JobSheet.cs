@@ -15,7 +15,7 @@ namespace WoodcraftSimulator.Jobs
 
         public string InteractionPrompt => board != null ? board.PromptFor(jobIndex) : name;
 
-        public string Description => board != null && jobIndex < board.Jobs.Count ? board.Jobs[jobIndex].DisplayName : name;
+        public string Description => board != null ? board.SheetTitle(jobIndex) : name;
 
         public void Interact(PlayerInteractor interactor)
         {

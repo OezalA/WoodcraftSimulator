@@ -706,3 +706,35 @@ choices: the player asks for the inspection; a new quality goal for first-time p
 - Job tips of the terrace and pergola mention the inspections. Needs a scene rebuild.
 - Fix (2026-11-17): delivering clears the station and jobs can be taken again, so accepting a job on a site now
   resets its inspections (`SitePreparation.ResetInspections`); otherwise a second pergola started "approved".
+
+## D-054: Phase 12 progression and career (Accepted, 2026-11-17, owner choices)
+Owner choices (all recommended options): one delivered job = one week (no clock pressure); skills open job types and
+make that work a little quicker; money may go below zero (debt), the game goes on; one test at the end (12a-12e).
+- **Career** (`CareerProgress`, domain, tested): experience = job size in euros × (0.5 + 0.5 × share of quality goals
+  met). Ranks: Acemi 0, Kalfa 100, Usta 400, Başusta 1200 XP. Reputation 0-5 (start 2.0) moves 35 % towards each
+  job's rating (5 × goals met share); it sets the pay factor of new offers (0.85 at 0, 1.0 at 2, 1.225 at 5).
+  Skills grow by doing: Kesim (parts), Birleştirme (fasteners), Yüzey (parts of finished jobs), Dış yapı (parts of
+  outdoor jobs); levels 1-5 at 0/15/40/90/180 points, each level 5 % quicker sawing / drilling and nailing / sanding
+  and oiling (Dış yapı opens jobs only). The player's hand is never tested (D-030 rule).
+- **Weeks and costs**: delivering closes the week: rent €15, plus €20 wage once the apprentice is hired (E on him;
+  before that he only offers to be hired). Charged even without money (`Ledger.Charge`, `RunningCost`): the balance
+  may go negative; purchases are still refused without money, so in debt only jobs whose deposit or stock covers the
+  material can be taken. Money turns red; Tab shows week, weekly costs, paid so far, a debt note.
+- **Job market** (`JobMarket`, domain, tested): the five sheets show this week's offers, drawn from the templates the
+  career may take (each open template once before repeats), with a customer (name list), sometimes another wood
+  (shelf: oak 1.6×, beech 1.4×, walnut 2.0×; tote: oak, beech; frame: pine) or a sanded and oiled finish (1.25×),
+  pay × reputation factor, rounded to euros. The last sheet shows the cheapest locked job as a goal ("Henüz değil:
+  ... Kalfa seviyesi gerekli"). New offers each week. Locks: frame and shelf Acemi; tool tote and terrace Kalfa;
+  pergola Usta + Dış yapı 2 (the terrace gives it). Hardwoods (and pine) are dense: every screw needs a pilot hole,
+  so harder jobs come by themselves (increasing difficulty without new rules).
+- **Wood asked for**: placing does not check the wood (dimensions only); a quality goal "İstendiği gibi meşe (n/m
+  parça)" counts it instead (cost: bonus and reputation, not a refusal).
+- **Unlocks**: pull saw and brushless drill need Kalfa; LED lamp Acemi. Workshop expansion: a second pair of
+  sawhorses (Kalfa, €40), hidden until bought (`Upgrade.reveal`). (The apprentice walks through them: the walkable
+  area is built at scene start.)
+- **HUD**: career card under the money (rank, week, experience bar, five reputation bars, skill levels); delivering
+  shows "+XP, itibar a > b, hafta gideri"; a rank up is announced.
+- **Save** (additive): `career`, `offers`, `job.activeSlot`. Older saves: the career starts from the delivered jobs
+  (75 % of their pay as experience, a week each); offers are drawn, a running job keeps the first sheet.
+- The experience of a job ignores the reputation factor (better reputation pays more but isn't a bigger job).
+- Not done (later): firing the apprentice, loans, deadlines, more templates (new structures), a second workshop room.

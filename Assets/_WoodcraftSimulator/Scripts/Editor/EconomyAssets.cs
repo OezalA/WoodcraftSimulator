@@ -31,6 +31,12 @@ namespace WoodcraftSimulator.Editor
             EnsureBoard(boards, "spruce-2000x145x18", species["spruce"], 2000f, 145f, 18f, 8.5f);
             EnsureBoard(boards, "spruce-2400x95x45", species["spruce"], 2400f, 95f, 45f, 9.9f);
 
+            // Woods customers may ask for (D-054): the bench stock sizes in pine and hardwoods.
+            EnsureBoard(boards, "pine-2400x95x45", species["pine"], 2400f, 95f, 45f, 8.5f);
+            EnsureBoard(boards, "beech-2000x145x18", species["beech"], 2000f, 145f, 18f, 19f);
+            EnsureBoard(boards, "oak-2000x145x18", species["oak"], 2000f, 145f, 18f, 26f);
+            EnsureBoard(boards, "walnut-2000x145x18", species["walnut"], 2000f, 145f, 18f, 38f);
+
             // Terrace material (D-046), delivered to the site outside.
             EnsureBoard(boards, "larch-2400x145x28", species["larch"], 2400f, 145f, 28f, 12f, outdoors: true);
             EnsureBoard(boards, "spruce-2400x145x45", species["spruce"], 2400f, 145f, 45f, 14f, outdoors: true);

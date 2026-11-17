@@ -20,6 +20,8 @@
         <!-- Money (top right) and the workshop inventory (Tab), D-040. -->
         <ui:VisualElement name="money-anchor" class="money-anchor" picking-mode="Ignore">
             <ui:Label name="money" class="money" picking-mode="Ignore" text="" />
+            <!-- Career card (built from code by CareerPanel, D-054). -->
+            <ui:VisualElement name="career-card" class="career" picking-mode="Ignore" />
         </ui:VisualElement>
         <ui:VisualElement name="inventory-anchor" class="inventory-anchor" picking-mode="Ignore">
             <ui:Label name="inventory" class="inventory hidden" picking-mode="Ignore" text="" />

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using WoodcraftSimulator.Career;
 using WoodcraftSimulator.Construction;
 using WoodcraftSimulator.Cutting;
 using WoodcraftSimulator.Economy;
@@ -37,7 +38,21 @@ namespace WoodcraftSimulator.Jobs
         [Tooltip("Fastener types (display names in the cut list).")]
         [SerializeField] private FastenerDefinition[] fasteners = Array.Empty<FastenerDefinition>();
 
+        [Tooltip("The player's career (D-054): which jobs are offered, pay factor, weekly costs.")]
+        [SerializeField] private WorkshopCareer career;
+
+        [Tooltip("Sheets on the board = offers per week (D-054).")]
+        [SerializeField, Min(1)] private int slots = 5;
+
         private readonly List<string> completedJobIds = new List<string>();
+        private readonly CareerProgress fallbackCareer = new CareerProgress();
+        private readonly System.Random random = new System.Random();
+        private Length kerf;
+        private JobTemplateInfo[] templates;
+
+        // Per sheet (slot): the offer, its template (index into jobs, -1 = empty), its job and material plan.
+        private JobOffer[] offers;
+        private int[] templateOf;
         private Job[] domainJobs;
         private MaterialPlan[] plans;
         private int activeIndex = -1;
@@ -51,6 +66,20 @@ namespace WoodcraftSimulator.Jobs
         private float lastMessageUntil;
 
         public IReadOnlyList<JobDefinition> Jobs => jobs;
+
+        /// <summary>Number of sheets (offers) on the board.</summary>
+        public int Slots => slots;
+
+        public CareerProgress CareerState => career != null ? career.Progress : fallbackCareer;
+
+        public WorkshopCareer WorkshopCareer => career;
+
+        /// <summary>The offer on a sheet, or null.</summary>
+        public JobOffer OfferAt(int slot) => offers != null && slot >= 0 && slot < offers.Length ? offers[slot] : null;
+
+        /// <summary>What a sheet shows from afar: the job's name, or "empty".</summary>
+        public string SheetTitle(int slot) =>
+            TemplateAt(slot) is JobDefinition template ? template.DisplayName : Loc.T("Empty sheet", "Boş kağıt");
 
         public bool HasActiveJob => activeIndex >= 0;
 
@@ -80,20 +109,71 @@ namespace WoodcraftSimulator.Jobs
                 return;
             }
 
-            Length kerf = saw.ToDomain().Kerf;
-            domainJobs = new Job[jobs.Length];
-            plans = new MaterialPlan[jobs.Length];
+            kerf = saw.ToDomain().Kerf;
+            templates = new JobTemplateInfo[jobs.Length];
             for (int i = 0; i < jobs.Length; i++)
             {
-                domainJobs[i] = jobs[i].ToDomain();
-                plans[i] = domainJobs[i].Plan(kerf);
-                if (!plans[i].IsFeasible)
+                templates[i] = jobs[i].ToTemplate();
+                MaterialPlan plan = jobs[i].ToDomain().Plan(kerf);
+                if (!plan.IsFeasible)
                 {
                     Debug.LogWarning($"[{nameof(JobBoard)}] Job '{jobs[i].Id}' can't be made from its stock: " +
-                                     string.Join(" ", plans[i].Problems), this);
+                                     string.Join(" ", plan.Problems), this);
                 }
             }
+
+            offers = new JobOffer[slots];
+            templateOf = new int[slots];
+            domainJobs = new Job[slots];
+            plans = new MaterialPlan[slots];
+            for (int i = 0; i < slots; i++)
+            {
+                templateOf[i] = -1;
+            }
         }
+
+        // A new game: the first week's offers (a save, if any, replaces them right after).
+        private void Start()
+        {
+            if (Array.TrueForAll(offers, offer => offer == null))
+            {
+                DrawOffers();
+            }
+        }
+
+        /// <summary>A new week's offers for every sheet (D-054).</summary>
+        private void DrawOffers()
+        {
+            IReadOnlyList<JobOffer> drawn = JobMarket.Generate(templates, CareerState, slots, random.NextDouble);
+            for (int i = 0; i < slots; i++)
+            {
+                SetOffer(i, i < drawn.Count ? drawn[i] : null);
+            }
+
+            Changed?.Invoke();
+        }
+
+        private void SetOffer(int slot, JobOffer offer)
+        {
+            offers[slot] = offer;
+            templateOf[slot] = offer != null ? Array.FindIndex(jobs, job => job != null && job.Id == offer.TemplateId) : -1;
+            if (templateOf[slot] < 0)
+            {
+                offers[slot] = null;
+                domainJobs[slot] = null;
+                plans[slot] = null;
+                return;
+            }
+
+            domainJobs[slot] = jobs[templateOf[slot]].ToDomain(offer);
+            plans[slot] = domainJobs[slot].Plan(kerf);
+        }
+
+        private JobDefinition TemplateAt(int slot) =>
+            templateOf != null && slot >= 0 && slot < templateOf.Length && templateOf[slot] >= 0 ? jobs[templateOf[slot]] : null;
+
+        private JobTemplateInfo TemplateInfoAt(int slot) =>
+            templateOf != null && slot >= 0 && slot < templateOf.Length && templateOf[slot] >= 0 ? templates[templateOf[slot]] : null;
 
         private void OnEnable()
         {
@@ -139,7 +219,7 @@ namespace WoodcraftSimulator.Jobs
         {
             foreach (AssemblyStation each in AllStations())
             {
-                if (each.FindBlueprint(jobs[index].Blueprint.Id) != null)
+                if (TemplateAt(index) is JobDefinition template && each.FindBlueprint(template.Blueprint.Id) != null)
                 {
                     return each;
                 }
@@ -214,7 +294,7 @@ namespace WoodcraftSimulator.Jobs
 
                     cachedResult = JobResult.Create(ActiveJob, report,
                         new MaterialUsage(boardsDelivered, boardsOrderedExtra, delivered, installed, sawdust), ElapsedSeconds,
-                        FinishedParts(), inspected, firstTime);
+                        FinishedParts(), inspected, firstTime, offers[activeIndex]?.SpeciesId != null);
                 }
 
                 return cachedResult;
@@ -312,7 +392,7 @@ namespace WoodcraftSimulator.Jobs
 
         /// <summary>What a job needs, before accepting it: material plan and what has to be bought.</summary>
         public string OfferText(int index) =>
-            index >= 0 && index < jobs.Length
+            plans != null && index >= 0 && index < slots && plans[index] != null
                 ? JobText.Offer(domainJobs[index], plans[index], FastenerName, Shopping(index))
                 : null;
 
@@ -326,7 +406,7 @@ namespace WoodcraftSimulator.Jobs
 
         public string PromptFor(int index)
         {
-            if (index < 0 || index >= jobs.Length)
+            if (index < 0 || index >= slots)
             {
                 return null;
             }
@@ -342,7 +422,22 @@ namespace WoodcraftSimulator.Jobs
 
         private string BasePrompt(int index)
         {
-            string jobName = jobs[index].DisplayName;
+            JobDefinition template = TemplateAt(index);
+            if (template == null)
+            {
+                return Loc.T("No job on this sheet this week", "Bu hafta bu kağıtta iş yok");
+            }
+
+            string jobName = template.DisplayName;
+            JobOffer offer = offers[index];
+            string who = string.IsNullOrEmpty(offer.Customer) ? jobName : $"{jobName}, {offer.Customer}";
+            if (offer.IsLocked)
+            {
+                string reason = TemplateInfoAt(index).LockReason(CareerState) ?? offer.LockReason;
+                return Loc.T($"Not yet: {jobName} ({offer.Customer}, pay {offer.Pay}): {reason}",
+                    $"Henüz değil: {jobName} ({offer.Customer}, ücret {offer.Pay}): {reason}");
+            }
+
             if (!HasActiveJob)
             {
                 if (!plans[index].IsFeasible)
@@ -360,13 +455,13 @@ namespace WoodcraftSimulator.Jobs
                 Money cost = Shopping(index).TotalCost;
                 Money deposit = domainJobs[index].Deposit;
                 string depositText = deposit > Money.Zero ? Loc.T($", deposit {deposit} now", $", avans {deposit} hemen") : string.Empty;
-                return Loc.T($"Accept job: {jobName}   (pay {pay}{depositText}; material to buy {cost}, money {economy.Ledger.Balance})",
-                    $"İşi kabul et: {jobName}   (ücret {pay}{depositText}; alınacak malzeme {cost}, para {economy.Ledger.Balance})");
+                return Loc.T($"Accept job: {who}   (pay {pay}{depositText}; material to buy {cost}, money {economy.Ledger.Balance})",
+                    $"İşi kabul et: {who}   (ücret {pay}{depositText}; alınacak malzeme {cost}, para {economy.Ledger.Balance})");
             }
 
             if (index != activeIndex)
             {
-                return Loc.T($"Job in progress: {jobs[activeIndex].DisplayName}", $"Devam eden iş: {jobs[activeIndex].DisplayName}");
+                return Loc.T($"Job in progress: {TemplateAt(activeIndex).DisplayName}", $"Devam eden iş: {TemplateAt(activeIndex).DisplayName}");
             }
 
             if (IsComplete)
@@ -384,7 +479,7 @@ namespace WoodcraftSimulator.Jobs
 
         public void Interact(int index)
         {
-            if (index < 0 || index >= jobs.Length)
+            if (index < 0 || index >= slots || TemplateAt(index) == null)
             {
                 return;
             }
@@ -408,7 +503,7 @@ namespace WoodcraftSimulator.Jobs
 
         private void Accept(int index)
         {
-            if (!plans[index].IsFeasible || !StationFor(index).IsEmpty)
+            if (offers[index].IsLocked || !plans[index].IsFeasible || !StationFor(index).IsEmpty)
             {
                 return;
             }
@@ -433,14 +528,14 @@ namespace WoodcraftSimulator.Jobs
                 return;
             }
 
-            if (!StationFor(index).TrySetBlueprint(jobs[index].Blueprint))
+            if (!StationFor(index).TrySetBlueprint(TemplateAt(index).Blueprint))
             {
                 return;
             }
 
             if (deposit > Money.Zero)
             {
-                economy.Ledger.Earn(deposit, Loc.T($"Deposit: {jobs[index].DisplayName}", $"Avans: {jobs[index].DisplayName}"));
+                economy.Ledger.Earn(deposit, Loc.T($"Deposit: {TemplateAt(index).DisplayName}", $"Avans: {TemplateAt(index).DisplayName}"));
             }
 
             depositPaid = deposit;
@@ -499,7 +594,7 @@ namespace WoodcraftSimulator.Jobs
         private void Deliver()
         {
             JobSettlement settlement = Settlement;
-            string jobName = jobs[activeIndex].DisplayName;
+            string jobName = TemplateAt(activeIndex).DisplayName;
             // The deposit was paid on acceptance; the rest now (the deposit never exceeds the delivery share).
             Money rest = settlement.Earned - depositPaid;
             if (rest > Money.Zero)
@@ -508,7 +603,28 @@ namespace WoodcraftSimulator.Jobs
             }
 
             depositPaid = Money.Zero;
-            completedJobIds.Add(jobs[activeIndex].Id);
+            completedJobIds.Add(TemplateAt(activeIndex).Id);
+
+            // The career moves on and the week closes (D-054): experience, reputation, skills, rent and wage.
+            JobResult result = Result;
+            AssemblyQualityReport report = result.Report;
+            string careerText = string.Empty;
+            if (career != null)
+            {
+                JobOutcome outcome = new JobOutcome(SizeOf(activeIndex), result.GoalsMet, result.Goals.Count,
+                    report.PartsRequired, report.FastenersRequired, ActiveJob.RequiresFinish,
+                    Active.TryGetComponent(out Workshop.SitePreparation _));
+                JobReview review = career.CloseWeek(outcome);
+                careerText = Loc.T(
+                    $"   +{review.Experience} XP, reputation {review.ReputationBefore:0.0} > {review.ReputationAfter:0.0}, week costs {career.LastCosts}",
+                    $"   +{review.Experience} XP, itibar {review.ReputationBefore:0.0} > {review.ReputationAfter:0.0}, hafta gideri {career.LastCosts}");
+                if (review.RankedUp)
+                {
+                    careerText += Loc.T($"\nNew rank: {CareerNames.Rank(review.RankAfter)}!",
+                        $"\nYeni seviye: {CareerNames.Rank(review.RankAfter)}!");
+                }
+            }
+
             Active.ClearAll();
             activeIndex = -1;
             OnStationChanged();
@@ -517,15 +633,17 @@ namespace WoodcraftSimulator.Jobs
                 cutList.ClearJobLines();
             }
 
-            ShowMessage(Loc.T($"Delivered: +{settlement.Earned} (profit {settlement.Profit})",
-                $"Teslim edildi: +{settlement.Earned} (kâr {settlement.Profit})"));
+            // A new week: new offers on the board.
+            DrawOffers();
+            ShowMessage(Loc.T($"Delivered: +{settlement.Earned} (profit {settlement.Profit}){careerText}",
+                $"Teslim edildi: +{settlement.Earned} (kâr {settlement.Profit}){careerText}"), 8f);
             Changed?.Invoke();
         }
 
-        private void ShowMessage(string message)
+        private void ShowMessage(string message, float seconds = 4f)
         {
             lastMessage = message;
-            lastMessageUntil = Time.unscaledTime + 4f;
+            lastMessageUntil = Time.unscaledTime + seconds;
         }
 
         private void ShowCutList()
@@ -552,10 +670,93 @@ namespace WoodcraftSimulator.Jobs
             cutList.SetJobLines(lengths, labels);
         }
 
+        /// <summary>
+        /// The size of the job on a sheet for experience (D-054): its pay with the wood and finish asked for, without the
+        /// reputation factor (better reputation pays more, but doesn't make the job bigger).
+        /// </summary>
+        private Money SizeOf(int slot)
+        {
+            JobTemplateInfo template = TemplateInfoAt(slot);
+            JobOffer offer = offers[slot];
+            SpeciesOption wood = null;
+            foreach (SpeciesOption option in template.SpeciesOptions)
+            {
+                if (option.SpeciesId == offer.SpeciesId)
+                {
+                    wood = option;
+                }
+            }
+
+            return JobMarket.PayFor(template, wood, offer.RequiresFinish, 1.0);
+        }
+
+        public OfferData[] CaptureOffers()
+        {
+            var data = new OfferData[slots];
+            for (int i = 0; i < slots; i++)
+            {
+                JobOffer offer = offers[i];
+                data[i] = offer == null
+                    ? new OfferData { templateId = string.Empty }
+                    : new OfferData
+                    {
+                        templateId = offer.TemplateId, customer = offer.Customer, speciesId = offer.SpeciesId ?? string.Empty,
+                        requiresFinish = offer.RequiresFinish, payCents = offer.Pay.Cents, locked = offer.IsLocked
+                    };
+            }
+
+            return data;
+        }
+
+        public CareerData CaptureCareer() => career != null ? career.Capture() : null;
+
+        /// <summary>
+        /// The saved offers; an older save has none: new ones are drawn, and its active job (by template) gets the first
+        /// sheet with the template's own wood and pay.
+        /// </summary>
+        private void RestoreOffers(OfferData[] saved, JobData data)
+        {
+            bool any = false;
+            for (int i = 0; i < slots; i++)
+            {
+                OfferData entry = saved != null && i < saved.Length ? saved[i] : null;
+                JobOffer offer = null;
+                if (entry != null && !string.IsNullOrEmpty(entry.templateId))
+                {
+                    int template = Array.FindIndex(jobs, job => job != null && job.Id == entry.templateId);
+                    string lockReason = entry.locked && template >= 0
+                        ? templates[template].LockReason(CareerState) ?? Loc.T("locked", "kilitli")
+                        : null;
+                    offer = new JobOffer(entry.templateId, entry.customer, string.IsNullOrEmpty(entry.speciesId) ? null : entry.speciesId,
+                        entry.requiresFinish, Money.FromCents(entry.payCents), lockReason);
+                    any = true;
+                }
+
+                SetOffer(i, offer);
+            }
+
+            if (any)
+            {
+                return;
+            }
+
+            DrawOffers();
+            if (!string.IsNullOrEmpty(data.activeJobId))
+            {
+                int template = Array.FindIndex(jobs, job => job != null && job.Id == data.activeJobId);
+                if (template >= 0)
+                {
+                    SetOffer(0, new JobOffer(jobs[template].Id, string.Empty, null, false, templates[template].BasePay));
+                    data.activeSlot = 0;
+                }
+            }
+        }
+
         /// <summary>Save state of the job system.</summary>
         public JobData Capture() => new JobData
         {
-            activeJobId = HasActiveJob ? jobs[activeIndex].Id : string.Empty,
+            activeJobId = HasActiveJob ? TemplateAt(activeIndex).Id : string.Empty,
+            activeSlot = activeIndex,
             elapsedSeconds = ElapsedSeconds,
             boardsDelivered = boardsDelivered,
             boardsOrderedExtra = boardsOrderedExtra,
@@ -568,15 +769,35 @@ namespace WoodcraftSimulator.Jobs
         /// Loading a save (before the assemblies are restored): the active job, its blueprint on the station and its
         /// cut list. The bought boards come back with the saved boards, so nothing is bought again.
         /// </summary>
-        public void Restore(JobData data)
+        public void Restore(JobData data, OfferData[] savedOffers = null, CareerData savedCareer = null)
         {
             completedJobIds.Clear();
             completedJobIds.AddRange(data.completedJobIds ?? Array.Empty<string>());
+
+            // The career first: the offers' locks depend on it. An older save starts it from the delivered jobs.
+            if (career != null)
+            {
+                var pays = new List<Money>();
+                foreach (string id in completedJobIds)
+                {
+                    int template = Array.FindIndex(jobs, job => job != null && job.Id == id);
+                    if (template >= 0)
+                    {
+                        pays.Add(templates[template].BasePay);
+                    }
+                }
+
+                career.Restore(savedCareer, pays);
+            }
+
+            RestoreOffers(savedOffers, data);
             activeIndex = -1;
             OnStationChanged();
             if (!string.IsNullOrEmpty(data.activeJobId))
             {
-                activeIndex = Array.FindIndex(jobs, job => job != null && job.Id == data.activeJobId);
+                activeIndex = data.activeSlot >= 0 && data.activeSlot < slots && TemplateAt(data.activeSlot)?.Id == data.activeJobId
+                    ? data.activeSlot
+                    : -1;
                 if (activeIndex < 0)
                 {
                     Debug.LogWarning($"[{nameof(JobBoard)}] Saved job '{data.activeJobId}' is unknown; no job is active.", this);
@@ -590,7 +811,7 @@ namespace WoodcraftSimulator.Jobs
             depositPaid = Money.FromCents(data.depositCents);
             if (HasActiveJob)
             {
-                StationFor(activeIndex).TrySetBlueprint(jobs[activeIndex].Blueprint);
+                StationFor(activeIndex).TrySetBlueprint(TemplateAt(activeIndex).Blueprint);
                 ShowCutList();
             }
 

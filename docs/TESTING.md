@@ -550,6 +550,23 @@ Rebuild the scene first. Pergola job (terrace works the same way: beams, joists)
 | Finish | Result has the goal `Her aşama ilk denetimde geçti` with `1/2 aşama` (posts failed first) |
 | Save after a failed inspection, quit, Play | Approved stages stay approved; the first-time result is kept |
 
+### MT-031: Career, job market, weekly costs (Phase 12, D-054)
+Rebuild the scene. First load your current save once (old-save row), then start fresh: pause menu > New workshop.
+| Step | Expected |
+|---|---|
+| Start | Top right under the money a career card: `Acemi`, `1. hafta`, empty XP bar `Kalfa için 0/100 XP`, reputation 2.0 (two bars), skills all 1 |
+| Job board | Five sheets: four open offers (frame / shelf, each with a customer, sometimes `meşe olsun` or `zımparalı ve yağlı` and a higher pay), the last one `Henüz değil: ... Kalfa seviyesi gerekli` |
+| E on the locked sheet | Nothing happens; the prompt explains the lock |
+| Order board, lower row | Pull saw and brushless drill: `Kalfa seviyesi gerekli`; LED lamp buyable; fourth sheet `İkinci sehpa takımı` (Kalfa) |
+| Look at the apprentice | `Çırak: işe al (haftalık €20.00 maaş)`; E hires him; then `artıkları toparla` |
+| Do and deliver a shelf | Message `+n XP, itibar 2.0 > x, hafta gideri €35.00` (with the apprentice); week 2; new offers; Tab shows the costs |
+| An oak shelf (if offered) | Material is oak boards; every screw needs a pilot hole; result has the goal `İstendiği gibi Meşe` |
+| Reach Kalfa | `Yeni seviye: Kalfa!`; tote and terrace offers appear; the upgrades unlock |
+| Buy the second sawhorses | A second pair appears in the middle of the workshop |
+| Spend into debt (deliver with little money) | Money turns red; Tab: `Borçtasın ...`; buying is refused; a job with a deposit can still be taken |
+| Save, quit, Play | Career card, offers on the sheets, apprentice hired, debt: all kept |
+| Load a save from before Phase 12 | Career starts from the delivered jobs (rank by their pay), offers drawn; a running job stays on the first sheet |
+
 ## Game view setup (corrects the earlier tip)
 A fixed resolution such as *Full HD (1920x1080)* at `Scale 1x` **crops** the image when the Game view window is
 smaller than 1920×1080: the bottom (tool belt bar) and the lower right (tool in hand) are cut off.
