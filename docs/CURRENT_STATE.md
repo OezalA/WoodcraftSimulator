@@ -22,6 +22,7 @@ spirit level for plumbing posts, temporary braces, working height; stage inspect
 11a-11d code done; **interim test MT-027 in progress**. Finding fixed (D-050): setting parts from the ladder was very
 hard ("merdiven kısa"): parts now also snap when aiming at the ghost itself; stepladder 2.0 m, standing step 1.45 m,
 carried at the side. Needs a scene rebuild, then MT-027 continues.
+Owner request (D-051): the job information is now a structured job card (stage with progress bar, cut list table, material per stock, tips); test MT-028.
 Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 
 ## Completed
@@ -89,6 +90,7 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 | Batch test 7b-10 (owner) | Played through terrace and tool tote; findings F1-F3 fixed (D-047, D-048; static compile + 247/247 tests by Claude). Accepted: "faz 10 kadar ok"; `main` fast-forwarded | 2026-11-16 |
 | Phase 11a-11d (D-049): static compile + `dotnet test` | 0 errors, 0 warnings; 263/263 tests passed (Claude). Compiled in Unity (no `error CS` in Editor.log, .meta files generated); owner started MT-027 (ladder, pergola) | 2026-11-16 |
 | MT-027 finding D-050 (ghost aim, taller ladder): static compile + `dotnet test` | 0 errors, 0 warnings; 263/263 (Claude). Not compiled or played in Unity yet | 2026-11-16 |
+| D-051 job card: static compile + `dotnet test` | 0 errors, 0 warnings; 263/263 (Claude). Not compiled or seen in Unity yet: MT-028 pending | 2026-11-17 |
 
 ## Known issues / limitations
 - **Carry feel not liked yet** (owner, 2026-11-13). Ideas for later: smooth follow (lerp/slerp) instead of rigid
@@ -121,5 +123,6 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 4. Done: batch test up to Phase 10 accepted (2026-11-16), `main` fast-forwarded.
 5. Done: Phase 11 planned (D-049); 11a-11d implemented.
 6. In progress: MT-027. Finding D-050 fixed; owner rebuilds the scene and continues MT-027 (from the ladder rows).
+   Also MT-028 (job card, D-051): no scene rebuild needed.
    Then 11e stage inspections. Open small idea: in the red slot preview, point out a wrong thickness explicitly (owner
    used 28 mm larch for an 18 mm spruce part).

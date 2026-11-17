@@ -122,8 +122,41 @@ namespace WoodcraftSimulator.Workshop
             return true;
         }
 
-        /// <summary>The construction stage, e.g. "Stage 3/5: beams (1/2)", from the parts installed.</summary>
-        public string StageText(AssemblyBuild build)
+        /// <summary>Where the work stands: stage number of count, its name and progress (for the job card).</summary>
+        public readonly struct StageState
+        {
+            public StageState(int number, int count, string name, int done, int total, string note = null)
+            {
+                Number = number;
+                Count = count;
+                Name = name;
+                Done = done;
+                Total = total;
+                Note = note;
+            }
+
+            /// <summary>1-based; <see cref="Count"/> + 1 once every stage is done.</summary>
+            public int Number { get; }
+
+            public int Count { get; }
+
+            public string Name { get; }
+
+            public int Done { get; }
+
+            public int Total { get; }
+
+            /// <summary>What to do first within the stage (e.g. set out the site), or null.</summary>
+            public string Note { get; }
+
+            public bool AllDone => Number > Count;
+        }
+
+        /// <summary>
+        /// The construction stage from the work done: site preparation, then one stage per part group (the last one
+        /// includes fastening whatever is still loose).
+        /// </summary>
+        public StageState CurrentStage(AssemblyBuild build)
         {
             int prepared = 0;
             foreach (SiteSpot spot in spots)
@@ -134,12 +167,12 @@ namespace WoodcraftSimulator.Workshop
                 }
             }
 
-            // Site preparation, then one stage per part group; fastening the rest counts with the last one.
+            // Fastening whatever is still loose counts with the last part stage.
             int count = stages.Length + 1;
             if (!Marked || prepared < spots.Length)
             {
-                return Loc.T($"Stage 1/{count}: site preparation ({prepared}/{spots.Length} spots{(Marked ? string.Empty : ", set out first")})",
-                    $"Aşama 1/{count}: zemin hazırlığı ({prepared}/{spots.Length} yer{(Marked ? string.Empty : ", önce işaretle")})");
+                return new StageState(1, count, Loc.T("site preparation", "zemin hazırlığı"), prepared, spots.Length,
+                    Marked ? null : Loc.T("set out the site first (corner stake)", "önce alanı işaretle (köşe kazığı)"));
             }
 
             for (int s = 0; s < stages.Length; s++)
@@ -160,14 +193,15 @@ namespace WoodcraftSimulator.Workshop
 
                 if (installed < total)
                 {
-                    return Loc.T($"Stage {s + 2}/{count}: {stages[s].name} ({installed}/{total})",
-                        $"Aşama {s + 2}/{count}: {stages[s].nameTurkish} ({installed}/{total})");
+                    return new StageState(s + 2, count, Loc.T(stages[s].name, stages[s].nameTurkish), installed, total);
                 }
             }
 
-            return build.IsComplete
-                ? Loc.T("All stages done", "Tüm aşamalar bitti")
-                : Loc.T($"Stage {count}/{count}: fasten everything", $"Aşama {count}/{count}: her şeyi sabitle");
+            AssemblyQualityReport report = build.CreateReport();
+            return report.IsComplete
+                ? new StageState(count + 1, count, Loc.T("all stages done", "tüm aşamalar bitti"), 1, 1)
+                : new StageState(count, count, Loc.T("fasten everything", "her şeyi sabitle"), report.FastenersInstalled,
+                    report.FastenersRequired);
         }
 
         /// <summary>Save state: "marked" and the slot ids of the prepared spots.</summary>

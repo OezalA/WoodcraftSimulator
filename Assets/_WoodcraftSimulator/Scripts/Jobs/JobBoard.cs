@@ -255,21 +255,24 @@ namespace WoodcraftSimulator.Jobs
             return fastenerId;
         }
 
-        /// <summary>The job sheet of the active job: description, material, cut list with progress.</summary>
-        public string SheetText()
+        /// <summary>Progress of each cut list line of the active job (empty without one).</summary>
+        public IReadOnlyList<CutListLineProgress> ActiveProgress() =>
+            // Loose pieces lying in the workshop count as "ready" for the cut list (installed ones are counted by slot).
+            HasActiveJob
+                ? CutListProgress.Evaluate(ActivePlan, Active.Build, WorkshopEconomy.LooseTimber())
+                : Array.Empty<CutListLineProgress>();
+
+        /// <summary>The construction stage of an outdoor job (D-046); false for a bench job.</summary>
+        public bool TryGetStage(out Workshop.SitePreparation.StageState stage)
         {
-            if (!HasActiveJob)
+            stage = default;
+            if (!HasActiveJob || !Active.TryGetComponent(out Workshop.SitePreparation site))
             {
-                return null;
+                return false;
             }
 
-            // Loose pieces lying in the workshop count as "ready" for the cut list (installed ones are counted by slot).
-            IReadOnlyList<CutListLineProgress> progress =
-                CutListProgress.Evaluate(ActivePlan, Active.Build, WorkshopEconomy.LooseTimber());
-            string sheet = JobText.Sheet(ActiveJob, ActivePlan, progress, FastenerName, boardsDelivered, ElapsedSeconds);
-
-            // Outdoor construction (D-046): the stage of the work.
-            return Active.TryGetComponent(out Workshop.SitePreparation site) ? site.StageText(Active.Build) + "\n" + sheet : sheet;
+            stage = site.CurrentStage(Active.Build);
+            return true;
         }
 
         /// <summary>What a job needs, before accepting it: material plan and what has to be bought.</summary>

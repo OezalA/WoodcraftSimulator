@@ -24,8 +24,9 @@
         <ui:VisualElement name="inventory-anchor" class="inventory-anchor" picking-mode="Ignore">
             <ui:Label name="inventory" class="inventory hidden" picking-mode="Ignore" text="" />
         </ui:VisualElement>
-        <!-- Job sheet of the active job (cut list with progress), or the offer of the sheet being looked at. -->
+        <!-- Job card of the active job (built from code by JobPanel, D-051), or the offer of the sheet being looked at. -->
         <ui:VisualElement name="job-anchor" class="job-anchor" picking-mode="Ignore">
+            <ui:VisualElement name="job-card" class="job-card hidden" picking-mode="Ignore" />
             <ui:Label name="job-sheet" class="job-sheet hidden" picking-mode="Ignore" text="" />
         </ui:VisualElement>
     </ui:VisualElement>

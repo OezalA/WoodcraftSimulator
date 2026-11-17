@@ -634,3 +634,23 @@ showed every try from the ladder refused with "no surface within 3 m": eyes at 2
 - **Carrying the ladder**: a taller ladder in front of the eyes hides the view, so it is carried low at the right side
   (`ICarryHold`, optional on any carryable).
 - Needs a scene rebuild (ladder geometry). D-049's "0.95 m" is superseded.
+
+## D-051: Job card instead of the job sheet text block (Accepted, 2026-11-17, owner request)
+Owner: the job information after accepting a job helps a lot, but looks scattered; make it more professional.
+- The active job is shown as a **card** (top left, 460 px; UI Toolkit elements built by `JobPanel`, styled in
+  `Hud.uss`, classes `job-card*`, `cut-row*`): header `AKTİF İŞ` + elapsed time, job name, one-line description;
+  sections separated by thin lines with small-caps headings:
+  - **Aşama** (outdoor jobs): number/count, stage name, progress bar (done/total), a note (e.g. set out first).
+    `SitePreparation.CurrentStage` returns it as data (`StageState`); numbering unchanged (fastening counts with the
+    last part stage).
+  - **Kesim listesi** as a table: status dot (grey = not started, amber = started / pieces ready, green = done),
+    quantity, full size L × W × T, part names (cut off with "..." if long), status (`2/4 takılı, 1 hazır` / `tamam`);
+    total `7/15 takılı` in the heading.
+  - **Malzeme**: one line per stock with its own count (the old text put the total of all boards against the first
+    stock, wrong for multi-stock jobs such as the terrace and pergola), extra boards ordered, fasteners.
+  - **İpuçları**: smaller, muted, each with an amber mark.
+- Elements are built once per job and language; refreshes (0.5 s) only change texts, bar widths and classes.
+- The offer (looking at a job sheet on the board) and the result stay plain text for now; they can get the same
+  style next if the owner wants. `JobText.Sheet` (domain, tested) stays as the plain-text form; the unused
+  `JobBoard.SheetText` / `SitePreparation.StageText` were removed.
+- No scene rebuild needed (UXML/USS assets).

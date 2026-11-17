@@ -505,6 +505,18 @@ Rebuild the scene first (*WoodcraftSimulator > Build Test Workshop Scene*).
 | Rafters (from the ladder), all brackets | Stage line: site, foundation, posts, beams, rafters; at the end the result with pay; delivery pays the rest |
 | Save while on the ladder / with crooked and braced posts, quit, Play | You stand on the ground beside the ladder; ladder pose, post leans and braces kept |
 
+### MT-028: Job card (D-051)
+| Step | Expected |
+|---|---|
+| Accept the shelf job (bench) | Top left a dark card: `AKTİF İŞ` with the time on the right, the job name large, one grey line below; sections `KESİM LİSTESİ`, `MALZEME`, `İPUÇLARI`; no `AŞAMA` section |
+| Look at the cut list | One row per size: dot, `2 ×`, `600 × 145 × 18 mm`, part names, `0/2 takılı`; heading shows the total, e.g. `0/7 takılı` |
+| Cut a part, then install it | The row gets `1 hazır` and an amber dot; installed: `1/2 takılı`; all in: green dot, `tamam` |
+| Accept the pergola job | `AŞAMA 1/5`, `Zemin hazırlığı`, `0/4`, empty bar, amber note `önce alanı işaretle (köşe kazığı)` |
+| Set out, prepare spots, set blocks | The bar fills, then the next stage starts with an empty bar |
+| `MALZEME` of the pergola | Four stock lines with their own counts (5 × Ladin 3000 × 120 × 45 mm, 2 × ... 145 ..., 4 × ... 100 × 100, 4 × Beton 200 × 200 × 200 mm), then the fasteners |
+| Long part names | Cut off with `...` in the row, the card does not get wider |
+| Look at a job sheet on the board with no job active | The offer text as before |
+
 ## Game view setup (corrects the earlier tip)
 A fixed resolution such as *Full HD (1920x1080)* at `Scale 1x` **crops** the image when the Game view window is
 smaller than 1920×1080: the bottom (tool belt bar) and the lower right (tool in hand) are cut off.
