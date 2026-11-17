@@ -141,6 +141,14 @@ namespace WoodcraftSimulator.Workshop
         /// <summary>The result of the last inspection asked for, until the next one (for the job card).</summary>
         public InspectionResult LastInspection { get; private set; }
 
+        /// <summary>A new job here: no stage approved yet.</summary>
+        public void ResetInspections()
+        {
+            Inspections.Clear();
+            LastInspection = null;
+            Changed?.Invoke();
+        }
+
         /// <summary>Stage (index into the stages) a slot belongs to, or -1.</summary>
         public int StageIndexOf(string slotId)
         {

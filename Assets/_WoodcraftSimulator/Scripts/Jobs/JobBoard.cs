@@ -454,6 +454,12 @@ namespace WoodcraftSimulator.Jobs
 
             activeIndex = index;
             ElapsedSeconds = 0.0;
+            // A new job on an outdoor site starts with no stage approved (D-053).
+            if (StationFor(index).TryGetComponent(out Workshop.SitePreparation site))
+            {
+                site.ResetInspections();
+            }
+
             boardsDelivered = plans[index].BoardsNeeded; // the boards set aside for the job, bought or from stock
             boardsOrderedExtra = 0;
             sawdustAtStart = waste != null ? waste.Log.TotalVolumeCubicMeters : 0.0;

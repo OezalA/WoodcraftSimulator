@@ -704,3 +704,5 @@ choices: the player asks for the inspection; a new quality goal for first-time p
   nothing approved yet; the player asks once (stages already finished pass if fastened).
 - Fix on the way: the pergola's corner stake said "set out the terrace (2.4 × 1.8 m)"; each stake now has its own text.
 - Job tips of the terrace and pergola mention the inspections. Needs a scene rebuild.
+- Fix (2026-11-17): delivering clears the station and jobs can be taken again, so accepting a job on a site now
+  resets its inspections (`SitePreparation.ResetInspections`); otherwise a second pergola started "approved".
