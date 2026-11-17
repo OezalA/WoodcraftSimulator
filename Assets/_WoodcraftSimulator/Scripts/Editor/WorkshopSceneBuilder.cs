@@ -175,6 +175,7 @@ namespace WoodcraftSimulator.Editor
                 player,
                 GameObject.Find("HUD"),
                 GameObject.Find("PauseController"),
+                GameObject.Find("PauseMenu"), // its UIDocument and PauseMenu (MT-032 finding: it was left behind)
                 saveService.gameObject,
                 Object.FindFirstObjectByType<JobBoard>()?.gameObject,
                 Object.FindFirstObjectByType<WorkshopEconomy>()?.gameObject,
