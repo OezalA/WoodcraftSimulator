@@ -29,9 +29,6 @@ namespace WoodcraftSimulator.Economy
             [Tooltip("Rank needed to buy it (D-054).")]
             public Career.CareerRank requiredRank = Career.CareerRank.Novice;
 
-            [Tooltip("Shown once owned (a workshop expansion, e.g. a second pair of sawhorses, D-054).")]
-            public GameObject reveal;
-
             public string Name => Loc.Pick(displayName, displayNameTurkish);
 
             public string Effect => Loc.Pick(effect, effectTurkish);
@@ -42,25 +39,11 @@ namespace WoodcraftSimulator.Economy
         [SerializeField] private WorkshopEconomy economy;
         [SerializeField] private Upgrade[] upgrades = Array.Empty<Upgrade>();
 
-        [Header("Lamp upgrade")]
-        [SerializeField] private Light[] lamps = Array.Empty<Light>();
-        [SerializeField, Min(1f)] private float lampIntensityFactor = 1.8f;
-
         private readonly HashSet<string> owned = new HashSet<string>();
-        private float[] baseIntensities;
 
         public IReadOnlyList<Upgrade> All => upgrades;
 
         public event Action Changed;
-
-        private void Awake()
-        {
-            baseIntensities = new float[lamps.Length];
-            for (int i = 0; i < lamps.Length; i++)
-            {
-                baseIntensities[i] = lamps[i] != null ? lamps[i].intensity : 0f;
-            }
-        }
 
         public bool Has(string upgradeId) => upgradeId != null && owned.Contains(upgradeId);
 
@@ -133,26 +116,7 @@ namespace WoodcraftSimulator.Economy
         private static bool RankAllows(Upgrade upgrade) =>
             Career.WorkshopCareer.Active == null || Career.WorkshopCareer.Active.Progress.Rank >= upgrade.requiredRank;
 
-        private void Apply()
-        {
-            foreach (Upgrade upgrade in upgrades)
-            {
-                if (upgrade.reveal != null)
-                {
-                    upgrade.reveal.SetActive(Has(upgrade.id));
-                }
-            }
-
-            float factor = Has(LedLamp) ? lampIntensityFactor : 1f;
-            for (int i = 0; i < lamps.Length; i++)
-            {
-                if (lamps[i] != null)
-                {
-                    lamps[i].intensity = baseIntensities[i] * factor;
-                }
-            }
-
-            Changed?.Invoke();
-        }
+        // What it looks like (the lamp, a second pair of sawhorses) is UpgradeVisuals in the workshop scene (D-056).
+        private void Apply() => Changed?.Invoke();
     }
 }

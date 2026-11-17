@@ -6,6 +6,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using WoodcraftSimulator.Construction;
 using WoodcraftSimulator.Cutting;
+using WoodcraftSimulator.Economy;
 using WoodcraftSimulator.Handling;
 using WoodcraftSimulator.Inventory;
 using WoodcraftSimulator.Jobs;
@@ -15,16 +16,19 @@ using WoodcraftSimulator.Measurement;
 using WoodcraftSimulator.Player;
 using WoodcraftSimulator.Tools;
 using WoodcraftSimulator.Workshop;
+using WoodcraftSimulator.World;
 
 namespace WoodcraftSimulator.Persistence
 {
     /// <summary>
-    /// Saves and loads the workshop (D-036): one JSON file in <see cref="Application.persistentDataPath"/>.
-    /// On start the last save is loaded (migrated, validated, then applied); on quit the game is saved.
-    /// An invalid file is never applied: it is moved aside and the generated workshop is used.
-    /// Systems with more state capture/restore it themselves (e.g. <see cref="AssemblyStation.CaptureState"/>); this
-    /// service finds them by <see cref="PersistentId"/> and applies them in dependency order: boards, assemblies
-    /// (need the boards; the job first sets their blueprint), items and belt, waste, switches, cut lists, player.
+    /// Saves and loads the game (D-036): one JSON file in <see cref="Application.persistentDataPath"/>. An invalid file
+    /// is never applied: it is moved aside and a new game starts.
+    /// Since Phase 12.5 (D-056) the game spans places (the workshop, customer locations), each a content scene next to
+    /// the core scene. The save keeps every place: its entries (boards, assemblies, sites, bins, switches, cut lists)
+    /// carry their place. <see cref="world"/> is the whole save in memory; the place loaded now is captured from the
+    /// scene (<see cref="CaptureLocation"/>) when it is left or the game is saved, and applied when it loads
+    /// (<see cref="ApplyLocation"/>). Global state (player, belt, tools and stepladder with the place they lie at,
+    /// money, career, jobs, upgrades, sawdust) is captured and applied as a whole. <see cref="SceneFlow"/> drives it.
     /// </summary>
     public sealed class SaveGameService : MonoBehaviour
     {
@@ -34,21 +38,21 @@ namespace WoodcraftSimulator.Persistence
         [SerializeField] private PlayerController player;
         [SerializeField] private PlayerToolBelt toolBelt;
 
-        [Tooltip("Optional: the workshop's sawdust total.")]
+        [Tooltip("Optional: the sawdust total.")]
         [SerializeField] private WorkshopWaste waste;
 
-        [Tooltip("Optional: the job board (active job, delivered stock, completed jobs).")]
+        [Tooltip("Optional: the job service (active job, offers, career).")]
         [SerializeField] private JobBoard jobBoard;
 
         [Tooltip("Optional: money and fastener stock (D-040).")]
-        [SerializeField] private Economy.WorkshopEconomy economy;
+        [SerializeField] private WorkshopEconomy economy;
 
         [Tooltip("Optional: equipment upgrades owned (D-044).")]
-        [SerializeField] private Economy.WorkshopUpgrades upgrades;
+        [SerializeField] private WorkshopUpgrades upgrades;
 
-        [Tooltip("Outdoor sites (terrace D-046, pergola D-049), each with a PersistentId.")]
-        [SerializeField] private Workshop.SitePreparation[] sites = Array.Empty<Workshop.SitePreparation>();
-
+        // The whole save in memory: every place's last captured state plus the global state.
+        private SaveGameData world = new SaveGameData();
+        private bool ready;
         private bool restarting;
 
         public string SavePath => Path.Combine(Application.persistentDataPath, FileName);
@@ -59,22 +63,10 @@ namespace WoodcraftSimulator.Persistence
         /// <summary>Raised after <see cref="LastStatus"/> changed.</summary>
         public event Action StatusChanged;
 
-        private void Start()
-        {
-            if (boardFactory == null || player == null || toolBelt == null)
-            {
-                Debug.LogError($"{nameof(SaveGameService)}: Board Factory, Player and Tool Belt must be assigned.", this);
-                enabled = false;
-                return;
-            }
-
-            Load();
-        }
-
         // Exiting Play Mode in the Editor also calls this.
         private void OnApplicationQuit()
         {
-            if (enabled && !restarting)
+            if (enabled && ready && !restarting)
             {
                 Save();
             }
@@ -82,6 +74,11 @@ namespace WoodcraftSimulator.Persistence
 
         public bool Save()
         {
+            if (!ready)
+            {
+                return false;
+            }
+
             try
             {
                 SaveGameData data = Capture();
@@ -98,7 +95,7 @@ namespace WoodcraftSimulator.Persistence
             }
         }
 
-        /// <summary>Deletes the save and reloads the scene: the generated workshop again.</summary>
+        /// <summary>Deletes the save and reloads everything: a new game.</summary>
         public void StartNewWorkshop()
         {
             restarting = true;
@@ -114,20 +111,10 @@ namespace WoodcraftSimulator.Persistence
                 Debug.LogError($"[{nameof(SaveGameService)}] Could not delete the save: {exception}", this);
             }
 
-            int buildIndex = SceneManager.GetActiveScene().buildIndex;
-            if (buildIndex < 0)
-            {
-                Debug.LogError($"[{nameof(SaveGameService)}] The scene is not in Build Settings, so it can't be reloaded. " +
-                               "The save was deleted; restart Play Mode for a new workshop.", this);
-                return;
-            }
-
-            // The pause menu stopped time; the reloaded scene must start running.
-            Time.timeScale = 1f;
-            SceneManager.LoadScene(buildIndex);
+            Core.Services.Get<SceneFlow>()?.ReloadAll();
         }
 
-        /// <summary>Saves, then reloads the scene from that save (e.g. after a language change).</summary>
+        /// <summary>Saves, then reloads everything from that save (e.g. after a language change).</summary>
         public void SaveAndReload()
         {
             if (!Save())
@@ -135,25 +122,27 @@ namespace WoodcraftSimulator.Persistence
                 return;
             }
 
-            int buildIndex = SceneManager.GetActiveScene().buildIndex;
-            if (buildIndex < 0)
-            {
-                Debug.LogError($"[{nameof(SaveGameService)}] The scene is not in Build Settings, so it can't be reloaded.", this);
-                return;
-            }
-
             restarting = true;
-            Time.timeScale = 1f;
-            SceneManager.LoadScene(buildIndex);
+            Core.Services.Get<SceneFlow>()?.ReloadAll();
         }
 
-        private void Load()
+        /// <summary>
+        /// Reads, migrates and validates the save; null if there is none or it is invalid (then moved aside). Called by
+        /// <see cref="SceneFlow"/> before any place is loaded (the save says which one).
+        /// </summary>
+        public SaveGameData ReadSave()
         {
             string path = SavePath;
+            if (boardFactory == null || player == null || toolBelt == null)
+            {
+                Debug.LogError($"{nameof(SaveGameService)}: Board Factory, Player and Tool Belt must be assigned.", this);
+                return null;
+            }
+
             if (!File.Exists(path))
             {
                 SetStatus(Loc.T("New workshop (no save yet)", "Yeni atölye (henüz kayıt yok)"));
-                return;
+                return null;
             }
 
             SaveGameData data;
@@ -164,43 +153,168 @@ namespace WoodcraftSimulator.Persistence
             catch (Exception exception)
             {
                 Reject(path, new[] { $"Unreadable file: {exception.Message}" });
-                return;
+                return null;
             }
 
             if (!SaveFormat.TryMigrate(data, out string migrationError))
             {
                 Reject(path, new[] { migrationError });
-                return;
+                return null;
             }
 
             IReadOnlyList<string> errors = SaveFormat.Validate(data, boardFactory.IsKnownSpecies);
             if (errors.Count > 0)
             {
                 Reject(path, errors);
+                return null;
+            }
+
+            SetStatus(Loc.T($"Loaded save from {FormatSavedAt(data.savedAtUtc)}", $"Kayıt yüklendi: {FormatSavedAt(data.savedAtUtc)}"));
+            return data;
+        }
+
+        /// <summary>
+        /// Applies a save after its place has loaded (null = a new game: the scenes stay as built). Order: money and
+        /// upgrades, the jobs (they set the stations' blueprints), the place (boards, sites, bins, assemblies, ...),
+        /// then the tools, stepladder and belt, the sawdust and the player.
+        /// </summary>
+        public void ApplyAll(SaveGameData data, Scene content, string locationId)
+        {
+            world = data ?? new SaveGameData();
+            if (data == null)
+            {
+                ready = true;
                 return;
             }
 
-            Apply(data);
-            SetStatus(Loc.T($"Loaded save from {FormatSavedAt(data.savedAtUtc)}", $"Kayıt yüklendi: {FormatSavedAt(data.savedAtUtc)}"));
+            if (economy != null)
+            {
+                economy.Restore(data.economy);
+                economy.RestorePending(ToPending(data.pendingDeliveries));
+            }
+
+            if (upgrades != null)
+            {
+                upgrades.Restore(data.upgrades);
+            }
+
+            if (jobBoard != null && data.job != null)
+            {
+                jobBoard.Restore(data.job, data.offers, data.career);
+            }
+
+            ApplyLocation(locationId, content);
+            ApplyItemsAndBelt(data);
+            ApplyProps(data);
+
+            if (waste != null && data.waste != null)
+            {
+                waste.Log.Restore(data.waste.cutCount, data.waste.volumeCubicMeters, data.waste.massKg);
+            }
+
+            if (SaveLocations.Of(data.location) == locationId)
+            {
+                Quaternion yaw = ToRotation(data.player.pose);
+                player.Teleport(ToPosition(data.player.pose), yaw.eulerAngles.y, data.player.pitch);
+            }
+
+            ready = true;
         }
 
-        private SaveGameData Capture()
+        /// <summary>
+        /// Puts a place's saved state into its freshly loaded scene. A place that was never captured (first visit, a
+        /// new game) stays as built.
+        /// </summary>
+        public void ApplyLocation(string locationId, Scene scene)
         {
-            var data = new SaveGameData
+            if (!WasCaptured(locationId))
             {
-                version = SaveFormat.CurrentVersion,
-                savedAtUtc = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
-                player = new PlayerData { pose = ToPose(player.GroundPosition, player.transform.rotation), pitch = player.Pitch }
-            };
+                return;
+            }
+
+            foreach (Apprentice apprentice in InScene<Apprentice>(scene))
+            {
+                apprentice.ResetToHome();
+            }
+
+            // The scene's own boards are replaced by the saved ones (cut pieces included).
+            foreach (TimberBoard existing in InScene<TimberBoard>(scene))
+            {
+                Destroy(existing.gameObject);
+            }
+
+            var boards = new Dictionary<string, Carryable>();
+            foreach (BoardData boardData in SaveLocations.At(world.boards, locationId, b => b.location))
+            {
+                boardFactory.TryGetSpecies(boardData.speciesId, out WoodSpeciesDefinition definition);
+                TimberPiece piece = SaveFormat.ToPiece(boardData, definition.ToDomain(), out BoardMarks marks);
+                TimberBoard board = boardFactory.Create(boardData.id, definition, piece, marks,
+                    ToPosition(boardData.pose), ToRotation(boardData.pose));
+                board.SetSurface((BoardSurface)boardData.surface);
+                if (board.gameObject.scene != scene)
+                {
+                    SceneManager.MoveGameObjectToScene(board.gameObject, scene);
+                }
+
+                // A board saved while carried was in the air: let it fall (supported ones don't move, D-031).
+                // Installed boards are exempt: the station below takes them over.
+                var carryable = board.GetComponent<Carryable>();
+                carryable.RequestSupportCheck();
+                boards[boardData.id] = carryable;
+            }
+
+            // Before the assemblies: the site gates where piers may stand.
+            RestoreSites(locationId, scene);
+            RestoreBins(locationId, scene);
+
+            Dictionary<string, AssemblyStation> stations = ById<AssemblyStation>(scene);
+            foreach (AssemblyData assembly in SaveLocations.At(world.assemblies, locationId, a => a.location))
+            {
+                if (stations.TryGetValue(assembly.stationId, out AssemblyStation station) && station.Build != null)
+                {
+                    station.RestoreState(assembly, id => boards.TryGetValue(id, out Carryable board) ? board : null);
+                }
+                else
+                {
+                    Warn($"assembly station '{assembly.stationId}' is not at '{locationId}'; its saved assembly is skipped.");
+                }
+            }
+
+            Dictionary<string, LightSwitch> lightSwitches = ById<LightSwitch>(scene);
+            foreach (SwitchData switchData in SaveLocations.At(world.switches, locationId, s => s.location))
+            {
+                if (lightSwitches.TryGetValue(switchData.id, out LightSwitch lightSwitch))
+                {
+                    lightSwitch.SetOn(switchData.on);
+                }
+            }
+
+            Dictionary<string, CutList> cutLists = ById<CutList>(scene);
+            foreach (CutListData cutListData in SaveLocations.At(world.cutLists, locationId, c => c.location))
+            {
+                if (cutLists.TryGetValue(cutListData.id, out CutList cutList))
+                {
+                    cutList.Restore(cutListData.selectedIndex);
+                }
+            }
+        }
+
+        /// <summary>Takes a place's state from its scene into the save data (before it unloads, or to save).</summary>
+        public void CaptureLocation(string locationId, Scene scene)
+        {
+            if (!scene.IsValid() || !scene.isLoaded)
+            {
+                return;
+            }
 
             // A piece in the apprentice's hands goes into its bin first (D-052).
-            foreach (Workshop.Apprentice apprentice in FindObjectsByType<Workshop.Apprentice>(FindObjectsSortMode.None))
+            foreach (Apprentice apprentice in InScene<Apprentice>(scene))
             {
                 apprentice.FinishNow();
             }
 
             var boards = new List<BoardData>();
-            foreach (TimberBoard board in FindObjectsByType<TimberBoard>(FindObjectsSortMode.None))
+            foreach (TimberBoard board in InScene<TimberBoard>(scene))
             {
                 if (board.Piece == null || !board.TryGetComponent(out PersistentId id))
                 {
@@ -210,90 +324,42 @@ namespace WoodcraftSimulator.Persistence
                 BoardData boardData = SaveFormat.ToData(id.Id, board.Piece, board.Marks);
                 boardData.pose = ToPose(board.transform);
                 boardData.surface = (int)board.Surface;
+                boardData.location = locationId;
                 boards.Add(boardData);
             }
 
-            data.boards = boards.ToArray();
-            CaptureItemsAndBelt(data);
-
             var assemblies = new List<AssemblyData>();
-            foreach (KeyValuePair<string, AssemblyStation> station in ById<AssemblyStation>())
+            foreach (KeyValuePair<string, AssemblyStation> station in ById<AssemblyStation>(scene))
             {
                 if (station.Value.Build != null)
                 {
-                    assemblies.Add(station.Value.CaptureState(station.Key));
+                    AssemblyData assembly = station.Value.CaptureState(station.Key);
+                    assembly.location = locationId;
+                    assemblies.Add(assembly);
                 }
-            }
-
-            data.assemblies = assemblies.ToArray();
-
-            if (waste != null && data.waste != null)
-            {
-                MaterialWasteLog log = waste.Log;
-                data.waste = new WasteData
-                {
-                    cutCount = log.CutCount, volumeCubicMeters = log.TotalVolumeCubicMeters, massKg = log.TotalMassKg
-                };
             }
 
             var switches = new List<SwitchData>();
-            foreach (KeyValuePair<string, LightSwitch> lightSwitch in ById<LightSwitch>())
+            foreach (KeyValuePair<string, LightSwitch> lightSwitch in ById<LightSwitch>(scene))
             {
-                switches.Add(new SwitchData { id = lightSwitch.Key, on = lightSwitch.Value.IsOn });
+                switches.Add(new SwitchData { id = lightSwitch.Key, on = lightSwitch.Value.IsOn, location = locationId });
             }
-
-            data.switches = switches.ToArray();
 
             var cutLists = new List<CutListData>();
-            foreach (KeyValuePair<string, CutList> cutList in ById<CutList>())
+            foreach (KeyValuePair<string, CutList> cutList in ById<CutList>(scene))
             {
-                cutLists.Add(new CutListData { id = cutList.Key, selectedIndex = cutList.Value.SelectedIndex });
+                cutLists.Add(new CutListData { id = cutList.Key, selectedIndex = cutList.Value.SelectedIndex, location = locationId });
             }
 
-            data.cutLists = cutLists.ToArray();
-            if (jobBoard != null)
+            var sites = new List<SiteData>();
+            foreach (KeyValuePair<string, SitePreparation> site in ById<SitePreparation>(scene))
             {
-                data.job = jobBoard.Capture();
-                data.offers = jobBoard.CaptureOffers();
-                data.career = jobBoard.CaptureCareer() ?? new CareerData();
+                sites.Add(new SiteData { id = site.Key, done = site.Value.Capture(), location = locationId });
             }
-
-            if (economy != null)
-            {
-                data.economy = economy.Capture();
-            }
-
-            if (upgrades != null)
-            {
-                data.upgrades = upgrades.Capture();
-            }
-
-            var siteData = new List<SiteData>();
-            foreach (Workshop.SitePreparation each in sites)
-            {
-                if (each != null && each.TryGetComponent(out PersistentId siteId))
-                {
-                    siteData.Add(new SiteData { id = siteId.Id, done = each.Capture() });
-                }
-            }
-
-            data.sites = siteData.ToArray();
-
-            // Large movable things that are not timber (the stepladder, D-049).
-            var props = new List<PropData>();
-            foreach (KeyValuePair<string, Carryable> prop in ById<Carryable>())
-            {
-                if (!prop.Value.TryGetComponent(out TimberBoard _))
-                {
-                    props.Add(new PropData { id = prop.Key, pose = ToPose(prop.Value.transform) });
-                }
-            }
-
-            data.props = props.ToArray();
 
             // Offcut bins and their pieces (D-052).
             var bins = new List<BinData>();
-            foreach (KeyValuePair<string, Workshop.OffcutBin> bin in ById<Workshop.OffcutBin>())
+            foreach (KeyValuePair<string, OffcutBin> bin in ById<OffcutBin>(scene))
             {
                 var pieces = new List<BoardData>();
                 foreach (StoredPiece stored in bin.Value.Stock.Pieces)
@@ -303,11 +369,86 @@ namespace WoodcraftSimulator.Persistence
                     pieces.Add(piece);
                 }
 
-                bins.Add(new BinData { id = bin.Key, pieces = pieces.ToArray() });
+                bins.Add(new BinData { id = bin.Key, pieces = pieces.ToArray(), location = locationId });
             }
 
-            data.bins = bins.ToArray();
-            return data;
+            world.boards = SaveLocations.Replace(world.boards, locationId, b => b.location, boards);
+            world.assemblies = SaveLocations.Replace(world.assemblies, locationId, a => a.location, assemblies);
+            world.switches = SaveLocations.Replace(world.switches, locationId, s => s.location, switches);
+            world.cutLists = SaveLocations.Replace(world.cutLists, locationId, c => c.location, cutLists);
+            world.sites = SaveLocations.Replace(world.sites, locationId, s => s.location, sites);
+            world.bins = SaveLocations.Replace(world.bins, locationId, b => b.location, bins);
+            world.site = Array.Empty<string>(); // the pre-D-049 terrace field, now in sites
+            MarkCaptured(locationId);
+        }
+
+        /// <summary>The whole save: the place loaded now captured from its scene, everything else from memory.</summary>
+        private SaveGameData Capture()
+        {
+            SceneFlow flow = Core.Services.Get<SceneFlow>();
+            string here = flow != null ? flow.CurrentLocationId : SaveLocations.Workshop;
+            CaptureLocation(here, SceneManager.GetActiveScene());
+
+            world.version = SaveFormat.CurrentVersion;
+            world.savedAtUtc = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture);
+            world.location = here;
+            world.player = new PlayerData { pose = ToPose(player.GroundPosition, player.transform.rotation), pitch = player.Pitch };
+            CaptureItemsAndBelt(world);
+            CaptureProps(world);
+
+            if (waste != null)
+            {
+                MaterialWasteLog log = waste.Log;
+                world.waste = new WasteData
+                {
+                    cutCount = log.CutCount, volumeCubicMeters = log.TotalVolumeCubicMeters, massKg = log.TotalMassKg
+                };
+            }
+
+            if (jobBoard != null)
+            {
+                world.job = jobBoard.Capture();
+                world.offers = jobBoard.CaptureOffers();
+                world.career = jobBoard.CaptureCareer() ?? new CareerData();
+            }
+
+            if (economy != null)
+            {
+                world.economy = economy.Capture();
+                world.pendingDeliveries = ToData(economy.Pending);
+            }
+
+            if (upgrades != null)
+            {
+                world.upgrades = upgrades.Capture();
+            }
+
+            return world;
+        }
+
+        // Which places' states are in the save. A save from before D-056 has none listed: its entries are the
+        // workshop's (when it has any, i.e. it is not empty).
+        private bool WasCaptured(string locationId)
+        {
+            if (Array.IndexOf(world.capturedLocations ?? Array.Empty<string>(), locationId) >= 0)
+            {
+                return true;
+            }
+
+            bool olderSave = (world.capturedLocations == null || world.capturedLocations.Length == 0) &&
+                             ((world.boards?.Length ?? 0) > 0 || (world.assemblies?.Length ?? 0) > 0);
+            return olderSave && locationId == SaveLocations.Workshop;
+        }
+
+        private void MarkCaptured(string locationId)
+        {
+            var list = new List<string>(world.capturedLocations ?? Array.Empty<string>());
+            if (!list.Contains(locationId))
+            {
+                list.Add(locationId);
+            }
+
+            world.capturedLocations = list.ToArray();
         }
 
         private void CaptureItemsAndBelt(SaveGameData data)
@@ -335,108 +476,33 @@ namespace WoodcraftSimulator.Persistence
             foreach (KeyValuePair<string, PickupItem> item in ById<PickupItem>())
             {
                 bool stored = onBelt.Contains(item.Value);
-                items.Add(new ItemData { id = item.Key, onBelt = stored, pose = ToPose(item.Value.transform) });
+                items.Add(new ItemData
+                {
+                    id = item.Key, onBelt = stored, pose = ToPose(item.Value.transform), location = LocationOf(item.Value)
+                });
             }
 
             data.items = items.ToArray();
         }
 
-        private void Apply(SaveGameData data)
+        /// <summary>Large movable things that are not timber (the stepladder, D-049), with the place they stand at.</summary>
+        private static void CaptureProps(SaveGameData data)
         {
-            foreach (Workshop.Apprentice apprentice in FindObjectsByType<Workshop.Apprentice>(FindObjectsSortMode.None))
+            var props = new List<PropData>();
+            foreach (KeyValuePair<string, Carryable> prop in ById<Carryable>())
             {
-                apprentice.ResetToHome();
-            }
-
-            // The builder's boards are replaced by the saved ones (cut pieces included).
-            foreach (TimberBoard existing in FindObjectsByType<TimberBoard>(FindObjectsSortMode.None))
-            {
-                Destroy(existing.gameObject);
-            }
-
-            var boards = new Dictionary<string, Carryable>();
-            foreach (BoardData boardData in data.boards ?? Array.Empty<BoardData>())
-            {
-                boardFactory.TryGetSpecies(boardData.speciesId, out WoodSpeciesDefinition definition);
-                TimberPiece piece = SaveFormat.ToPiece(boardData, definition.ToDomain(), out BoardMarks marks);
-                TimberBoard board = boardFactory.Create(boardData.id, definition, piece, marks,
-                    ToPosition(boardData.pose), ToRotation(boardData.pose));
-                board.SetSurface((BoardSurface)boardData.surface);
-
-                // A board saved while carried was in the air: let it fall (supported ones don't move, D-031).
-                // Installed boards are exempt: the station below takes them over.
-                var carryable = board.GetComponent<Carryable>();
-                carryable.RequestSupportCheck();
-                boards[boardData.id] = carryable;
-            }
-
-            // Money and fasteners first: the job board's prompts read them. A save from before the economy starts it.
-            if (economy != null)
-            {
-                economy.Restore(data.economy);
-            }
-
-            if (upgrades != null)
-            {
-                upgrades.Restore(data.upgrades);
-            }
-
-            // Before the assemblies: the site gates where piers may stand.
-            RestoreSites(data);
-            RestoreProps(data);
-            RestoreBins(data);
-
-            // The job sets the station's blueprint and the cut list before the assembly is restored.
-            if (jobBoard != null && data.job != null)
-            {
-                jobBoard.Restore(data.job, data.offers, data.career);
-            }
-
-            Dictionary<string, AssemblyStation> stations = ById<AssemblyStation>();
-            foreach (AssemblyData assembly in data.assemblies ?? Array.Empty<AssemblyData>())
-            {
-                if (stations.TryGetValue(assembly.stationId, out AssemblyStation station) && station.Build != null)
+                if (!prop.Value.TryGetComponent(out TimberBoard _))
                 {
-                    station.RestoreState(assembly, id => boards.TryGetValue(id, out Carryable board) ? board : null);
-                }
-                else
-                {
-                    Warn($"assembly station '{assembly.stationId}' is not in the scene; its saved assembly is skipped.");
+                    props.Add(new PropData { id = prop.Key, pose = ToPose(prop.Value.transform), location = LocationOf(prop.Value) });
                 }
             }
 
-            ApplyItemsAndBelt(data);
-
-            if (waste != null && data.waste != null)
-            {
-                waste.Log.Restore(data.waste.cutCount, data.waste.volumeCubicMeters, data.waste.massKg);
-            }
-
-            Dictionary<string, LightSwitch> lightSwitches = ById<LightSwitch>();
-            foreach (SwitchData switchData in data.switches ?? Array.Empty<SwitchData>())
-            {
-                if (lightSwitches.TryGetValue(switchData.id, out LightSwitch lightSwitch))
-                {
-                    lightSwitch.SetOn(switchData.on);
-                }
-            }
-
-            Dictionary<string, CutList> cutLists = ById<CutList>();
-            foreach (CutListData cutListData in data.cutLists ?? Array.Empty<CutListData>())
-            {
-                if (cutLists.TryGetValue(cutListData.id, out CutList cutList))
-                {
-                    cutList.Restore(cutListData.selectedIndex);
-                }
-            }
-
-            Quaternion yaw = ToRotation(data.player.pose);
-            player.Teleport(ToPosition(data.player.pose), yaw.eulerAngles.y, data.player.pitch);
+            data.props = props.ToArray();
         }
 
         /// <summary>
-        /// Items lying in the world go back to their saved pose; belt items into their slots. Items the save doesn't
-        /// know (added in a later version of the workshop) stay where the scene has them.
+        /// Items lying somewhere go back to their saved pose and place; belt items into their slots. Items the save
+        /// doesn't know (added in a later version of the game) stay where the scene has them.
         /// </summary>
         private void ApplyItemsAndBelt(SaveGameData data)
         {
@@ -445,11 +511,15 @@ namespace WoodcraftSimulator.Persistence
             {
                 if (!items.TryGetValue(itemData.id, out PickupItem item))
                 {
-                    Warn($"item '{itemData.id}' is not in the scene; skipped.");
+                    Warn($"item '{itemData.id}' is not in the game; skipped.");
                 }
                 else if (!itemData.onBelt)
                 {
                     item.transform.SetPositionAndRotation(ToPosition(itemData.pose), ToRotation(itemData.pose));
+                    if (item.TryGetComponent(out Traveller traveller))
+                    {
+                        traveller.Location = SaveLocations.Of(itemData.location);
+                    }
                 }
             }
 
@@ -467,12 +537,140 @@ namespace WoodcraftSimulator.Persistence
             toolBelt.Restore(slots, belt.selected);
         }
 
-        /// <summary>All objects of a type that have a <see cref="PersistentId"/>, inactive ones included (belt items).</summary>
-        private static Dictionary<string, T> ById<T>() where T : Component
+        /// <summary>Puts the stepladder (and other props) back at their place; one saved while carried falls down.</summary>
+        private static void ApplyProps(SaveGameData data)
+        {
+            Dictionary<string, Carryable> props = ById<Carryable>();
+            foreach (PropData prop in data.props ?? Array.Empty<PropData>())
+            {
+                if (props.TryGetValue(prop.id, out Carryable carryable) && !carryable.TryGetComponent(out TimberBoard _))
+                {
+                    carryable.transform.SetPositionAndRotation(ToPosition(prop.pose), ToRotation(prop.pose));
+                    if (carryable.TryGetComponent(out Traveller traveller))
+                    {
+                        traveller.Location = SaveLocations.Of(prop.location);
+                    }
+
+                    carryable.RequestSupportCheck();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Site preparation by site id; a save from before D-049 has only the terrace's state in <c>site</c>.
+        /// </summary>
+        private void RestoreSites(string locationId, Scene scene)
+        {
+            var byId = new Dictionary<string, string[]>();
+            foreach (SiteData siteData in SaveLocations.At(world.sites, locationId, s => s.location))
+            {
+                if (!string.IsNullOrEmpty(siteData.id))
+                {
+                    byId[siteData.id] = siteData.done ?? Array.Empty<string>();
+                }
+            }
+
+            if (byId.Count == 0 && locationId == SaveLocations.Workshop && world.site != null && world.site.Length > 0)
+            {
+                byId["TerraceSite"] = world.site;
+            }
+
+            foreach (KeyValuePair<string, SitePreparation> site in ById<SitePreparation>(scene))
+            {
+                site.Value.Restore(byId.TryGetValue(site.Key, out string[] done) ? done : Array.Empty<string>());
+            }
+        }
+
+        /// <summary>Fills the offcut bins (D-052); bins missing from the save (older saves) start empty.</summary>
+        private void RestoreBins(string locationId, Scene scene)
+        {
+            var saved = new Dictionary<string, BinData>();
+            foreach (BinData bin in SaveLocations.At(world.bins, locationId, b => b.location))
+            {
+                saved[bin.id] = bin;
+            }
+
+            foreach (KeyValuePair<string, OffcutBin> bin in ById<OffcutBin>(scene))
+            {
+                var pieces = new List<StoredPiece>();
+                if (saved.TryGetValue(bin.Key, out BinData binData))
+                {
+                    foreach (BoardData pieceData in binData.pieces ?? Array.Empty<BoardData>())
+                    {
+                        if (boardFactory.TryGetSpecies(pieceData.speciesId, out WoodSpeciesDefinition definition))
+                        {
+                            TimberPiece piece = SaveFormat.ToPiece(pieceData, definition.ToDomain(), out _);
+                            pieces.Add(new StoredPiece(piece, (BoardSurface)pieceData.surface));
+                        }
+                    }
+                }
+
+                bin.Value.Stock.Restore(pieces);
+            }
+        }
+
+        private static string LocationOf(Component component) =>
+            component.TryGetComponent(out Traveller traveller) ? traveller.Location : SaveLocations.Workshop;
+
+        private static PendingDeliveryData[] ToData(IReadOnlyList<WorkshopEconomy.PendingDelivery> pending)
+        {
+            var data = new PendingDeliveryData[pending.Count];
+            for (int i = 0; i < data.Length; i++)
+            {
+                WorkshopEconomy.PendingDelivery order = pending[i];
+                data[i] = new PendingDeliveryData
+                {
+                    deliveryId = order.deliveryId, speciesId = order.speciesId, count = order.count,
+                    lengthMillimeters = order.lengthMillimeters, widthMillimeters = order.widthMillimeters,
+                    thicknessMillimeters = order.thicknessMillimeters
+                };
+            }
+
+            return data;
+        }
+
+        private static IEnumerable<WorkshopEconomy.PendingDelivery> ToPending(PendingDeliveryData[] data)
+        {
+            foreach (PendingDeliveryData order in data ?? Array.Empty<PendingDeliveryData>())
+            {
+                if (order != null && order.count > 0)
+                {
+                    yield return new WorkshopEconomy.PendingDelivery
+                    {
+                        deliveryId = order.deliveryId, speciesId = order.speciesId, count = order.count,
+                        lengthMillimeters = order.lengthMillimeters, widthMillimeters = order.widthMillimeters,
+                        thicknessMillimeters = order.thicknessMillimeters
+                    };
+                }
+            }
+        }
+
+        /// <summary>Objects of a type in one scene (inactive ones included).</summary>
+        private static List<T> InScene<T>(Scene scene) where T : Component
+        {
+            var result = new List<T>();
+            foreach (T component in FindObjectsByType<T>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                if (component.gameObject.scene == scene)
+                {
+                    result.Add(component);
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>Objects of a type that have a <see cref="PersistentId"/> (inactive ones included), in one scene or all.</summary>
+        private static Dictionary<string, T> ById<T>(Scene? scene = null) where T : Component
         {
             var result = new Dictionary<string, T>();
             foreach (T component in FindObjectsByType<T>(FindObjectsInactive.Include, FindObjectsSortMode.None))
             {
+                if (scene.HasValue && component.gameObject.scene != scene.Value)
+                {
+                    continue;
+                }
+
                 if (component.TryGetComponent(out PersistentId id) && !string.IsNullOrEmpty(id.Id))
                 {
                     if (result.ContainsKey(id.Id))
@@ -538,76 +736,6 @@ namespace WoodcraftSimulator.Persistence
 
         private static PoseData ToPose(Vector3 p, Quaternion r) =>
             new PoseData { px = p.x, py = p.y, pz = p.z, rx = r.x, ry = r.y, rz = r.z, rw = r.w };
-
-        /// <summary>
-        /// Site preparation by site id; a save from before D-049 has only the terrace's state in <c>site</c>.
-        /// </summary>
-        private void RestoreSites(SaveGameData data)
-        {
-            var byId = new Dictionary<string, string[]>();
-            foreach (SiteData siteData in data.sites ?? Array.Empty<SiteData>())
-            {
-                if (siteData != null && !string.IsNullOrEmpty(siteData.id))
-                {
-                    byId[siteData.id] = siteData.done ?? Array.Empty<string>();
-                }
-            }
-
-            if (byId.Count == 0 && data.site != null && data.site.Length > 0)
-            {
-                byId["TerraceSite"] = data.site;
-            }
-
-            foreach (Workshop.SitePreparation each in sites)
-            {
-                if (each != null && each.TryGetComponent(out PersistentId siteId))
-                {
-                    each.Restore(byId.TryGetValue(siteId.Id, out string[] done) ? done : Array.Empty<string>());
-                }
-            }
-        }
-
-        /// <summary>Fills the offcut bins (D-052); bins missing from the save (older saves) start empty.</summary>
-        private void RestoreBins(SaveGameData data)
-        {
-            var saved = new Dictionary<string, BinData>();
-            foreach (BinData bin in data.bins ?? Array.Empty<BinData>())
-            {
-                saved[bin.id] = bin;
-            }
-
-            foreach (KeyValuePair<string, Workshop.OffcutBin> bin in ById<Workshop.OffcutBin>())
-            {
-                var pieces = new List<StoredPiece>();
-                if (saved.TryGetValue(bin.Key, out BinData binData))
-                {
-                    foreach (BoardData pieceData in binData.pieces ?? Array.Empty<BoardData>())
-                    {
-                        if (boardFactory.TryGetSpecies(pieceData.speciesId, out WoodSpeciesDefinition definition))
-                        {
-                            TimberPiece piece = SaveFormat.ToPiece(pieceData, definition.ToDomain(), out _);
-                            pieces.Add(new StoredPiece(piece, (BoardSurface)pieceData.surface));
-                        }
-                    }
-                }
-
-                bin.Value.Stock.Restore(pieces);
-            }
-        }
-
-        /// <summary>Puts the stepladder (and other props) back; one saved while carried falls to the ground.</summary>
-        private void RestoreProps(SaveGameData data)
-        {
-            Dictionary<string, Carryable> props = ById<Carryable>();
-            foreach (PropData prop in data.props ?? Array.Empty<PropData>())
-            {
-                if (props.TryGetValue(prop.id, out Carryable carryable) && !carryable.TryGetComponent(out TimberBoard _))
-                {
-                    carryable.transform.SetPositionAndRotation(ToPosition(prop.pose), ToRotation(prop.pose));
-                    carryable.RequestSupportCheck();
-                }
-            }
-        }
 
         private static Vector3 ToPosition(PoseData pose) => new Vector3(pose.px, pose.py, pose.pz);
 

@@ -55,8 +55,12 @@ namespace WoodcraftSimulator.Inventory
         }
 
         /// <summary>Called by <see cref="PlayerToolBelt"/>: stored items can't be hit or collided with.</summary>
+        /// <summary>On the belt (in the hand or holstered).</summary>
+        public bool IsStored { get; private set; }
+
         internal void SetStored(bool stored)
         {
+            IsStored = stored;
             foreach (Collider itemCollider in colliders)
             {
                 itemCollider.enabled = !stored;

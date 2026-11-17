@@ -30,8 +30,6 @@ namespace WoodcraftSimulator.UI
         [SerializeField] private PlayerCarrier carrier;
         [SerializeField] private PlayerToolBelt toolBelt;
 
-        [Tooltip("Assembly stations whose quality report is shown when their structure is completed.")]
-        [SerializeField] private AssemblyStation[] stations = System.Array.Empty<AssemblyStation>();
 
         [Tooltip("Optional: while it has a job in progress, its result is shown instead of the assembly report.")]
         [SerializeField] private Jobs.JobBoard jobBoard;
@@ -41,7 +39,6 @@ namespace WoodcraftSimulator.UI
 
         private Label reportLabel;
         private float reportHideTime = -1f;
-        private System.Action[] completionHandlers;
 
         private VisualElement crosshair;
         private Label promptLabel;
@@ -102,16 +99,8 @@ namespace WoodcraftSimulator.UI
 
             // Optional element: older layouts without it simply show no report.
             reportLabel = root.Q<Label>("assembly-report");
-            completionHandlers = new System.Action[stations.Length];
-            for (int i = 0; i < stations.Length; i++)
-            {
-                AssemblyStation station = stations[i];
-                if (station != null)
-                {
-                    completionHandlers[i] = () => ShowReport(station);
-                    station.Completed += completionHandlers[i];
-                }
-            }
+            // Any station in any loaded scene (the HUD is in the core scene, D-056).
+            AssemblyStation.AnyCompleted += ShowReport;
 
             Refresh();
             OnBeltChanged();
@@ -252,18 +241,7 @@ namespace WoodcraftSimulator.UI
                 toolBelt.Changed -= OnBeltChanged;
             }
 
-            if (completionHandlers != null)
-            {
-                for (int i = 0; i < stations.Length; i++)
-                {
-                    if (stations[i] != null && completionHandlers[i] != null)
-                    {
-                        stations[i].Completed -= completionHandlers[i];
-                    }
-                }
-
-                completionHandlers = null;
-            }
+            AssemblyStation.AnyCompleted -= ShowReport;
 
             if (observedTool != null)
             {

@@ -73,6 +73,7 @@ namespace WoodcraftSimulator.Workshop
 
         private void Awake()
         {
+            boardFactory = Core.Services.Resolve(boardFactory); // in the core scene (D-056)
             Stock = new OffcutStock(species != null ? species.Id : "unknown");
             Stock.Changed += OnStockChanged;
         }

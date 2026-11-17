@@ -41,6 +41,9 @@ namespace WoodcraftSimulator.Tools
         [Tooltip("Target dimension the measured piece is checked against. Optional.")]
         [SerializeField] private CutList cutList;
 
+        // The bench note is in the workshop scene, the tool in the core scene (D-056); null away from the workshop.
+        private CutList NoteOnBench => cutList != null ? cutList : cutList = Core.Services.Get<CutList>();
+
         [Tooltip("Allowed deviation of the measured piece from the target, in millimeters.")]
         [SerializeField, Min(0f)] private float toleranceMillimeters = 1f;
 
@@ -527,13 +530,13 @@ namespace WoodcraftSimulator.Tools
         {
             Length measured = result.MeasuredPiece.Dimensions.Length;
             string measuredText = measured.ToString();
-            if (cutList != null)
+            if (NoteOnBench != null)
             {
                 // The cut piece against the job's target: this is what counts, not the pencil line (D-031).
                 var tolerance = new Tolerance(Length.FromMillimeters((double)toleranceMillimeters));
-                ToleranceCheck check = tolerance.Check(cutList.Target, measured);
+                ToleranceCheck check = tolerance.Check(NoteOnBench.Target, measured);
                 string verdict = check.IsWithin ? Loc.T("OK", "TAMAM") : Loc.T("OUT OF TOLERANCE", "TOLERANS DIŞI");
-                measuredText += Loc.T($" (target {cutList.Target}, {verdict} {tolerance})", $" (hedef {cutList.Target}, {verdict} {tolerance})");
+                measuredText += Loc.T($" (target {NoteOnBench.Target}, {verdict} {tolerance})", $" (hedef {NoteOnBench.Target}, {verdict} {tolerance})");
             }
 
             string other = result.OtherPiece.Dimensions.Length.ToString();

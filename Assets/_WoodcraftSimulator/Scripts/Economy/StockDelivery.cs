@@ -15,6 +15,29 @@ namespace WoodcraftSimulator.Economy
     {
         [SerializeField] private TimberBoardFactory boardFactory;
 
+        [Tooltip("Which deliveries come here: \"workshop\", \"outdoor\" (the sites by the workshop) or a location id (D-056).")]
+        [SerializeField] private string deliveryId = "workshop";
+
+        private static readonly System.Collections.Generic.List<StockDelivery> Loaded =
+            new System.Collections.Generic.List<StockDelivery>();
+
+        public string DeliveryId => deliveryId;
+
+        /// <summary>The loaded delivery area with this id, or null (its scene isn't loaded).</summary>
+        public static StockDelivery Find(string id) => Loaded.Find(each => each != null && each.deliveryId == id);
+
+        // The factory lives in the core scene (D-056).
+        private void Awake() => boardFactory = Core.Services.Resolve(boardFactory);
+
+        // Boards bought while this place wasn't loaded are brought now (D-056).
+        private void OnEnable()
+        {
+            Loaded.Add(this);
+            Core.Services.Get<WorkshopEconomy>()?.DeliverPending(this);
+        }
+
+        private void OnDisable() => Loaded.Remove(this);
+
         [SerializeField, Min(1)] private int boardsPerRow = 6;
         [SerializeField, Min(1)] private int maximumLayers = 8;
         [SerializeField, Min(0f)] private float gap = 0.03f;

@@ -7,6 +7,9 @@ namespace WoodcraftSimulator.Economy
     public sealed class UpgradeSheet : MonoBehaviour, IInteractable, IDescribable
     {
         [SerializeField] private WorkshopUpgrades upgrades;
+
+        // A sheet in the workshop scene, the upgrades in the core scene (D-056).
+        private void Awake() => upgrades = Core.Services.Resolve(upgrades);
         [SerializeField, Min(0)] private int upgradeIndex;
 
         private string lastResult;

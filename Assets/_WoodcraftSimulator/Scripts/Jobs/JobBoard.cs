@@ -23,12 +23,10 @@ namespace WoodcraftSimulator.Jobs
     public sealed class JobBoard : MonoBehaviour
     {
         [SerializeField] private JobDefinition[] jobs = Array.Empty<JobDefinition>();
-        [SerializeField] private AssemblyStation station;
 
-        [Tooltip("Further assembly places (e.g. the terrace site); a job is built where its blueprint is known.")]
-        [SerializeField] private AssemblyStation[] otherStations = Array.Empty<AssemblyStation>();
-
-        [SerializeField] private CutList cutList;
+        // The job service lives in the core scene (D-056); the assembly stations and the bench's cut list note are in
+        // the content scenes and found at runtime (AssemblyStation.All, Services).
+        private CutList cutList;
         [SerializeField] private WorkshopWaste waste;
         [SerializeField] private WorkshopEconomy economy;
 
@@ -95,16 +93,22 @@ namespace WoodcraftSimulator.Jobs
         public IReadOnlyList<string> CompletedJobIds => completedJobIds;
 
         /// <summary>The structure of the active job is complete (waiting to be delivered).</summary>
-        public bool IsComplete => HasActiveJob && Active.Build.IsComplete;
+        public bool IsComplete => Active != null && Active.Build.IsComplete;
+
+        /// <summary>The active job's station is not in a loaded scene (the job is at a place the player isn't, D-056).</summary>
+        public bool ActiveJobElsewhere => HasActiveJob && Active == null;
+
+        /// <summary>The bench's cut list note, if the workshop is loaded.</summary>
+        private CutList NoteOnBench => cutList != null ? cutList : cutList = Core.Services.Get<CutList>();
 
         /// <summary>Raised after a job was accepted, completed, delivered or more stock was bought.</summary>
         public event Action Changed;
 
         private void Awake()
         {
-            if (station == null || saw == null || economy == null)
+            if (saw == null || economy == null)
             {
-                Debug.LogError($"{nameof(JobBoard)}: Station, Saw and Economy must be assigned.", this);
+                Debug.LogError($"{nameof(JobBoard)}: Saw and Economy must be assigned.", this);
                 enabled = false;
                 return;
             }
@@ -177,59 +181,59 @@ namespace WoodcraftSimulator.Jobs
 
         private void OnEnable()
         {
-            foreach (AssemblyStation each in AllStations())
-            {
-                each.Changed += OnStationChanged;
-                each.Completed += OnStationCompleted;
-            }
-
+            AssemblyStation.AnyChanged += OnStationChanged;
+            AssemblyStation.AnyCompleted += OnStationCompleted;
+            AssemblyStation.LoadedChanged += OnStationsLoaded;
             TimberBoard.AnySurfaceChanged += OnStationChanged;
         }
 
         private void OnDisable()
         {
-            foreach (AssemblyStation each in AllStations())
-            {
-                each.Changed -= OnStationChanged;
-                each.Completed -= OnStationCompleted;
-            }
-
+            AssemblyStation.AnyChanged -= OnStationChanged;
+            AssemblyStation.AnyCompleted -= OnStationCompleted;
+            AssemblyStation.LoadedChanged -= OnStationsLoaded;
             TimberBoard.AnySurfaceChanged -= OnStationChanged;
         }
 
-        /// <summary>The workshop's assembly table and any other station (the terrace site outside, D-046).</summary>
-        private IEnumerable<AssemblyStation> AllStations()
-        {
-            if (station != null)
-            {
-                yield return station;
-            }
-
-            foreach (AssemblyStation other in otherStations)
-            {
-                if (other != null)
-                {
-                    yield return other;
-                }
-            }
-        }
-
-        /// <summary>Where a job is built: the station that knows its blueprint.</summary>
+        /// <summary>
+        /// Where a job is built: the loaded station that knows its blueprint (the assembly table, a site outside, a
+        /// customer location, D-046, D-056); null when that place isn't loaded.
+        /// </summary>
         private AssemblyStation StationFor(int index)
         {
-            foreach (AssemblyStation each in AllStations())
+            if (!(TemplateAt(index) is JobDefinition template))
             {
-                if (TemplateAt(index) is JobDefinition template && each.FindBlueprint(template.Blueprint.Id) != null)
+                return null;
+            }
+
+            foreach (AssemblyStation each in AssemblyStation.All)
+            {
+                if (each != null && each.FindBlueprint(template.Blueprint.Id) != null)
                 {
                     return each;
                 }
             }
 
-            return station;
+            return null;
         }
 
-        /// <summary>The station of the active job (the workshop table when none is active).</summary>
-        private AssemblyStation Active => HasActiveJob ? StationFor(activeIndex) : station;
+        /// <summary>The station of the active job, or null (none, or its place isn't loaded).</summary>
+        private AssemblyStation Active => HasActiveJob ? StationFor(activeIndex) : null;
+
+        private void OnStationChanged(AssemblyStation changed) => OnStationChanged();
+
+        private void OnStationCompleted(AssemblyStation completed) => OnStationCompleted();
+
+        // A scene with stations came or went: cached results may refer to the other place.
+        // A place that loads while its job is active takes the blueprint and the bench note shows the cut list.
+        private void OnStationsLoaded()
+        {
+            OnStationChanged();
+            if (Active != null && Active.IsEmpty)
+            {
+                Active.TrySetBlueprint(TemplateAt(activeIndex).Blueprint);
+            }
+        }
 
         private void Update()
         {
@@ -348,7 +352,7 @@ namespace WoodcraftSimulator.Jobs
         /// <summary>Progress of each cut list line of the active job (empty without one).</summary>
         public IReadOnlyList<CutListLineProgress> ActiveProgress() =>
             // Loose pieces lying in the workshop count as "ready" for the cut list (installed ones are counted by slot).
-            HasActiveJob
+            Active != null
                 ? CutListProgress.Evaluate(ActivePlan, Active.Build, WorkshopEconomy.LooseTimber())
                 : Array.Empty<CutListLineProgress>();
 
@@ -358,7 +362,7 @@ namespace WoodcraftSimulator.Jobs
         /// </summary>
         public bool NeedsPiece(TimberPiece piece)
         {
-            if (!HasActiveJob || piece == null)
+            if (Active == null || piece == null)
             {
                 return false;
             }
@@ -381,7 +385,7 @@ namespace WoodcraftSimulator.Jobs
         public bool TryGetStage(out Workshop.SitePreparation.StageState stage)
         {
             stage = default;
-            if (!HasActiveJob || !Active.TryGetComponent(out Workshop.SitePreparation site))
+            if (Active == null || !Active.TryGetComponent(out Workshop.SitePreparation site))
             {
                 return false;
             }
@@ -445,10 +449,10 @@ namespace WoodcraftSimulator.Jobs
                     return Loc.T($"{jobName}: can't be made from the stock (see Console)", $"{jobName}: bu malzemeden yapılamaz (Console'a bak)");
                 }
 
-                if (!StationFor(index).IsEmpty)
+                if (StationFor(index) is AssemblyStation place && !place.IsEmpty)
                 {
-                    return Loc.T($"Accept job: {jobName}   (clear the {StationFor(index).DisplayName} first)",
-                        $"İşi kabul et: {jobName}   (önce {StationFor(index).DisplayName} boşaltılmalı)");
+                    return Loc.T($"Accept job: {jobName}   (clear the {place.DisplayName} first)",
+                        $"İşi kabul et: {jobName}   (önce {place.DisplayName} boşaltılmalı)");
                 }
 
                 Money pay = domainJobs[index].Pay;
@@ -503,7 +507,7 @@ namespace WoodcraftSimulator.Jobs
 
         private void Accept(int index)
         {
-            if (offers[index].IsLocked || !plans[index].IsFeasible || !StationFor(index).IsEmpty)
+            if (offers[index].IsLocked || !plans[index].IsFeasible || (StationFor(index) is AssemblyStation busy && !busy.IsEmpty))
             {
                 return;
             }
@@ -528,7 +532,8 @@ namespace WoodcraftSimulator.Jobs
                 return;
             }
 
-            if (!StationFor(index).TrySetBlueprint(TemplateAt(index).Blueprint))
+            // A place that isn't loaded takes the blueprint when it loads (OnStationsLoaded, D-056).
+            if (StationFor(index) is AssemblyStation target && !target.TrySetBlueprint(TemplateAt(index).Blueprint))
             {
                 return;
             }
@@ -550,7 +555,7 @@ namespace WoodcraftSimulator.Jobs
             activeIndex = index;
             ElapsedSeconds = 0.0;
             // A new job on an outdoor site starts with no stage approved (D-053).
-            if (StationFor(index).TryGetComponent(out Workshop.SitePreparation site))
+            if (StationFor(index) is AssemblyStation siteStation && siteStation.TryGetComponent(out Workshop.SitePreparation site))
             {
                 site.ResetInspections();
             }
@@ -561,7 +566,7 @@ namespace WoodcraftSimulator.Jobs
             OnStationChanged();
             ShowCutList();
             ShowMessage(shopping.TotalCost > Money.Zero
-                ? (StationFor(index) == station
+                ? (!(StationFor(index) is AssemblyStation outdoor && outdoor.TryGetComponent(out Workshop.SitePreparation _))
                     ? Loc.T($"Material bought ({shopping.TotalCost}): see the delivery area", $"Malzeme alındı ({shopping.TotalCost}): teslim alanına bak")
                     : Loc.T($"Material bought ({shopping.TotalCost}): delivered to the site outside", $"Malzeme alındı ({shopping.TotalCost}): dışarıdaki şantiyeye bırakıldı"))
                 : Loc.T("The workshop has all the material", "Atölyede tüm malzeme var"));
@@ -628,9 +633,9 @@ namespace WoodcraftSimulator.Jobs
             Active.ClearAll();
             activeIndex = -1;
             OnStationChanged();
-            if (cutList != null)
+            if (NoteOnBench != null)
             {
-                cutList.ClearJobLines();
+                NoteOnBench.ClearJobLines();
             }
 
             // A new week: new offers on the board.
@@ -648,7 +653,7 @@ namespace WoodcraftSimulator.Jobs
 
         private void ShowCutList()
         {
-            if (cutList == null)
+            if (NoteOnBench == null || !HasActiveJob)
             {
                 return;
             }
@@ -667,7 +672,7 @@ namespace WoodcraftSimulator.Jobs
                 labels.Add($"{line.Quantity} x {string.Join(", ", names)}");
             }
 
-            cutList.SetJobLines(lengths, labels);
+            NoteOnBench.SetJobLines(lengths, labels);
         }
 
         /// <summary>
@@ -811,7 +816,7 @@ namespace WoodcraftSimulator.Jobs
             depositPaid = Money.FromCents(data.depositCents);
             if (HasActiveJob)
             {
-                StationFor(activeIndex).TrySetBlueprint(TemplateAt(activeIndex).Blueprint);
+                StationFor(activeIndex)?.TrySetBlueprint(TemplateAt(activeIndex).Blueprint);
                 ShowCutList();
             }
 

@@ -11,6 +11,9 @@ namespace WoodcraftSimulator.Economy
     public sealed class OrderSheet : MonoBehaviour, IInteractable, IDescribable
     {
         [SerializeField] private WorkshopEconomy economy;
+
+        // A sheet in the workshop scene, the economy in the core scene (D-056).
+        private void Awake() => economy = Core.Services.Resolve(economy);
         [SerializeField, Min(0)] private int itemIndex;
 
         private string lastResult;

@@ -86,6 +86,10 @@ namespace WoodcraftSimulator.Workshop
 
         private void Awake()
         {
+            // The job service, economy and career live in the core scene (D-056).
+            jobBoard = Core.Services.Resolve(jobBoard);
+            economy = Core.Services.Resolve(economy);
+            career = Core.Services.Resolve(career);
             agent = GetComponent<NavMeshAgent>();
             home = transform.position;
             homeRotation = transform.rotation;

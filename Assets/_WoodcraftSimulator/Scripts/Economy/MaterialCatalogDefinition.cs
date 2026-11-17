@@ -104,6 +104,20 @@ namespace WoodcraftSimulator.Economy
             return null;
         }
 
+        /// <summary>A species asset sold in the catalog, by species id (pending deliveries, D-056).</summary>
+        public WoodSpeciesDefinition SpeciesById(string speciesId)
+        {
+            foreach (BoardEntry board in boards)
+            {
+                if (board != null && board.species != null && board.species.Id == speciesId)
+                {
+                    return board.species;
+                }
+            }
+
+            return null;
+        }
+
         // float → decimal via the shortest string avoids 8.5f becoming 8.4999...
         private static Money Price(float euros) =>
             Money.FromEuros(decimal.Parse(euros.ToString("R", System.Globalization.CultureInfo.InvariantCulture),

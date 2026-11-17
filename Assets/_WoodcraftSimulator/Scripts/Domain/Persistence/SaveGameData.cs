@@ -52,6 +52,15 @@ namespace WoodcraftSimulator.Persistence
 
         /// <summary>The offers on the job board, one per sheet (D-054). Empty (older saves): new offers are drawn.</summary>
         public OfferData[] offers = Array.Empty<OfferData>();
+
+        /// <summary>The place the player is at (location id, D-056); empty in older saves = the workshop.</summary>
+        public string location;
+
+        /// <summary>Places whose state is in this save (D-056); a place not listed is loaded as built (first visit).</summary>
+        public string[] capturedLocations = Array.Empty<string>();
+
+        /// <summary>Boards bought for a place that wasn't loaded, still to be delivered there (D-056).</summary>
+        public PendingDeliveryData[] pendingDeliveries = Array.Empty<PendingDeliveryData>();
     }
 
     [Serializable]
@@ -114,6 +123,9 @@ namespace WoodcraftSimulator.Persistence
     [Serializable]
     public sealed class BoardData
     {
+        /// <summary>The place (location id) it belongs to (D-056); empty in older saves = the workshop.</summary>
+        public string location;
+
         /// <summary>Unique id of this physical piece in the save (referenced by assemblies).</summary>
         public string id;
 
@@ -132,6 +144,9 @@ namespace WoodcraftSimulator.Persistence
     [Serializable]
     public sealed class ItemData
     {
+        /// <summary>The place (location id) it belongs to (D-056); empty in older saves = the workshop.</summary>
+        public string location;
+
         /// <summary>Scene id of the item object (stable, set by the scene builder).</summary>
         public string id;
 
@@ -199,6 +214,9 @@ namespace WoodcraftSimulator.Persistence
     [Serializable]
     public sealed class AssemblyData
     {
+        /// <summary>The place (location id) it belongs to (D-056); empty in older saves = the workshop.</summary>
+        public string location;
+
         /// <summary>Scene id of the assembly station.</summary>
         public string stationId;
 
@@ -223,6 +241,9 @@ namespace WoodcraftSimulator.Persistence
     [Serializable]
     public sealed class SiteData
     {
+        /// <summary>The place (location id) it belongs to (D-056); empty in older saves = the workshop.</summary>
+        public string location;
+
         /// <summary>Scene id of the site.</summary>
         public string id;
 
@@ -233,8 +254,23 @@ namespace WoodcraftSimulator.Persistence
     [Serializable]
     public sealed class PropData
     {
+        /// <summary>The place (location id) it belongs to (D-056); empty in older saves = the workshop.</summary>
+        public string location;
+
         public string id;
         public PoseData pose = new PoseData();
+    }
+
+    /// <summary>Boards waiting to be delivered to a place that wasn't loaded (D-056).</summary>
+    [Serializable]
+    public sealed class PendingDeliveryData
+    {
+        public string deliveryId;
+        public string speciesId;
+        public float lengthMillimeters;
+        public float widthMillimeters;
+        public float thicknessMillimeters;
+        public int count;
     }
 
     /// <summary>Experience, reputation, week, skills (D-054).</summary>
@@ -274,6 +310,9 @@ namespace WoodcraftSimulator.Persistence
     [Serializable]
     public sealed class BinData
     {
+        /// <summary>The place (location id) it belongs to (D-056); empty in older saves = the workshop.</summary>
+        public string location;
+
         public string id;
         public BoardData[] pieces = Array.Empty<BoardData>();
     }
@@ -289,6 +328,9 @@ namespace WoodcraftSimulator.Persistence
     [Serializable]
     public sealed class SwitchData
     {
+        /// <summary>The place (location id) it belongs to (D-056); empty in older saves = the workshop.</summary>
+        public string location;
+
         public string id;
         public bool on;
     }
@@ -296,6 +338,9 @@ namespace WoodcraftSimulator.Persistence
     [Serializable]
     public sealed class CutListData
     {
+        /// <summary>The place (location id) it belongs to (D-056); empty in older saves = the workshop.</summary>
+        public string location;
+
         public string id;
         public int selectedIndex;
     }

@@ -20,6 +20,7 @@ using WoodcraftSimulator.Player;
 using WoodcraftSimulator.Tools;
 using WoodcraftSimulator.UI;
 using WoodcraftSimulator.Workshop;
+using WoodcraftSimulator.World;
 
 namespace WoodcraftSimulator.Editor
 {
@@ -122,11 +123,80 @@ namespace WoodcraftSimulator.Editor
             AddPlayerSounds(player);
             TurkishNames.Apply();
 
-            // Intentionally does not touch Build Settings (ProjectSettings): add the scene there manually when needed.
+            // Phase 12.5 (D-056): what lasts across places goes into the core scene; the workshop stays a content scene.
+            Scene core = SplitIntoCoreScene(player, saveService);
+
+            // Intentionally does not touch Build Settings (ProjectSettings): add the scenes there manually when needed.
+            EnsureFolder(Path.GetDirectoryName(CoreScenePath).Replace('\\', '/'));
             EditorSceneManager.SaveScene(scene, ScenePath);
+            EditorSceneManager.SaveScene(core, CoreScenePath);
+            PlayModeStartScene.Apply();
 
             Selection.activeGameObject = player;
-            Debug.Log($"Workshop scene built and saved to {ScenePath}.");
+            Debug.Log($"Scenes built: {CoreScenePath} (player, HUD, services, tools) and {ScenePath} (the workshop). " +
+                      "Play starts from the core scene.");
+        }
+
+        private const string CoreScenePath = PlayModeStartScene.CoreScenePath;
+
+        /// <summary>
+        /// Creates the core scene (D-056) and moves into it what must outlive a place: the player, HUD, pause menu, save
+        /// system (with the scene flow), the services (economy, upgrades, career, jobs, sawdust) and the tools and the
+        /// stepladder (each a <see cref="Traveller"/> that remembers the place it lies at). The workshop gets its place
+        /// marker (<see cref="PlaceInfo"/>) with the arrival point where the player starts.
+        /// </summary>
+        private static Scene SplitIntoCoreScene(GameObject player, SaveGameService saveService)
+        {
+            Scene core = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Additive);
+
+            LocationDefinition workshop = LocationAssets.Workshop(ScenePath);
+            var info = new GameObject("PlaceInfo").AddComponent<PlaceInfo>();
+            SceneManager.MoveGameObjectToScene(info.gameObject, player.scene);
+            var arrival = new GameObject("ArrivalPoint").transform;
+            arrival.SetParent(info.transform, false);
+            arrival.SetPositionAndRotation(player.transform.position, player.transform.rotation);
+            SetReference(info, "location", workshop);
+            SetReference(info, "arrivalPoint", arrival);
+
+            var flow = saveService.gameObject.AddComponent<SceneFlow>();
+            SetReferences(flow, "locations", new Object[] { workshop });
+            SetReference(flow, "saveService", saveService);
+            SetReference(flow, "player", player.GetComponent<PlayerController>());
+
+            var moving = new List<GameObject>
+            {
+                player,
+                GameObject.Find("HUD"),
+                GameObject.Find("PauseController"),
+                saveService.gameObject,
+                Object.FindFirstObjectByType<JobBoard>()?.gameObject,
+                Object.FindFirstObjectByType<WorkshopEconomy>()?.gameObject,
+                Object.FindFirstObjectByType<WorkshopWaste>()?.gameObject
+            };
+
+            // Tools and the stepladder travel: they live in the core scene and remember where they lie.
+            foreach (PickupItem item in Object.FindObjectsByType<PickupItem>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                item.gameObject.AddComponent<Traveller>();
+                moving.Add(item.gameObject);
+            }
+
+            foreach (Stepladder ladder in Object.FindObjectsByType<Stepladder>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                ladder.gameObject.AddComponent<Traveller>();
+                moving.Add(ladder.gameObject);
+            }
+
+            foreach (GameObject each in moving)
+            {
+                if (each != null && each.scene != core)
+                {
+                    each.transform.SetParent(null, true);
+                    SceneManager.MoveGameObjectToScene(each, core);
+                }
+            }
+
+            return core;
         }
 
         private static void ConfigureDefaultObjects(Scene scene)
@@ -201,7 +271,8 @@ namespace WoodcraftSimulator.Editor
                 new Vector3(1.6f, 0.5f, 0.02f), materials.Workbench);
             Object.DestroyImmediate(board.GetComponent<BoxCollider>()); // the sheets are what you aim at
 
-            var jobBoard = board.AddComponent<JobBoard>();
+            // The job service lives in the core scene (D-056); the board and its sheets stay in the workshop.
+            var jobBoard = new GameObject("Jobs").AddComponent<JobBoard>();
             JobDefinition[] jobs =
             {
                 JobAssets.FrameJob(species), JobAssets.ShelfJob(species), ToteAssets.ToteJob(species), TerraceAssets.TerraceJob(species),
@@ -217,7 +288,6 @@ namespace WoodcraftSimulator.Editor
                     sheetSize, materials.Paper);
                 EnlargeGrabCollider(sheet, sheetSize);
                 var jobSheet = sheet.AddComponent<JobSheet>();
-                SetReference(jobSheet, "board", jobBoard);
                 var serializedSheet = new SerializedObject(jobSheet);
                 serializedSheet.FindProperty("jobIndex").intValue = i;
                 serializedSheet.ApplyModifiedPropertiesWithoutUndo();
@@ -250,21 +320,8 @@ namespace WoodcraftSimulator.Editor
             var serializedBoard = new SerializedObject(jobBoard);
             serializedBoard.FindProperty("slots").intValue = jobs.Length; // one offer per sheet
             serializedBoard.ApplyModifiedPropertiesWithoutUndo();
-            SetReference(jobBoard, "station", Object.FindFirstObjectByType<AssemblyStation>());
-            SetReference(jobBoard, "cutList", Object.FindFirstObjectByType<CutList>());
             SetReference(jobBoard, "waste", Object.FindFirstObjectByType<WorkshopWaste>());
             SetReference(jobBoard, "economy", economy);
-            var outdoorStations = new List<Object>();
-            foreach (string sitePath in new[] { "Environment/TerraceSite", "Environment/PergolaSite" })
-            {
-                GameObject outdoorSite = GameObject.Find(sitePath);
-                if (outdoorSite != null)
-                {
-                    outdoorStations.Add(outdoorSite.GetComponent<AssemblyStation>());
-                }
-            }
-
-            SetReferences(jobBoard, "otherStations", outdoorStations);
             SetReference(jobBoard, "saw", SawAssets.HandSaw());
             SetReferences(jobBoard, "fasteners", Fasteners());
         }
@@ -282,9 +339,6 @@ namespace WoodcraftSimulator.Editor
             economyObject.transform.SetParent(parent, false);
             var economy = economyObject.AddComponent<WorkshopEconomy>();
             SetReference(economy, "catalog", catalog);
-            SetReference(economy, "delivery", delivery);
-            GameObject outdoor = GameObject.Find("Environment/OutdoorDelivery");
-            SetReference(economy, "outdoorDelivery", outdoor != null ? outdoor.GetComponent<StockDelivery>() : null);
             SetReferences(economy, "fasteners", Fasteners());
             var serializedEconomy = new SerializedObject(economy);
             serializedEconomy.FindProperty("startingFundsEuros").floatValue = 100f;
@@ -322,7 +376,6 @@ namespace WoodcraftSimulator.Editor
                     sheetSize, materials.Paper);
                 EnlargeGrabCollider(sheet, sheetSize);
                 var orderSheet = sheet.AddComponent<OrderSheet>();
-                SetReference(orderSheet, "economy", economy);
                 var serializedSheet = new SerializedObject(orderSheet);
                 serializedSheet.FindProperty("itemIndex").intValue = i;
                 serializedSheet.ApplyModifiedPropertiesWithoutUndo();
@@ -473,13 +526,22 @@ namespace WoodcraftSimulator.Editor
             SetUpgrade(list.GetArrayElementAtIndex(3), "sawhorses-2", "Second pair of sawhorses", "İkinci sehpa takımı",
                 "cut and lay out two boards at once", "aynı anda iki tahtayla çalış", 40f, CareerRank.Journeyman,
                 secondHorses.gameObject);
+            // What the upgrades look like in the workshop (lamp, second sawhorses): UpgradeVisuals there (D-056).
             Light lamp = GameObject.Find("Environment/Workshop/WorkbenchLamp")?.GetComponent<Light>();
-            SerializedProperty lamps = serialized.FindProperty("lamps");
-            lamps.arraySize = lamp != null ? 1 : 0;
+            var visuals = parent.gameObject.AddComponent<UpgradeVisuals>();
+            var serializedVisuals = new SerializedObject(visuals);
+            SerializedProperty visualLamps = serializedVisuals.FindProperty("lamps");
+            visualLamps.arraySize = lamp != null ? 1 : 0;
             if (lamp != null)
             {
-                lamps.GetArrayElementAtIndex(0).objectReferenceValue = lamp;
+                visualLamps.GetArrayElementAtIndex(0).objectReferenceValue = lamp;
             }
+
+            SerializedProperty reveals = serializedVisuals.FindProperty("reveals");
+            reveals.arraySize = 1;
+            reveals.GetArrayElementAtIndex(0).FindPropertyRelative("upgradeId").stringValue = "sawhorses-2";
+            reveals.GetArrayElementAtIndex(0).FindPropertyRelative("shown").objectReferenceValue = secondHorses.gameObject;
+            serializedVisuals.ApplyModifiedPropertiesWithoutUndo();
 
             serialized.ApplyModifiedPropertiesWithoutUndo();
 
@@ -491,7 +553,6 @@ namespace WoodcraftSimulator.Editor
                     sheetSize, materials.Paper);
                 EnlargeGrabCollider(sheet, sheetSize);
                 var upgradeSheet = sheet.AddComponent<UpgradeSheet>();
-                SetReference(upgradeSheet, "upgrades", upgrades);
                 var serializedSheet = new SerializedObject(upgradeSheet);
                 serializedSheet.FindProperty("upgradeIndex").intValue = i;
                 serializedSheet.ApplyModifiedPropertiesWithoutUndo();
@@ -520,7 +581,6 @@ namespace WoodcraftSimulator.Editor
             entry.FindPropertyRelative("effectTurkish").stringValue = effectTurkish;
             entry.FindPropertyRelative("priceEuros").floatValue = price;
             entry.FindPropertyRelative("requiredRank").enumValueIndex = (int)rank;
-            entry.FindPropertyRelative("reveal").objectReferenceValue = reveal;
         }
 
         /// <summary>
@@ -671,7 +731,6 @@ namespace WoodcraftSimulator.Editor
             SetReference(station, "pilotPointMaterial", materials.PilotPoint);
             SetReference(station, "screwHeadMaterial", materials.Steel);
             SetReference(station, "holeMaterial", materials.PencilMark);
-            SetReference(station, "waste", Object.FindFirstObjectByType<WorkshopWaste>());
             SetReferences(station, "knownBlueprints", new Object[] { TerraceAssets.Terrace() });
             SetReferences(station, "fasteners", Fasteners());
             var serializedStation = new SerializedObject(station);
@@ -682,7 +741,10 @@ namespace WoodcraftSimulator.Editor
             var deliveryObject = new GameObject("OutdoorDelivery");
             deliveryObject.transform.SetParent(environment, false);
             deliveryObject.transform.localPosition = new Vector3(1.9f, 0f, -6f);
-            deliveryObject.AddComponent<StockDelivery>();
+            var outdoorDelivery = deliveryObject.AddComponent<StockDelivery>();
+            var serializedDelivery = new SerializedObject(outdoorDelivery);
+            serializedDelivery.FindProperty("deliveryId").stringValue = WorkshopEconomy.OutdoorDelivery;
+            serializedDelivery.ApplyModifiedPropertiesWithoutUndo();
 
             // Sawhorses left of the site, for cutting joists to length outside.
             BuildSawhorses(environment, materials.Workbench, new Vector3(-2.4f, 0f, -6f), setSawFloor: false);
@@ -819,7 +881,6 @@ namespace WoodcraftSimulator.Editor
             SetReference(station, "screwHeadMaterial", materials.Steel);
             SetReference(station, "holeMaterial", materials.PencilMark);
             SetReference(station, "braceMaterial", materials.Lumber);
-            SetReference(station, "waste", Object.FindFirstObjectByType<WorkshopWaste>());
             SetReferences(station, "knownBlueprints", new Object[] { PergolaAssets.Pergola() });
             SetReferences(station, "fasteners", Fasteners());
             var serializedStation = new SerializedObject(station);
@@ -1036,9 +1097,6 @@ namespace WoodcraftSimulator.Editor
 
             var apprentice = root.AddComponent<Apprentice>();
             SetReference(apprentice, "carryPoint", carryPoint);
-            SetReference(apprentice, "jobBoard", Object.FindFirstObjectByType<JobBoard>());
-            SetReference(apprentice, "economy", Object.FindFirstObjectByType<WorkshopEconomy>());
-            SetReference(apprentice, "career", Object.FindFirstObjectByType<WorkshopCareer>());
         }
 
         /// <summary>A box from <paramref name="from"/> to <paramref name="to"/> with the given cross-section (x, y).</summary>
@@ -1177,7 +1235,6 @@ namespace WoodcraftSimulator.Editor
             var pencilTool = pencil.AddComponent<PencilTool>();
             SetReference(pencilTool, "blade", CreateTapeBlade(pencil, materials.TapeBlade));
             SetReference(pencilTool, "markPreview", CreateLine(pencil, "MarkPreview", materials.MarkPreview, 0.0015f));
-            SetReference(pencilTool, "cutList", cutList);
 
             // Hand saw: placeholder box for a ~500 mm blade (120 mm tall, 4 mm thick for visibility), lying flat on the
             // bench; held upright, pointing forward and slightly down.
@@ -1187,7 +1244,6 @@ namespace WoodcraftSimulator.Editor
             var sawTool = saw.AddComponent<HandSawTool>();
             SetReference(sawTool, "definition", SawAssets.HandSaw());
             SetReference(sawTool, "waste", waste);
-            SetReference(sawTool, "cutList", cutList);
             SetReference(sawTool, "cutGuide", CreateLine(saw, "CutGuide", materials.CutGuide, 0.003f));
         }
 
@@ -1287,7 +1343,6 @@ namespace WoodcraftSimulator.Editor
             SetReference(station, "pilotPointMaterial", materials.PilotPoint);
             SetReference(station, "screwHeadMaterial", materials.Steel);
             SetReference(station, "holeMaterial", materials.PencilMark);
-            SetReference(station, "waste", Object.FindFirstObjectByType<WorkshopWaste>());
             SetReferences(station, "knownBlueprints",
                 new Object[] { BlueprintAssets.Frame600x300(), BlueprintAssets.WallShelf(), ToteAssets.ToolTote() });
             SetReferences(station, "fasteners", Fasteners());
@@ -1567,17 +1622,6 @@ namespace WoodcraftSimulator.Editor
             SetReference(hud, "carrier", carrier);
             SetReference(hud, "toolBelt", carrier.GetComponent<PlayerToolBelt>());
 
-            // Completion reports of every assembly station in the scene.
-            AssemblyStation[] stations = Object.FindObjectsByType<AssemblyStation>(FindObjectsSortMode.None);
-            var serializedHud = new SerializedObject(hud);
-            SerializedProperty stationsProperty = serializedHud.FindProperty("stations");
-            stationsProperty.arraySize = stations.Length;
-            for (int i = 0; i < stations.Length; i++)
-            {
-                stationsProperty.GetArrayElementAtIndex(i).objectReferenceValue = stations[i];
-            }
-
-            serializedHud.ApplyModifiedPropertiesWithoutUndo();
 
             // Job sheet and results (same UI document).
             var jobBoard = Object.FindFirstObjectByType<JobBoard>();
@@ -1624,7 +1668,10 @@ namespace WoodcraftSimulator.Editor
             serializedFactory.FindProperty("lumberMaterial").objectReferenceValue = materials.Lumber;
             serializedFactory.FindProperty("markMaterial").objectReferenceValue = materials.PencilMark;
             GameObject timber = GameObject.Find("Environment/Workshop/Timber");
-            serializedFactory.FindProperty("container").objectReferenceValue = timber != null ? timber.transform : null;
+            if (timber != null)
+            {
+                timber.AddComponent<BoardContainer>(); // where created boards go in the workshop (D-056)
+            }
             serializedFactory.ApplyModifiedPropertiesWithoutUndo();
 
             var service = saveObject.AddComponent<SaveGameService>();
@@ -1635,19 +1682,8 @@ namespace WoodcraftSimulator.Editor
 
             var jobBoard = Object.FindFirstObjectByType<JobBoard>();
             SetReference(service, "jobBoard", jobBoard);
-            foreach (StockDelivery delivery in Object.FindObjectsByType<StockDelivery>(FindObjectsSortMode.None))
-            {
-                SetReference(delivery, "boardFactory", factory);
-            }
-
-            foreach (OffcutBin bin in Object.FindObjectsByType<OffcutBin>(FindObjectsSortMode.None))
-            {
-                SetReference(bin, "boardFactory", factory);
-            }
-
             SetReference(service, "economy", Object.FindFirstObjectByType<WorkshopEconomy>());
             SetReference(service, "upgrades", Object.FindFirstObjectByType<WorkshopUpgrades>());
-            SetReferences(service, "sites", Object.FindObjectsByType<SitePreparation>(FindObjectsSortMode.None));
 
             return service;
         }

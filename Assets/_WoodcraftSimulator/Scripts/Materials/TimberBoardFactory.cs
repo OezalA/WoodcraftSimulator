@@ -18,8 +18,8 @@ namespace WoodcraftSimulator.Materials
         [SerializeField] private Material lumberMaterial;
         [SerializeField] private Material markMaterial;
 
-        [Tooltip("Parent of created boards (keeps the hierarchy tidy).")]
-        [SerializeField] private Transform container;
+        // The factory lives in the core scene; boards are made in the content scene that is active (the place the
+        // player is at), under its BoardContainer if it has one (D-056).
 
         private Dictionary<string, WoodSpeciesDefinition> speciesById;
 
@@ -35,7 +35,12 @@ namespace WoodcraftSimulator.Materials
             var board = new GameObject($"{piece.Species.DisplayName}_{piece.Dimensions.Length.FormatMillimeters()}");
             // Inactive while configuring: Awake (TimberBoard.Rebuild) runs on activation, with the species set.
             board.SetActive(false);
-            board.transform.SetParent(container, false);
+            Transform container = BoardContainer.InActiveScene();
+            if (container != null)
+            {
+                board.transform.SetParent(container, false);
+            }
+
             board.transform.SetPositionAndRotation(position, rotation);
 
             board.AddComponent<MeshFilter>();

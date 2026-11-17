@@ -413,6 +413,11 @@ namespace WoodcraftSimulator.Handling
         {
             carried.transform.SetPositionAndRotation(placementPosition, placementRotation);
             carried.SetCarried(false);
+            if (carried.TryGetComponent(out World.Traveller traveller))
+            {
+                traveller.PutDownHere(); // the stepladder now stands at this place (D-056)
+            }
+
             if (snapTarget != null)
             {
                 snapTarget.Install(carried, snap);

@@ -26,6 +26,9 @@ namespace WoodcraftSimulator.Tools
         [Tooltip("Source of the target dimension. Optional: without it, marks are not checked.")]
         [SerializeField] private CutList cutList;
 
+        // The bench note is in the workshop scene, the tool in the core scene (D-056); null away from the workshop.
+        private CutList NoteOnBench => cutList != null ? cutList : cutList = Core.Services.Get<CutList>();
+
         [Tooltip("Allowed deviation from the target, in millimeters.")]
         [SerializeField, Min(0f)] private float toleranceMillimeters = 1f;
 
@@ -193,8 +196,8 @@ namespace WoodcraftSimulator.Tools
             point.Board.AddMark(mark);
 
             Length distance = mark.DistanceFromReference(point.BoardLength);
-            SetLines(liveLine, cutList != null
-                ? FormatResult(tolerance.Check(cutList.Target, distance))
+            SetLines(liveLine, NoteOnBench != null
+                ? FormatResult(tolerance.Check(NoteOnBench.Target, distance))
                 : Loc.T($"Marked at {distance}", $"{distance} noktası işaretlendi"));
         }
 
@@ -236,7 +239,7 @@ namespace WoodcraftSimulator.Tools
 
         private void UpdateLiveLine(Length reading)
         {
-            Length target = cutList != null ? cutList.Target : Length.Zero;
+            Length target = NoteOnBench != null ? NoteOnBench.Target : Length.Zero;
             if (shownHasReading && reading == shownReading && target == shownTarget && adjusted == shownAdjusted)
             {
                 return;
@@ -247,7 +250,7 @@ namespace WoodcraftSimulator.Tools
             shownTarget = target;
             shownAdjusted = adjusted;
             string line = $"{reading.FormatMillimeters()} mm{(adjusted ? Loc.T(" (wheel)", " (tekerlek)") : string.Empty)}";
-            if (cutList != null)
+            if (NoteOnBench != null)
             {
                 line += Loc.T($"   target {target.FormatMillimeters()} mm", $"   hedef {target.FormatMillimeters()} mm");
             }

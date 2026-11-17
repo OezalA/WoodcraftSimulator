@@ -116,6 +116,7 @@ namespace WoodcraftSimulator.Construction
 
         private void Awake()
         {
+            waste = Services.Resolve(waste); // in the core scene (D-056)
             unitCube ??= BoxMeshBuilder.Create(Vector3.one, "Unit cube");
             fastenerSpecs = new Dictionary<string, FastenerSpec>();
             foreach (FastenerDefinition definition in fasteners)
@@ -136,9 +137,39 @@ namespace WoodcraftSimulator.Construction
             Setup(blueprint);
         }
 
-        private void OnEnable() => PlacementTargets.Register(this);
+        private static readonly List<AssemblyStation> Loaded = new List<AssemblyStation>();
 
-        private void OnDisable() => PlacementTargets.Unregister(this);
+        /// <summary>The stations of all loaded scenes (D-056: the job service lives in another scene).</summary>
+        public static IReadOnlyList<AssemblyStation> All => Loaded;
+
+        /// <summary>Raised by any station after it changed (<see cref="Changed"/>).</summary>
+        public static event Action<AssemblyStation> AnyChanged;
+
+        /// <summary>Raised by any station when its structure is complete (<see cref="Completed"/>).</summary>
+        public static event Action<AssemblyStation> AnyCompleted;
+
+        /// <summary>Raised when a station comes or goes with its scene.</summary>
+        public static event Action LoadedChanged;
+
+        private void OnEnable()
+        {
+            PlacementTargets.Register(this);
+            Loaded.Add(this);
+            LoadedChanged?.Invoke();
+        }
+
+        private void OnDisable()
+        {
+            PlacementTargets.Unregister(this);
+            Loaded.Remove(this);
+            LoadedChanged?.Invoke();
+        }
+
+        private void RaiseChanged()
+        {
+            Changed?.Invoke();
+            AnyChanged?.Invoke(this);
+        }
 
         // Glue dries with playing time (paused = Time.deltaTime 0). Completion may follow when the last joint is dry.
         private void Update() => Build?.AdvanceTime(Time.deltaTime);
@@ -159,7 +190,7 @@ namespace WoodcraftSimulator.Construction
             {
                 Setup(definition);
                 BlueprintChanged?.Invoke();
-                Changed?.Invoke();
+                RaiseChanged();
             }
 
             return true;
@@ -201,7 +232,7 @@ namespace WoodcraftSimulator.Construction
             }
 
             Setup(active);
-            Changed?.Invoke();
+            RaiseChanged();
         }
 
         private void Setup(BlueprintDefinition definition)
@@ -259,6 +290,7 @@ namespace WoodcraftSimulator.Construction
                 if (!restoring)
                 {
                     Completed?.Invoke();
+                    AnyCompleted?.Invoke(this);
                 }
             };
             UpdatePointMarkers();
@@ -434,7 +466,7 @@ namespace WoodcraftSimulator.Construction
             }
 
             UpdatePointMarkers();
-            Changed?.Invoke();
+            RaiseChanged();
         }
 
         private int SlotIndex(string slotId)
@@ -576,7 +608,7 @@ namespace WoodcraftSimulator.Construction
             {
                 AddHole(connection, point);
                 UpdatePointMarkers();
-                Changed?.Invoke();
+                RaiseChanged();
             }
 
             return result;
@@ -591,7 +623,7 @@ namespace WoodcraftSimulator.Construction
                 HideDrivingHead();
                 ShowScrew(connection, point);
                 UpdatePointMarkers();
-                Changed?.Invoke();
+                RaiseChanged();
             }
 
             return result;
@@ -606,7 +638,7 @@ namespace WoodcraftSimulator.Construction
                 HideDrivingHead();
                 ShowScrew(connection, point);
                 UpdatePointMarkers();
-                Changed?.Invoke();
+                RaiseChanged();
             }
 
             return result;
@@ -905,7 +937,7 @@ namespace WoodcraftSimulator.Construction
             ghosts[index].SetActive(false);
             UpdatePosts();
             UpdatePointMarkers();
-            Changed?.Invoke();
+            RaiseChanged();
             return true;
         }
 
@@ -1092,7 +1124,7 @@ namespace WoodcraftSimulator.Construction
             ghosts[index].SetActive(true);
             UpdatePosts();
             UpdatePointMarkers();
-            Changed?.Invoke();
+            RaiseChanged();
         }
 
         private string Describe(int index, TimberPiece piece, PlaceResult result)

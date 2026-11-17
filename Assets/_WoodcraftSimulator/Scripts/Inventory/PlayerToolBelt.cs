@@ -165,6 +165,12 @@ namespace WoodcraftSimulator.Inventory
             pickup.transform.SetPositionAndRotation(position, rotation);
             pickup.SetStored(false);
             pickup.gameObject.SetActive(true);
+            // It now lies at the place the player is at (D-056).
+            if (pickup.TryGetComponent(out World.Traveller traveller))
+            {
+                traveller.PutDownHere();
+            }
+
             return true;
         }
 

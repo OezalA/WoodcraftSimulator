@@ -7,6 +7,9 @@ namespace WoodcraftSimulator.Jobs
     public sealed class JobSheet : MonoBehaviour, IInteractable, IDescribable
     {
         [SerializeField] private JobBoard board;
+
+        // A sheet in the workshop scene, the job service in the core scene (D-056).
+        private void Awake() => board = Core.Services.Resolve(board);
         [SerializeField, Min(0)] private int jobIndex;
 
         public JobBoard Board => board;

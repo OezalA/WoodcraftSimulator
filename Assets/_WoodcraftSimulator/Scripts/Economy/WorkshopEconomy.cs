@@ -24,10 +24,31 @@ namespace WoodcraftSimulator.Economy
         }
 
         [SerializeField] private MaterialCatalogDefinition catalog;
-        [SerializeField] private StockDelivery delivery;
 
-        [Tooltip("Optional: delivery area at the outdoor site, for catalog boards marked 'deliver outdoors' (D-046).")]
-        [SerializeField] private StockDelivery outdoorDelivery;
+        // The economy lives in the core scene; the delivery areas in the content scenes, found by id (D-056).
+        public const string WorkshopDelivery = "workshop";
+        public const string OutdoorDelivery = "outdoor";
+
+        /// <summary>Boards bought for a place that isn't loaded: delivered when it loads (D-056).</summary>
+        [Serializable]
+        public sealed class PendingDelivery
+        {
+            public string deliveryId;
+            public string speciesId;
+            public float lengthMillimeters;
+            public float widthMillimeters;
+            public float thicknessMillimeters;
+            public int count;
+        }
+
+        private readonly List<PendingDelivery> pending = new List<PendingDelivery>();
+
+        public IReadOnlyList<PendingDelivery> Pending => pending;
+
+        /// <summary>
+        /// Where boards for the active job go instead of the usual area (a customer location, D-056); null = the usual.
+        /// </summary>
+        public string DeliveryOverride { get; set; }
 
         [Tooltip("Fastener types (display names in the inventory).")]
         [SerializeField] private FastenerDefinition[] fasteners = Array.Empty<FastenerDefinition>();
@@ -47,9 +68,9 @@ namespace WoodcraftSimulator.Economy
 
         private void Awake()
         {
-            if (catalog == null || delivery == null)
+            if (catalog == null)
             {
-                Debug.LogError($"{nameof(WorkshopEconomy)}: Catalog and Delivery must be assigned.", this);
+                Debug.LogError($"{nameof(WorkshopEconomy)}: Catalog must be assigned.", this);
                 enabled = false;
                 return;
             }
@@ -98,15 +119,59 @@ namespace WoodcraftSimulator.Economy
             PurchaseResult result = MaterialCatalog.TryBuy(Ledger, item, quantity, Fasteners);
             if (result == PurchaseResult.Bought && species != null)
             {
-                (DeliversOutdoors(item) ? outdoorDelivery : delivery).Deliver(species, item.BoardStock.Dimensions, quantity);
+                string target = DeliveryOverride ?? (DeliversOutdoors(item) ? OutdoorDelivery : WorkshopDelivery);
+                StockDelivery area = StockDelivery.Find(target);
+                if (area != null)
+                {
+                    area.Deliver(species, item.BoardStock.Dimensions, quantity);
+                }
+                else
+                {
+                    // The place isn't loaded (e.g. a customer location): the boards wait there for the player.
+                    BoardDimensions size = item.BoardStock.Dimensions;
+                    pending.Add(new PendingDelivery
+                    {
+                        deliveryId = target, speciesId = species.Id, count = quantity,
+                        lengthMillimeters = (float)size.Length.Millimeters, widthMillimeters = (float)size.Width.Millimeters,
+                        thicknessMillimeters = (float)size.Thickness.Millimeters
+                    });
+                }
             }
 
             return result;
         }
 
+        /// <summary>Brings the boards waiting for this area (its scene just loaded).</summary>
+        public void DeliverPending(StockDelivery area)
+        {
+            for (int i = pending.Count - 1; i >= 0; i--)
+            {
+                PendingDelivery order = pending[i];
+                if (order.deliveryId != area.DeliveryId)
+                {
+                    continue;
+                }
+
+                WoodSpeciesDefinition species = catalog != null ? catalog.SpeciesById(order.speciesId) : null;
+                if (species != null)
+                {
+                    area.Deliver(species, BoardDimensions.FromMillimeters(order.lengthMillimeters, order.widthMillimeters,
+                        order.thicknessMillimeters), order.count);
+                }
+
+                pending.RemoveAt(i);
+            }
+        }
+
+        public void RestorePending(IEnumerable<PendingDelivery> orders)
+        {
+            pending.Clear();
+            pending.AddRange(orders ?? Array.Empty<PendingDelivery>());
+        }
+
         /// <summary>Whether a bought board goes to the outdoor site rather than the workshop.</summary>
         public bool DeliversOutdoors(CatalogItem item) =>
-            item != null && item.Kind == CatalogItemKind.Board && outdoorDelivery != null && catalog.DeliversOutdoors(item.Id);
+            item != null && item.Kind == CatalogItemKind.Board && catalog.DeliversOutdoors(item.Id);
 
         /// <summary>Where a bought item ends up, for messages.</summary>
         public string DeliveryText(CatalogItem item) => item.Kind != CatalogItemKind.Board
