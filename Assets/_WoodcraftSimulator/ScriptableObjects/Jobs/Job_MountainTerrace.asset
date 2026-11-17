@@ -1,0 +1,66 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 537f385b4d91875408760371ee5ea153, type: 3}
+  m_Name: Job_MountainTerrace
+  m_EditorClassIdentifier: WoodcraftSimulator::WoodcraftSimulator.Jobs.JobDefinition
+  id: mountain-terrace-job
+  displayName: Mountain house terrace
+  description: 'A terrace in front of a mountain house, looking at the snowy peaks:
+    pier blocks, beams, joists, larch decking.'
+  blueprint: {fileID: 11400000, guid: 508a5067064e01f41b194feb9cfeb060, type: 2}
+  stockSpecies: {fileID: 11400000, guid: 3fd4be3a08bd3c74f9b6fafeb4fe74ab, type: 2}
+  stockLengthMillimeters: 2400
+  stockWidthMillimeters: 145
+  stockThicknessMillimeters: 28
+  spareBoards: 0
+  tips:
+  - Drive there with the van (it stands in the workshop yard). The material is delivered
+    to the site; take your tools (the belt, or loaded in the van bed) and the stepladder
+    if you need it.
+  - Set out at the corner stake, prepare the pier spots, then build bottom up; the
+    customer inspects each stage (E on the corner stake).
+  - Hand the finished job over at the house door.
+  payEuros: 1100
+  requiresFinish: 0
+  extraStocks:
+  - species: {fileID: 11400000, guid: dca24a1dc39899146a557f009cce814a, type: 2}
+    lengthMillimeters: 2400
+    widthMillimeters: 145
+    thicknessMillimeters: 45
+  - species: {fileID: 11400000, guid: dca24a1dc39899146a557f009cce814a, type: 2}
+    lengthMillimeters: 2400
+    widthMillimeters: 120
+    thicknessMillimeters: 45
+  - species: {fileID: 11400000, guid: e4d6a686a9c30c646b613105b74c882f, type: 2}
+    lengthMillimeters: 200
+    widthMillimeters: 200
+    thicknessMillimeters: 200
+  depositShare: 0.5
+  location: {fileID: 11400000, guid: 02081076d32668b4294a61ce781f7aae, type: 2}
+  requiredRank: 2
+  needsSkill: 1
+  requiredSkill: 3
+  requiredSkillLevel: 2
+  woodOptions: []
+  finishOptional: 0
+  displayNameTurkish: "Da\u011F evi teras\u0131"
+  descriptionTurkish: "Da\u011F evinin \xF6n\xFCnde, karl\u0131 zirvelere bakan teras:
+    beton ayaklar, kiri\u015Fler, d\xF6\u015Feme alt\u0131 kiri\u015Fleri, melez
+    d\xF6\u015Feme."
+  tipsTurkish:
+  - "Oraya kamyonetle git (at\xF6lye avlusunda durur). Malzeme \u015Fantiyeye teslim
+    edilir; aletlerini al (kemerde ya da kamyonet kasas\u0131nda), gerekirse merdiveni
+    de."
+  - "K\xF6\u015Fe kaz\u0131\u011F\u0131nda alan\u0131 i\u015Faretle, ayak yerlerini
+    haz\u0131rla, a\u015Fa\u011F\u0131dan yukar\u0131 kur; m\xFC\u015Fteri her a\u015Famay\u0131
+    denetler (k\xF6\u015Fe kaz\u0131\u011F\u0131nda E)."
+  - "Bitince i\u015Fi evin kap\u0131s\u0131nda m\xFC\u015Fteriye teslim et."

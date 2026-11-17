@@ -1,0 +1,73 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 537f385b4d91875408760371ee5ea153, type: 3}
+  m_Name: Job_IslandDeck
+  m_EditorClassIdentifier: WoodcraftSimulator::WoodcraftSimulator.Jobs.JobDefinition
+  id: island-deck-job
+  displayName: Island house deck with glass railing
+  description: A deck at an island house facing the sea, with a ready-made glass
+    railing on its front edge (three panels, two clamps each).
+  blueprint: {fileID: 11400000, guid: 65227cb9e9c33194dae3a6a9c76b98a4, type: 2}
+  stockSpecies: {fileID: 11400000, guid: 3fd4be3a08bd3c74f9b6fafeb4fe74ab, type: 2}
+  stockLengthMillimeters: 2400
+  stockWidthMillimeters: 145
+  stockThicknessMillimeters: 28
+  spareBoards: 0
+  tips:
+  - Drive there with the van (it stands in the workshop yard). The material is delivered
+    to the site; take your tools (the belt, or loaded in the van bed) and the stepladder
+    if you need it.
+  - Set out at the corner stake, prepare the pier spots, then build bottom up; the
+    customer inspects each stage (E on the corner stake).
+  - 'The glass panels come ready-made: carry one to the front edge of the deck and
+    fix it with its two clamps (drill-driver).'
+  - Hand the finished job over at the house door.
+  payEuros: 1650
+  requiresFinish: 0
+  extraStocks:
+  - species: {fileID: 11400000, guid: dca24a1dc39899146a557f009cce814a, type: 2}
+    lengthMillimeters: 2400
+    widthMillimeters: 145
+    thicknessMillimeters: 45
+  - species: {fileID: 11400000, guid: dca24a1dc39899146a557f009cce814a, type: 2}
+    lengthMillimeters: 2400
+    widthMillimeters: 120
+    thicknessMillimeters: 45
+  - species: {fileID: 11400000, guid: e4d6a686a9c30c646b613105b74c882f, type: 2}
+    lengthMillimeters: 200
+    widthMillimeters: 200
+    thicknessMillimeters: 200
+  - species: {fileID: 11400000, guid: d2fd15f6d7eec9344b7fdd2b19ce92b5, type: 2}
+    lengthMillimeters: 790
+    widthMillimeters: 1000
+    thicknessMillimeters: 10
+  depositShare: 0.5
+  location: {fileID: 11400000, guid: 77a2a61993da613408120c8f493a7c8e, type: 2}
+  requiredRank: 2
+  needsSkill: 1
+  requiredSkill: 3
+  requiredSkillLevel: 2
+  woodOptions: []
+  finishOptional: 0
+  displayNameTurkish: Ada evi cam korkuluklu veranda
+  descriptionTurkish: "Denize bakan ada evinde veranda; \xF6n kenar\u0131nda haz\u0131r
+    cam korkuluk (\xFC\xE7 panel, her biri iki kelep\xE7eyle)."
+  tipsTurkish:
+  - "Oraya kamyonetle git (at\xF6lye avlusunda durur). Malzeme \u015Fantiyeye teslim
+    edilir; aletlerini al (kemerde ya da kamyonet kasas\u0131nda), gerekirse merdiveni
+    de."
+  - "K\xF6\u015Fe kaz\u0131\u011F\u0131nda alan\u0131 i\u015Faretle, ayak yerlerini
+    haz\u0131rla, a\u015Fa\u011F\u0131dan yukar\u0131 kur; m\xFC\u015Fteri her a\u015Famay\u0131
+    denetler (k\xF6\u015Fe kaz\u0131\u011F\u0131nda E)."
+  - "Cam paneller haz\u0131r gelir: birini d\xF6\u015Femenin \xF6n kenar\u0131na
+    ta\u015F\u0131, iki kelep\xE7esiyle sabitle (\u015Farjl\u0131 matkap)."
+  - "Bitince i\u015Fi evin kap\u0131s\u0131nda m\xFC\u015Fteriye teslim et."

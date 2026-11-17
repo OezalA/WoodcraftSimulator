@@ -104,6 +104,13 @@ MonoBehaviour:
     thicknessMillimeters: 18
     priceEuros: 38
     deliverOutdoors: 0
+  - id: glass-panel-790x1000x10
+    species: {fileID: 11400000, guid: d2fd15f6d7eec9344b7fdd2b19ce92b5, type: 2}
+    lengthMillimeters: 790
+    widthMillimeters: 1000
+    thicknessMillimeters: 10
+    priceEuros: 85
+    deliverOutdoors: 1
   fastenerBoxes:
   - id: screws-4x40-200
     fastener: {fileID: 11400000, guid: a24339b0500c9b647bd1ed790096f860, type: 2}
@@ -137,3 +144,7 @@ MonoBehaviour:
     fastener: {fileID: 11400000, guid: 13ce2a72568d80545926baa214387cb0, type: 2}
     boxSize: 4
     priceEuros: 28
+  - id: glass-clamps-6
+    fastener: {fileID: 11400000, guid: b75c9b00125b10749b668abc6a8c9a4d, type: 2}
+    boxSize: 6
+    priceEuros: 24

@@ -153,7 +153,7 @@ test at the end.
 - [x] 12d: Finances: weekly rent and wage, Tab summary, debt shown
 - [x] 12e: Career card on the HUD, delivery message with experience and reputation
 
-## Phase 12.5: Customer Locations (added 2026-11-17, D-055, D-056, D-057) - code done, test MT-032 pending
+## Phase 12.5: Customer Locations (added 2026-11-17, D-055, D-056, D-057) - DONE (MT-032 accepted 2026-11-17)
 Jobs are built at the customer's place, with its landscape. The mechanism with greybox landscapes here; the
 landscapes' beauty in Phase 13.
 - [x] 12.5a: Scenes: Core + workshop + one per location; services across scenes; place-aware save
