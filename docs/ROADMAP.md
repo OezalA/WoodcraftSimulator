@@ -126,7 +126,7 @@ calculated correctly.
 - [x] 10b: Terrace 2.4 × 1.8 m blueprint: pier blocks, beams, joists with connectors, decking; stage validation
 - [x] 10c: Terrace job (material, pay, deposit), batch test list
 
-## Phase 11: Larger Structures (plan approved 2026-11-16, D-049) - 11a-11d accepted (MT-027..029, 2026-11-17), 11e code done, MT-030 pending
+## Phase 11: Larger Structures (plan approved 2026-11-16, D-049) - DONE (MT-027..MT-030 accepted 2026-11-17)
 First project: a garden pergola 3 × 3 m. Owner's choices: stepladder for height, a spirit level tool for plumbing
 posts, stage inspections at the end of each stage (block the next stage, affect pay). Test plan: interim test after
 11a-11d (ladder and spirit level are new feel), then 11e.
@@ -144,7 +144,7 @@ posts, stage inspections at the end of each stage (block the next stage, affect 
 - [x] 11e: Stage inspections (D-053): E on the corner stake; loose joints / proud screws block the next stage,
   flaws are noted; goal "every stage passed its first inspection". MT-030 pending
 
-## Phase 12: Progression and Career (plan approved 2026-11-17, D-054) - code done, test MT-031 pending
+## Phase 12: Progression and Career (plan approved 2026-11-17, D-054) - DONE (MT-031 accepted 2026-11-17)
 Owner's choices: one delivered job = one week; skills open jobs and make work a little quicker; debt allowed; one
 test at the end.
 - [x] 12a: Domain: career (experience, ranks, reputation, skills), running costs, debt in the ledger; tests
@@ -153,7 +153,7 @@ test at the end.
 - [x] 12d: Finances: weekly rent and wage, Tab summary, debt shown
 - [x] 12e: Career card on the HUD, delivery message with experience and reputation
 
-## Phase 12.5: Customer Locations (added 2026-11-17, D-055) - planned, detailed plan after MT-030 / MT-031
+## Phase 12.5: Customer Locations (added 2026-11-17, D-055) - planning
 Jobs are built at the customer's place, with its landscape. The mechanism with greybox landscapes here; the
 landscapes' beauty in Phase 13.
 - [ ] Scenes: workshop + one per location; state carried across (money, career, tools, timber, job in progress)
