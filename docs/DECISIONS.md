@@ -810,3 +810,14 @@ Implements D-056. Not yet compiled or played in Unity at the time of writing (MT
   sand and grass disc in a sea plane, three islets on the horizon, light haze, warm sun. Houses are boxes.
 - Simplifications: the site's ground is flat in both places (no stepped piers on the slope); the job board's seven
   sheets show all jobs; the apprentice stays at the workshop.
+
+## D-058: Art and audio sources for Phase 13 (Accepted, 2026-11-17, owner)
+Owner agreed to the recommended mixed approach:
+- **First CC0** (public domain, no attribution required, may be redistributed): e.g. Poly Haven, ambientCG (textures,
+  HDRI skies, some models), CC0-filtered Freesound (sounds). These can live in the public repository (Git LFS). Each
+  file's source and licence is listed in a credits file next to it.
+- **Purchases only where CC0 is not good enough** (e.g. realistic tool models, character animation): Claude proposes
+  a few packages with price, licence and URP compatibility; the **owner** decides and buys with his own Unity account
+  (licences are bound to the buyer; Claude can't and must not pay). Bought assets stay out of the public repository
+  (`.gitignore`, D-037) and the game keeps working without them (greybox fallback).
+- Claude may download CC0 files only after the owner's approval (per batch).
