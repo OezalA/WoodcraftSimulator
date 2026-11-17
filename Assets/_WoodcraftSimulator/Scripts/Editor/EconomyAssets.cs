@@ -48,12 +48,16 @@ namespace WoodcraftSimulator.Editor
             EnsureBoard(boards, "spruce-3000x145x45", species["spruce"], 3000f, 145f, 45f, 18f, outdoors: true);
             EnsureBoard(boards, "spruce-2400x100x100", species["spruce"], 2400f, 100f, 100f, 22f, outdoors: true);
 
+            // Ready-made glass railing panels for the island balcony (D-055), delivered where the job is.
+            EnsureBoard(boards, "glass-panel-790x1000x10", species["glass"], 790f, 1000f, 10f, 85f, outdoors: true);
+
             SerializedProperty boxes = serialized.FindProperty("fastenerBoxes");
             EnsureBox(boxes, "screws-4x40-200", BlueprintAssets.WoodScrew4x40(), 200, 6f);
             EnsureBox(boxes, "screws-5x80-50", BlueprintAssets.WoodScrew5x80(), 50, 7.5f);
             EnsureBox(boxes, "nails-2.8x50-250", BlueprintAssets.Nail2_8x50(), 250, 4f);
             EnsureBox(boxes, "dowels-8x40-50", BlueprintAssets.Dowel8x40(), 50, 3.5f);
             EnsureBox(boxes, "deck-screws-5x60-200", TerraceAssets.DeckScrew(), 200, 18f);
+            EnsureBox(boxes, "glass-clamps-6", TerraceAssets.GlassClamp(), 6, 24f);
             EnsureBox(boxes, "joist-hangers-10", TerraceAssets.JoistHanger(), 10, 15f);
             EnsureBox(boxes, "post-bases-6", TerraceAssets.PostBase(), 6, 12f);
             EnsureBox(boxes, "post-anchors-4", PergolaAssets.PostAnchor(), 4, 28f);

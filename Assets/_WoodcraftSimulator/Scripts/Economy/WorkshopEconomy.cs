@@ -141,6 +141,25 @@ namespace WoodcraftSimulator.Economy
             return result;
         }
 
+        /// <summary>Brings the boards waiting for every loaded area (after a place was loaded and set up, D-056).</summary>
+        public void DeliverAllPending()
+        {
+            var ids = new HashSet<string>();
+            foreach (PendingDelivery order in pending)
+            {
+                ids.Add(order.deliveryId);
+            }
+
+            foreach (string id in ids)
+            {
+                StockDelivery area = StockDelivery.Find(id);
+                if (area != null)
+                {
+                    DeliverPending(area);
+                }
+            }
+        }
+
         /// <summary>Brings the boards waiting for this area (its scene just loaded).</summary>
         public void DeliverPending(StockDelivery area)
         {

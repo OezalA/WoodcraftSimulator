@@ -18,7 +18,7 @@ namespace WoodcraftSimulator.Editor
         private static readonly Dictionary<string, string> Species = new Dictionary<string, string>
         {
             { "spruce", "Ladin" }, { "pine", "Çam" }, { "oak", "Meşe" }, { "beech", "Kayın" },
-            { "walnut", "Ceviz" }, { "larch", "Melez" }, { "douglas-fir", "Duglas" }, { "concrete", "Beton" }
+            { "walnut", "Ceviz" }, { "larch", "Melez" }, { "douglas-fir", "Duglas" }, { "concrete", "Beton" }, { "glass", "Cam" }
         };
 
         private static readonly Dictionary<string, string> Items = new Dictionary<string, string>

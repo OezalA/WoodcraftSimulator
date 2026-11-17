@@ -25,6 +25,9 @@ spirit level for plumbing posts, temporary braces, working height; stage inspect
 the next stage, flaws are only noted; goal "every stage passed its first inspection". **MT-030 accepted (2026-11-17).**
 **Phase 12 (progression and career) code done (D-054)**: weekly job market with customers, woods and finish; ranks,
 reputation, skills; rent and apprentice wage per delivered job (= one week), debt allowed; career card. **MT-031 accepted (2026-11-17); `main` fast-forwarded (c0d45a9).**
+**Phase 12.5 (customer locations) code done (D-055..D-057)**: Core scene + content scenes (workshop, mountain
+house, island house), van with cargo, place-aware save, location jobs (mountain terrace, island deck with ready-made
+glass panels), handover at the house door. Not compiled or played in Unity yet: **MT-032 pending** (rebuild).
 Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 
 ## Completed
@@ -98,6 +101,7 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 | Phase 11e (D-053): static compile + `dotnet test` | 0 errors, 0 warnings; 272/272 (Claude). Not compiled or played in Unity yet: MT-030 pending | 2026-11-17 |
 | Phase 12 (D-054): static compile + `dotnet test` | 0 errors, 0 warnings; 283/283 (Claude). Not compiled or played in Unity yet: MT-030 + MT-031 pending | 2026-11-17 |
 | Phases 11e + 12 (owner) | MT-030 and MT-031 accepted ("mt-30 ve 31 tamam"); compiled in Unity (no `error CS`, no exceptions in Editor.log); `main` fast-forwarded to c0d45a9 | 2026-11-17 |
+| Phase 12.5 (D-056, D-057): static compile + `dotnet test` | 0 errors, 0 warnings; 285/285 (Claude). Not compiled or played in Unity yet: MT-032 pending | 2026-11-17 |
 
 ## Known issues / limitations
 - **Carry feel not liked yet** (owner, 2026-11-13). Ideas for later: smooth follow (lerp/slerp) instead of rigid
@@ -131,7 +135,7 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 5. Done: Phase 11 planned (D-049); 11a-11d implemented.
 6. Done: MT-027..MT-029 accepted, `main` fast-forwarded (2026-11-17).
 7. Done: MT-030 and MT-031 accepted (2026-11-17); Phases 11 and 12 complete, `main` fast-forwarded (c0d45a9).
-8. Next: Phase 12.5 customer locations (D-055): detailed plan for the owner's approval.
+8. Phase 12.5 code done (D-056, D-057). Next: owner rebuilds the scenes and runs MT-032; then Phase 13.
    Owner request (D-055): Phase 12.5 customer locations (mountain terrace, island balcony with ready-made glass
    panels) comes before Phase 13; detailed plan after MT-030 / MT-031.
    Open small idea: in the red slot preview, point out a wrong thickness explicitly (owner

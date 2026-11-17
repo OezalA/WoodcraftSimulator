@@ -567,6 +567,26 @@ Rebuild the scene. First load your current save once (old-save row), then start 
 | Save, quit, Play | Career card, offers on the sheets, apprentice hired, debt: all kept |
 | Load a save from before Phase 12 | Career starts from the delivered jobs (rank by their pay), offers drawn; a running job stays on the first sheet |
 
+### MT-032: Customer locations: scenes, van, mountain terrace, island deck (Phase 12.5, D-056, D-057)
+Rebuild with *WoodcraftSimulator > Build Test Workshop Scene*: it now writes Core.unity, Workshop.unity and the two location scenes. Play starts from the core scene whatever scene is open.
+| Step | Expected |
+|---|---|
+| Play (your save) | The workshop loads as before: boards, tools, bins, apprentice, job board (seven sheets), money, career card; no errors in the Console |
+| Regression: cut, assemble, a bench job, save, quit, Play | Works as before; everything kept |
+| Pick a tool from the wall, hang it back; carry the stepladder | Works as before |
+| Yard, left of the terrace | A white van; E: `Kamyonet: gidecek yer yok (önce bir müşteri işi al)` |
+| Menu *WoodcraftSimulator > Test (Play Mode) > Career: Master ...* | Career card `Usta`, Dış yapı 2, +€500; the board shows `Dağ evi terası` / `Ada evi cam korkuluklu veranda` offers (if not, use the menu again) |
+| Accept the mountain terrace | Prompt names the place and the material cost incl. delivery; message: material bought; job card `AKTİF İŞ · DAĞ EVİ` |
+| Job sheet again | `... Dağ evi yerinde yapılıyor: kamyonetle git ...` |
+| Put the stepladder and a few offcuts in the van bed, tools on the belt; E on the van | `Dağ evi yoluna çık, yol €12.00`; E: short loading, you stand beside the van at the mountain house; €12 charged |
+| Look around | Snowy peaks in the haze, a chalet, the site, sawhorses, the delivered material next to the site, the stepladder and offcuts in the van bed |
+| Build the terrace (inspections at the corner stake) | Works as in the workshop yard |
+| Leave a tool on the ground, drive back to the workshop | The tool comes back in the van bed; the half-built terrace stays at the mountain |
+| Save at the mountain, quit, Play | You are at the mountain house; its state and the van cargo spots as left |
+| Finish the terrace, E on the house door | `... Dağ evi sahibi teslim et: ... ödenir`; delivery as usual (pay, XP, week) |
+| Island deck job | Material ×1.3 + €40 fee; ferry €25; the sea with islets; three glass panels delivered; each set on the front deck edge and fixed with two clamps; fifth stage `cam korkuluk` |
+| Pause > New workshop | A fresh game in the workshop; no errors |
+
 ## Game view setup (corrects the earlier tip)
 A fixed resolution such as *Full HD (1920x1080)* at `Scale 1x` **crops** the image when the Game view window is
 smaller than 1920×1080: the bottom (tool belt bar) and the lower right (tool in hand) are cut off.

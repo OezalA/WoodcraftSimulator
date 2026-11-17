@@ -153,11 +153,11 @@ test at the end.
 - [x] 12d: Finances: weekly rent and wage, Tab summary, debt shown
 - [x] 12e: Career card on the HUD, delivery message with experience and reputation
 
-## Phase 12.5: Customer Locations (added 2026-11-17, D-055) - planning
+## Phase 12.5: Customer Locations (added 2026-11-17, D-055, D-056, D-057) - code done, test MT-032 pending
 Jobs are built at the customer's place, with its landscape. The mechanism with greybox landscapes here; the
 landscapes' beauty in Phase 13.
-- [ ] Scenes: workshop + one per location; state carried across (money, career, tools, timber, job in progress)
-- [ ] Travel by van: load material and tools, drive to the location and back; each location saved
-- [ ] Location rules (e.g. island: dearer, later material; mountain: sloped ground)
-- [ ] Mountain house: terrace with a view of snowy peaks (greybox terrain, fog, sky)
-- [ ] Island house: wooden balcony with ready-made glass panels installed like bought connectors (water, horizon)
+- [x] 12.5a: Scenes: Core + workshop + one per location; services across scenes; place-aware save
+- [x] 12.5b: Travel by van: bed cargo travels, tools packed at customers, trip cost; each place saved
+- [x] 12.5c: Location rules (trip cost, material factor, delivery fee), material delivered to the place, handover there
+- [x] 12.5d: Mountain house: terrace with a view of snowy peaks (generated terrain, haze)
+- [x] 12.5e: Island house: deck with ready-made glass panels and clamps (sea, horizon, islets)

@@ -63,6 +63,7 @@ namespace WoodcraftSimulator.World
             player.enabled = false;
             yield return LoadContent(start);
             saveService.ApplyAll(save, content, start.Id);
+            Core.Services.Get<Economy.WorkshopEconomy>()?.DeliverAllPending(); // bought while away (D-056)
             Traveller.ShowFor(start.Id);
             player.enabled = true;
             IsTravelling = false;
@@ -97,6 +98,7 @@ namespace WoodcraftSimulator.World
 
             yield return LoadContent(target);
             saveService.ApplyLocation(target.Id, content);
+            Core.Services.Get<Economy.WorkshopEconomy>()?.DeliverAllPending(); // material waiting for this place
             Traveller.ShowFor(target.Id);
             afterLoad?.Invoke(content);
 

@@ -47,6 +47,8 @@ namespace WoodcraftSimulator.Editor
             new SpeciesSeed("douglas-fir", "Douglas fir", "Pseudotsuga menziesii", 530f, new Color(0.84f, 0.60f, 0.42f)),
             // Not wood (D-046): concrete pier blocks are sold and carried like boards but never sawn or sanded.
             new SpeciesSeed("concrete", "Concrete", "Concrete (pier blocks)", 2200f, new Color(0.62f, 0.62f, 0.6f)),
+            // Not wood either (D-055): ready-made glass railing panels, bought and installed like the pier blocks.
+            new SpeciesSeed("glass", "Glass", "Toughened safety glass (railing panels)", 2500f, new Color(0.62f, 0.82f, 0.9f)),
         };
 
         /// <summary>Returns all default species by id, creating missing assets.</summary>
@@ -71,7 +73,7 @@ namespace WoodcraftSimulator.Editor
                     serialized.FindProperty("densityKgPerCubicMeter").floatValue = seed.Density;
                     serialized.FindProperty("greyboxColor").colorValue = seed.Color;
                     serialized.FindProperty("dataNotes").stringValue = DataNotes;
-                    serialized.FindProperty("isTimber").boolValue = seed.Id != "concrete";
+                    serialized.FindProperty("isTimber").boolValue = seed.Id != "concrete" && seed.Id != "glass";
                     serialized.ApplyModifiedPropertiesWithoutUndo();
                     AssetDatabase.SaveAssetIfDirty(definition);
                 }

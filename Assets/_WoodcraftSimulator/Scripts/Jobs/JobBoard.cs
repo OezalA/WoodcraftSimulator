@@ -145,6 +145,15 @@ namespace WoodcraftSimulator.Jobs
             }
         }
 
+        /// <summary>New offers now, without closing a week (Editor test shortcut, D-057).</summary>
+        public void RedrawOffers()
+        {
+            if (!HasActiveJob)
+            {
+                DrawOffers();
+            }
+        }
+
         /// <summary>A new week's offers for every sheet (D-054).</summary>
         private void DrawOffers()
         {
@@ -688,6 +697,12 @@ namespace WoodcraftSimulator.Jobs
                     careerText += Loc.T($"\nNew rank: {CareerNames.Rank(review.RankAfter)}!",
                         $"\nYeni seviye: {CareerNames.Rank(review.RankAfter)}!");
                 }
+            }
+
+            // The site is ready for the next customer: no stage approved (D-053, D-056).
+            if (Active.TryGetComponent(out Workshop.SitePreparation finishedSite))
+            {
+                finishedSite.ResetInspections();
             }
 
             Active.ClearAll();

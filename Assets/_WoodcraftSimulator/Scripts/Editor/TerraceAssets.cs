@@ -84,9 +84,32 @@ namespace WoodcraftSimulator.Editor
 
         public static Vector3 PierPosition(int index) => new Vector3(PierX[index % 3], 0f, BeamZ[index / 3]);
 
-        public static BlueprintDefinition Terrace()
+        public const string GlassClampId = "glass-clamp";
+        public const string GlassSpeciesId = "glass";
+
+        /// <summary>A ready-made glass railing panel, 790 × 1000 × 10 mm (D-055: bought and installed, not made).</summary>
+        public static readonly Vector3 GlassPanelSize = new Vector3(790f, 1000f, 10f);
+
+        public static readonly float[] GlassX = { -0.8f, 0f, 0.8f };
+
+        /// <summary>The clamp holding a glass panel on the deck: screwed down into the front deck board (D-056).</summary>
+        public static FastenerDefinition GlassClamp()
         {
-            string path = $"{BlueprintAssets.Folder}/Terrace2400x1800.asset";
+            FastenerDefinition fastener = BlueprintAssets.GetOrCreateFastener("GlassClamp", GlassClampId,
+                "Glass panel clamp with screws", 5f, 40f, FastenerKind.Connector);
+            return Rename(fastener, "Glass panel clamp with screws", "Cam panel kelepçesi (vidalarıyla)");
+        }
+
+        public static BlueprintDefinition Terrace() => Terrace("Terrace2400x1800", BlueprintId, "Terrace 2.4 × 1.8 m", "Teras 2,4 × 1,8 m");
+
+        /// <summary>
+        /// The terrace blueprint, or a variant of it with its own id (a customer location's, D-056); with a glass
+        /// railing three ready-made glass panels stand on the front edge of the deck, each held by two clamps.
+        /// </summary>
+        public static BlueprintDefinition Terrace(string fileName, string blueprintId, string name, string nameTurkish,
+            bool glassRailing = false)
+        {
+            string path = $"{BlueprintAssets.Folder}/{fileName}.asset";
             // Rewritten on every call (data defined here only), so layout changes reach an existing asset (D-048).
             var definition = AssetDatabase.LoadAssetAtPath<BlueprintDefinition>(path);
             if (definition == null)
@@ -137,10 +160,21 @@ namespace WoodcraftSimulator.Editor
                     new Vector3(0f, joistTop + 0.014f + gap, DeckZ(d)), flatAlongX, joistIds));
             }
 
+            float deckTop = joistTop + 0.028f + gap;
+            if (glassRailing)
+            {
+                for (int g = 0; g < GlassX.Length; g++)
+                {
+                    // Upright along the front edge of the deck: length along X, its 1 m height up, 10 mm thick.
+                    slots.Add(($"glass-{g + 1}", $"Glass panel {g + 1}", $"Cam panel {g + 1}", GlassPanelSize,
+                        new Vector3(GlassX[g], deckTop + GlassPanelSize.y / 2000f + gap, -0.885f), onEdgeAlongX, new[] { "deck-1" }));
+                }
+            }
+
             var serialized = new SerializedObject(definition);
-            serialized.FindProperty("id").stringValue = BlueprintId;
-            serialized.FindProperty("displayName").stringValue = "Terrace 2.4 × 1.8 m";
-            serialized.FindProperty("displayNameTurkish").stringValue = "Teras 2,4 × 1,8 m";
+            serialized.FindProperty("id").stringValue = blueprintId;
+            serialized.FindProperty("displayName").stringValue = name;
+            serialized.FindProperty("displayNameTurkish").stringValue = nameTurkish;
             serialized.FindProperty("accuracyMillimeters").floatValue = 2f;
             serialized.FindProperty("fitMillimeters").floatValue = 8f;
             SerializedProperty slotsProperty = serialized.FindProperty("slots");
@@ -198,6 +232,19 @@ namespace WoodcraftSimulator.Editor
                     // ends, so they need pilot holes (red points).
                     connections.Add(($"deck-{d + 1}-joist-{j + 1}", $"deck-{d + 1}", $"joist-{j + 1}", DeckScrewId,
                         new Vector3(JoistX[j], joistTop + 0.028f + gap, DeckZ(d)), Vector3.down));
+                }
+            }
+
+            if (glassRailing)
+            {
+                for (int g = 0; g < GlassX.Length; g++)
+                {
+                    // Two clamps per panel, screwed down into the front deck board just behind the glass.
+                    foreach (float dx in new[] { -0.28f, 0.28f })
+                    {
+                        connections.Add(($"glass-{g + 1}-clamp-{(dx < 0f ? "left" : "right")}", $"glass-{g + 1}", "deck-1",
+                            GlassClampId, new Vector3(GlassX[g] + dx, deckTop, -0.865f), Vector3.down));
+                    }
                 }
             }
 

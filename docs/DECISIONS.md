@@ -778,3 +778,35 @@ merchant (tools and offcuts go in the van); each trip costs fuel / ferry money; 
   material); delivered to the customer at the location; offered from rank Usta.
 - Steps: 12.5a scenes + services + save v3 (no visible change), 12.5b van and travel, 12.5c location rules and jobs,
   12.5d mountain house terrace, 12.5e island balcony with ready-made glass panels.
+
+## D-057: Phase 12.5 as built (Accepted, 2026-11-17)
+Implements D-056. Not yet compiled or played in Unity at the time of writing (MT-032).
+- **Scenes**: `Scenes/Core/Core.unity` (player, HUD, pause menu, SaveSystem with `SceneFlow`, Jobs, Economy with
+  upgrades and career, WorkshopWaste, all tools and the stepladder), `Scenes/Workshop/Workshop.unity` (unchanged
+  content plus the van and `PlaceInfo`), `Scenes/Locations/MountainHouse.unity`, `Scenes/Locations/IslandHouse.unity`.
+  The builder builds everything in one go, then moves the core objects (`SplitIntoCoreScene`) and builds the locations.
+  `EditorSceneManager.playModeStartScene` = Core (Editor setting): Play always starts there; `SceneFlow` loads the
+  place the save says. Scenes are loaded by path (Editor), Build Settings untouched.
+- **Cross-scene references**: content objects resolve core services with `Services.Resolve` in `Awake`; core objects
+  find content through registries (`AssemblyStation.All` + static events, `StockDelivery.Find(id)`, `BoardContainer`,
+  `PlacementTargets`, `OffcutBin.All`, `Van`); `UpgradeVisuals` (workshop) shows the lamp and the second sawhorses.
+- **Travellers**: tools (`PickupItem`) and the stepladder carry a `Traveller`: they live in Core, remember the place
+  they lie at (set when put down from the belt or the hands) and are only shown there.
+- **Save**: place-bound entries carry `location`; `capturedLocations` says which places have a saved state (a place
+  never visited loads as built); `location` = where the player is; `pendingDeliveries` = material bought for a place not
+  loaded (delivered after the place is set up). Older saves: everything is the workshop's.
+- **Van** (`Van`): in each place; E drives to the workshop or the active job's place (wheel chooses); the bed's
+  boards (recreated from data), tools and stepladder travel at their spots; leaving a customer's place packs every tool
+  and the stepladder lying there; trip cost when leaving the workshop (mountain €12, island €25, there and back).
+- **Places** (`LocationDefinition` assets): workshop; mountain house (trip €12, delivery fee €20); island house (trip
+  €25, material ×1.3, fee €40). A job's material is delivered to its place, with the price difference and fee.
+- **Jobs**: "Dağ evi terası" (€1100) and "Ada evi cam korkuluklu veranda" (€1650), rank Usta + Dış yapı 2, deposit
+  50 %. Both use the terrace's construction as variant blueprints (own ids); the island deck adds three ready-made glass
+  panels 790 × 1000 × 10 mm (`glass` = a non-timber material like concrete, €85 each) on the front edge, two
+  `glass-clamp` connectors each (box of 6 €24), as a fifth stage "cam korkuluk". Handed over at the house door
+  (`CustomerHandover`); delivering resets the site's inspections.
+- **Landscapes (greybox)**: mountain: a generated 400 × 400 m terrain (flat yard, meadows, a ring of peaks up to
+  ~160 m, highest in the terrace's view; grass/rock/snow layers from generated textures), haze, cold light; island: a
+  sand and grass disc in a sea plane, three islets on the horizon, light haze, warm sun. Houses are boxes.
+- Simplifications: the site's ground is flat in both places (no stepped piers on the slope); the job board's seven
+  sheets show all jobs; the apprentice stays at the workshop.

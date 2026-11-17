@@ -28,7 +28,7 @@ namespace WoodcraftSimulator.Editor
     /// Generates the greybox test workshop scene from code so it is reproducible.
     /// Units: 1 Unity unit = 1 meter. Real-world reference sizes are noted inline.
     /// </summary>
-    public static class WorkshopSceneBuilder
+    public static partial class WorkshopSceneBuilder
     {
         private const string ScenePath = "Assets/_WoodcraftSimulator/Scenes/Workshop/Workshop.unity";
         private const string MaterialFolder = "Assets/_WoodcraftSimulator/Art/Materials/Greybox";
@@ -130,6 +130,10 @@ namespace WoodcraftSimulator.Editor
             EnsureFolder(Path.GetDirectoryName(CoreScenePath).Replace('\\', '/'));
             EditorSceneManager.SaveScene(scene, ScenePath);
             EditorSceneManager.SaveScene(core, CoreScenePath);
+
+            // The customer locations, each its own content scene (D-055/D-056); built, saved and closed.
+            BuildCustomerLocations(materials);
+            SceneManager.SetActiveScene(scene);
             PlayModeStartScene.Apply();
 
             Selection.activeGameObject = player;
@@ -138,6 +142,9 @@ namespace WoodcraftSimulator.Editor
         }
 
         private const string CoreScenePath = PlayModeStartScene.CoreScenePath;
+
+        // Where the player arrives back at the workshop: beside the van in the yard.
+        private static Transform workshopArrival;
 
         /// <summary>
         /// Creates the core scene (D-056) and moves into it what must outlive a place: the player, HUD, pause menu, save
@@ -152,14 +159,11 @@ namespace WoodcraftSimulator.Editor
             LocationDefinition workshop = LocationAssets.Workshop(ScenePath);
             var info = new GameObject("PlaceInfo").AddComponent<PlaceInfo>();
             SceneManager.MoveGameObjectToScene(info.gameObject, player.scene);
-            var arrival = new GameObject("ArrivalPoint").transform;
-            arrival.SetParent(info.transform, false);
-            arrival.SetPositionAndRotation(player.transform.position, player.transform.rotation);
             SetReference(info, "location", workshop);
-            SetReference(info, "arrivalPoint", arrival);
+            SetReference(info, "arrivalPoint", workshopArrival);
 
             var flow = saveService.gameObject.AddComponent<SceneFlow>();
-            SetReferences(flow, "locations", new Object[] { workshop });
+            SetReferences(flow, "locations", new Object[] { workshop, LocationJobs.Mountain(), LocationJobs.Island() });
             SetReference(flow, "saveService", saveService);
             SetReference(flow, "player", player.GetComponent<PlayerController>());
 
@@ -249,6 +253,8 @@ namespace WoodcraftSimulator.Editor
             BuildJobBoard(workshop, materials, species);
             BuildToolWall(workshop, materials);
             BuildSawhorses(workshop, materials.Workbench, new Vector3(-1.6f, FloorTop, 0f));
+            // The van in the yard, left of the terrace (D-056): drives to the customer locations.
+            workshopArrival = BuildVan(environment, materials, new Vector3(-6.5f, 0f, -6f), 0f);
             BuildOffcutBins(workshop, materials, species);
             BuildApprentice(workshop, materials);
 
@@ -266,9 +272,9 @@ namespace WoodcraftSimulator.Editor
         {
             float wallZ = InteriorDepth / 2f;
             float centerY = FloorTop + 1.5f;
-            const float centerX = -1.9f;
+            const float centerX = -2.15f; // seven sheets (D-056), clear of the tool wall
             GameObject board = CreateBox("JobBoard", parent, new Vector3(centerX, centerY, wallZ - 0.01f),
-                new Vector3(1.6f, 0.5f, 0.02f), materials.Workbench);
+                new Vector3(2.08f, 0.5f, 0.02f), materials.Workbench);
             Object.DestroyImmediate(board.GetComponent<BoxCollider>()); // the sheets are what you aim at
 
             // The job service lives in the core scene (D-056); the board and its sheets stay in the workshop.
@@ -276,13 +282,15 @@ namespace WoodcraftSimulator.Editor
             JobDefinition[] jobs =
             {
                 JobAssets.FrameJob(species), JobAssets.ShelfJob(species), ToteAssets.ToteJob(species), TerraceAssets.TerraceJob(species),
-                PergolaAssets.PergolaJob(species)
+                PergolaAssets.PergolaJob(species),
+                // Customer locations (Phase 12.5, D-056).
+                LocationJobs.MountainTerraceJob(species), LocationJobs.IslandDeckJob(species)
             };
             for (int i = 0; i < jobs.Length; i++)
             {
                 // A4 portrait (210 × 297 mm) pinned on the board; the sheet is a child of the workshop, not the board,
                 // so its scale is its real size.
-                float x = centerX + (i - (jobs.Length - 1) / 2f) * 0.3f;
+                float x = centerX + (i - (jobs.Length - 1) / 2f) * 0.28f;
                 var sheetSize = new Vector3(0.21f, 0.297f, 0.002f);
                 GameObject sheet = CreateBox($"JobSheet_{jobs[i].Id}", parent, new Vector3(x, centerY, wallZ - 0.021f),
                     sheetSize, materials.Paper);
@@ -303,6 +311,8 @@ namespace WoodcraftSimulator.Editor
             SetCareer(jobs[2], CareerRank.Journeyman, null, 1, false, (species["oak"], 1.6f), (species["beech"], 1.4f));
             SetCareer(jobs[3], CareerRank.Journeyman, null, 1, false);
             SetCareer(jobs[4], CareerRank.Master, Skill.Outdoor, 2, false);
+            SetCareer(jobs[5], CareerRank.Master, Skill.Outdoor, 2, false);
+            SetCareer(jobs[6], CareerRank.Master, Skill.Outdoor, 2, false);
 
             // Stock delivery: on the floor in front of the timber rack, boards along Z, side by side towards +X.
             // Its board factory is assigned later (it lives on the save system).
@@ -640,11 +650,35 @@ namespace WoodcraftSimulator.Editor
         /// stake to set out the outline (string line), six pier spots to dig and gravel, a delivery area for terrace
         /// material and two sawhorses to cut it.
         /// </summary>
-        private static void BuildTerraceSite(Transform environment, GreyboxMaterials materials)
+        private static void BuildTerraceSite(Transform environment, GreyboxMaterials materials) =>
+            BuildTerraceSite(environment, materials, new TerraceSite
+            {
+                Id = "TerraceSite", Position = new Vector3(0f, 0f, -6f), Blueprint = TerraceAssets.Terrace(),
+                Yaw = 0f, DeliveryId = WorkshopEconomy.OutdoorDelivery, DeliveryOffset = new Vector3(1.9f, 0f, 0f),
+                SawhorsesOffset = new Vector3(-2.4f, 0f, 0f)
+            });
+
+        /// <summary>A terrace site (the workshop's yard, or a customer location's, D-056).</summary>
+        private sealed class TerraceSite
         {
-            var siteObject = new GameObject("TerraceSite");
+            public string Id;
+            public Vector3 Position;
+            public float Yaw;
+            public BlueprintDefinition Blueprint;
+            public string DeliveryId;
+            public Vector3 DeliveryOffset;
+            public Vector3 SawhorsesOffset;
+            public bool GlassRailing;
+            public string Outline;
+            public string OutlineTurkish;
+        }
+
+        private static Transform BuildTerraceSite(Transform environment, GreyboxMaterials materials, TerraceSite spec)
+        {
+            var siteObject = new GameObject(spec.Id);
             siteObject.transform.SetParent(environment, false);
-            siteObject.transform.localPosition = new Vector3(0f, 0f, -6f);
+            siteObject.transform.localPosition = spec.Position;
+            siteObject.transform.localRotation = Quaternion.Euler(0f, spec.Yaw, 0f);
             Transform site = siteObject.transform;
 
             // Thin site floor (child of the station): aiming at it offers the pier slots.
@@ -683,7 +717,15 @@ namespace WoodcraftSimulator.Editor
             GameObject marker = CreateBox("CornerStake", site, new Vector3(-1.25f, 0.25f, -0.95f), new Vector3(0.05f, 0.5f, 0.05f),
                 materials.PencilRed);
             EnlargeGrabCollider(marker, marker.transform.localScale);
-            SetReference(marker.AddComponent<SiteMarker>(), "site", preparation); // default text: the terrace
+            var siteMarker = marker.AddComponent<SiteMarker>();
+            SetReference(siteMarker, "site", preparation);
+            if (spec.Outline != null)
+            {
+                var serializedMarker = new SerializedObject(siteMarker);
+                serializedMarker.FindProperty("outline").stringValue = spec.Outline;
+                serializedMarker.FindProperty("outlineTurkish").stringValue = spec.OutlineTurkish;
+                serializedMarker.ApplyModifiedPropertiesWithoutUndo();
+            }
             var lineObject = new GameObject("StringLine");
             lineObject.transform.SetParent(site, false);
             var line = lineObject.AddComponent<LineRenderer>();
@@ -724,30 +766,44 @@ namespace WoodcraftSimulator.Editor
             serializedPreparation.ApplyModifiedPropertiesWithoutUndo();
 
             var station = siteObject.AddComponent<AssemblyStation>();
-            siteObject.AddComponent<PersistentId>().Set("TerraceSite");
-            SetReference(station, "blueprint", TerraceAssets.Terrace());
+            siteObject.AddComponent<PersistentId>().Set(spec.Id);
+            SetReference(station, "blueprint", spec.Blueprint);
             SetReference(station, "ghostMaterial", materials.BlueprintGhost);
             SetReference(station, "pointMarkerMaterial", materials.CutGuide);
             SetReference(station, "pilotPointMaterial", materials.PilotPoint);
             SetReference(station, "screwHeadMaterial", materials.Steel);
             SetReference(station, "holeMaterial", materials.PencilMark);
-            SetReferences(station, "knownBlueprints", new Object[] { TerraceAssets.Terrace() });
+            SetReferences(station, "knownBlueprints", new Object[] { spec.Blueprint });
+            if (spec.GlassRailing)
+            {
+                // One more stage: the ready-made glass panels on the deck edge (D-055).
+                var serializedStages = new SerializedObject(preparation);
+                SerializedProperty stages = serializedStages.FindProperty("stages");
+                stages.arraySize = 5;
+                SerializedProperty glass = stages.GetArrayElementAtIndex(4);
+                glass.FindPropertyRelative("slotPrefix").stringValue = "glass";
+                glass.FindPropertyRelative("name").stringValue = "glass railing";
+                glass.FindPropertyRelative("nameTurkish").stringValue = "cam korkuluk";
+                serializedStages.ApplyModifiedPropertiesWithoutUndo();
+            }
             SetReferences(station, "fasteners", Fasteners());
             var serializedStation = new SerializedObject(station);
             serializedStation.FindProperty("snapDistance").floatValue = 0.15f;
             serializedStation.ApplyModifiedPropertiesWithoutUndo();
 
             // Delivery area for terrace material: on the ground right of the site, boards along Z.
-            var deliveryObject = new GameObject("OutdoorDelivery");
-            deliveryObject.transform.SetParent(environment, false);
-            deliveryObject.transform.localPosition = new Vector3(1.9f, 0f, -6f);
+            var deliveryObject = new GameObject(spec.DeliveryId == WorkshopEconomy.OutdoorDelivery ? "OutdoorDelivery" : "SiteDelivery");
+            deliveryObject.transform.SetParent(site, false);
+            deliveryObject.transform.localPosition = spec.DeliveryOffset;
+            deliveryObject.transform.SetParent(environment, true);
             var outdoorDelivery = deliveryObject.AddComponent<StockDelivery>();
             var serializedDelivery = new SerializedObject(outdoorDelivery);
-            serializedDelivery.FindProperty("deliveryId").stringValue = WorkshopEconomy.OutdoorDelivery;
+            serializedDelivery.FindProperty("deliveryId").stringValue = spec.DeliveryId;
             serializedDelivery.ApplyModifiedPropertiesWithoutUndo();
 
             // Sawhorses left of the site, for cutting joists to length outside.
-            BuildSawhorses(environment, materials.Workbench, new Vector3(-2.4f, 0f, -6f), setSawFloor: false);
+            BuildSawhorses(environment, materials.Workbench, site.TransformPoint(spec.SawhorsesOffset), setSawFloor: false);
+            return site;
         }
 
         /// <summary>
@@ -1182,7 +1238,8 @@ namespace WoodcraftSimulator.Editor
         private static Object[] Fasteners() => new Object[]
         {
             BlueprintAssets.WoodScrew5x80(), BlueprintAssets.WoodScrew4x40(), BlueprintAssets.Nail2_8x50(), BlueprintAssets.Dowel8x40(),
-            TerraceAssets.DeckScrew(), TerraceAssets.JoistHanger(), TerraceAssets.PostBase(), PergolaAssets.PostAnchor()
+            TerraceAssets.DeckScrew(), TerraceAssets.JoistHanger(), TerraceAssets.PostBase(), PergolaAssets.PostAnchor(),
+            TerraceAssets.GlassClamp()
         };
 
         private static void SetReferences(Object target, string propertyName, IReadOnlyList<Object> values)

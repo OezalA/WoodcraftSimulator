@@ -29,12 +29,8 @@ namespace WoodcraftSimulator.Economy
         // The factory lives in the core scene (D-056).
         private void Awake() => boardFactory = Core.Services.Resolve(boardFactory);
 
-        // Boards bought while this place wasn't loaded are brought now (D-056).
-        private void OnEnable()
-        {
-            Loaded.Add(this);
-            Core.Services.Get<WorkshopEconomy>()?.DeliverPending(this);
-        }
+        // Boards bought while this place wasn't loaded are brought by SceneFlow once the place is set up (D-056).
+        private void OnEnable() => Loaded.Add(this);
 
         private void OnDisable() => Loaded.Remove(this);
 
