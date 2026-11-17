@@ -130,6 +130,8 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 5. Done: Phase 11 planned (D-049); 11a-11d implemented.
 6. Done: MT-027..MT-029 accepted, `main` fast-forwarded (2026-11-17).
 7. Next: owner rebuilds the scene and runs MT-030 (stage inspections, D-053) and MT-031 (career, D-054). Then Phases 11
-   and 12 are complete; next: Phase 13 (presentation and polish).
+   and 12 are complete.
+   Owner request (D-055): Phase 12.5 customer locations (mountain terrace, island balcony with ready-made glass
+   panels) comes before Phase 13; detailed plan after MT-030 / MT-031.
    Open small idea: in the red slot preview, point out a wrong thickness explicitly (owner
    used 28 mm larch for an 18 mm spruce part).

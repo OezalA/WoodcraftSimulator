@@ -738,3 +738,21 @@ make that work a little quicker; money may go below zero (debt), the game goes o
   (75 % of their pay as experience, a week each); offers are drawn, a running job keeps the first sheet.
 - The experience of a job ignores the reputation factor (better reputation pays more but isn't a bigger job).
 - Not done (later): firing the apprentice, loans, deadlines, more templates (new structures), a second workshop room.
+
+## D-055: Phase 12.5 "customer locations" added between Phases 12 and 13 (Accepted, 2026-11-17, owner request)
+Owner: after Phase 12, jobs are built at the customer's place, with the landscape part of it, e.g. a terrace at a
+mountain house looking at snowy peaks, a glass balcony for someone living on an island. Not in the master prompt's
+roadmap; inserted as Phase 12.5 (recommended split, accepted):
+- **12.5 = the mechanism, greybox landscapes**: separate scenes (workshop + one per customer location), state carried
+  between them (money, career, tools, timber, a job in progress), travel with a van that carries the material and
+  tools taken along (a forgotten tool or missing board is a real decision), each location saved on its own, rules
+  per location (e.g. island: material dearer and later; mountain: sloped ground). First two locations: a mountain
+  house terrace with a view of snowy peaks, an island house balcony. Landscapes as simple terrain, snow-white peaks,
+  fog, sky, water plane and horizon: the feeling of the view, not yet its beauty.
+- **Phase 13 makes the locations beautiful** (terrain textures, vegetation, water, light, sky). Needs a decision on
+  art sources first: own made, or kept outside the public repository (D-037).
+- **Glass balcony**: owner's choice: the wooden structure is built as usual; the glass panels come ready-made and are
+  installed like the pergola's post bases (bought parts, D-049), no glazing craft.
+- Order: MT-030 and MT-031 first (the market and weekly costs are its basis), then a detailed 12.5 plan for approval.
+- Architectural note: the code finds most things scene-wide (`FindObjectsByType`, static registries); 12.5 has to
+  decide what lives across scenes (a persistent "game" object) before any location is built.
