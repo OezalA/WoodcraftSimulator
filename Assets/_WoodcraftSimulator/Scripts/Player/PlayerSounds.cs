@@ -18,12 +18,16 @@ namespace WoodcraftSimulator.Player
         [Tooltip("Optional: money tones on purchases and pay.")]
         [SerializeField] private WorkshopEconomy economy;
 
+        [Tooltip("Optional: recorded CC0 sounds (Phase 13d, D-061); without them the generated placeholders play.")]
+        [SerializeField] private Audio.SoundLibrary library;
+
         [SerializeField, Range(0f, 1f)] private float effectsVolume = 0.6f;
         [SerializeField, Range(0f, 1f)] private float ambienceVolume = 0.12f;
 
         private AudioSource effects;
         private Money lastBalance;
         private int lastBeltCount = -1;
+        private Carryable lastCarried;
 
         private void Awake()
         {
@@ -74,7 +78,36 @@ namespace WoodcraftSimulator.Player
             }
         }
 
-        private void OnCarryingChanged(bool isCarrying) => Play(ProceduralSounds.Thunk);
+        // Picking up and putting down knock with what it is: wood, glass, metal (the stepladder) (D-061).
+        private void OnCarryingChanged(bool isCarrying)
+        {
+            if (isCarrying)
+            {
+                lastCarried = carrier.Carried;
+            }
+
+            Play(ImpactFor(lastCarried) ?? ProceduralSounds.Thunk);
+        }
+
+        private AudioClip ImpactFor(Carryable thing)
+        {
+            if (library == null || thing == null)
+            {
+                return null;
+            }
+
+            if (thing.TryGetComponent(out Materials.TimberBoard board) && board.Piece != null)
+            {
+                if (board.Piece.Species.Id == "glass")
+                {
+                    return Audio.SoundLibrary.Any(library.impactGlass);
+                }
+
+                return board.Piece.Species.IsTimber ? Audio.SoundLibrary.Any(library.impactWood) : null;
+            }
+
+            return Audio.SoundLibrary.Any(library.impactMetal);
+        }
 
         private void OnBeltChanged()
         {

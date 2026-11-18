@@ -24,3 +24,5 @@ We list the source anyway, so every file can be traced. Bought assets never go h
 | Hdri/kloofendal_48d_partly_cloudy_puresky_2k.hdr (workshop sky, 2K) | https://polyhaven.com/a/kloofendal_48d_partly_cloudy_puresky | Greg Zaal (Poly Haven) | CC0 1.0 | 2026-11-18 |
 | Hdri/kloofendal_43d_clear_puresky_2k.hdr (mountain house sky, 2K) | https://polyhaven.com/a/kloofendal_43d_clear_puresky | Greg Zaal (Poly Haven) | CC0 1.0 | 2026-11-18 |
 | Hdri/rustig_koppie_puresky_2k.hdr (island house sky, 2K) | https://polyhaven.com/a/rustig_koppie_puresky | Greg Zaal (Poly Haven) | CC0 1.0 | 2026-11-18 |
+| Audio/Kenney (footsteps concrete/grass/snow/wood, impacts wood/plank/metal/glass; from "Impact Sounds" 1.0) | https://kenney.nl/assets/impact-sounds | Kenney (www.kenney.nl) | CC0 1.0 | 2026-11-18 |
+| Audio/Kenney (click, confirmation, error, select, drop, open, close; from "Interface Sounds") | https://kenney.nl/assets/interface-sounds | Kenney (www.kenney.nl) | CC0 1.0 | 2026-11-18 |

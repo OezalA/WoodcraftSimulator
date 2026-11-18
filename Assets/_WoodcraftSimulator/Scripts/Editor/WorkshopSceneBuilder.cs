@@ -657,6 +657,11 @@ namespace WoodcraftSimulator.Editor
             SetReference(sounds, "carrier", player.GetComponent<PlayerCarrier>());
             SetReference(sounds, "toolBelt", player.GetComponent<PlayerToolBelt>());
             SetReference(sounds, "economy", Object.FindFirstObjectByType<WorkshopEconomy>());
+
+            // Recorded CC0 sounds and footsteps (Phase 13d, D-061).
+            Audio.SoundLibrary library = AudioAssets.Library();
+            SetReference(sounds, "library", library);
+            SetReference(player.AddComponent<Audio.PlayerFootsteps>(), "library", library);
         }
 
         /// <summary>
