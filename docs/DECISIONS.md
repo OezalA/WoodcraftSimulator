@@ -838,3 +838,17 @@ Owner agreed to the recommended mixed approach:
   cubes scaled to size) get cube meshes with metre-based UVs for their size (`UseMetreUVs`, shared per size), so a
   texture has the same physical scale everywhere. Mountain terrain layers use Grass004 / Rock058 / Snow010A.
 - End grain (rings on the board ends) is not separate yet: the ends show the side texture.
+
+## D-060: Phase 13c: skies, reflections, post-processing (Accepted, 2026-11-18)
+- **Skies** (owner-approved, Poly Haven, CC0, 2K, sky-only "puresky" panoramas so their ground doesn't fight our
+  terrain, 14 MB in LFS): workshop `kloofendal_48d_partly_cloudy_puresky`, mountain `kloofendal_43d_clear_puresky`,
+  island `rustig_koppie_puresky`, on Unity's panoramic skybox (import: 2K, no mipmaps, wrap around).
+- **Ambient light**: three colours (sky, horizon, ground) in every place, chosen to match the sky: no lighting bake is
+  needed (a sky-based ambient would need one).
+- **Reflections**: one realtime reflection probe per place, rendered once when the place loads (on awake), so the sea,
+  glass panels, steel and oiled wood reflect the sky without a bake.
+- **Post-processing**: a global volume in the core scene (ACES tonemapping, bloom 0.25 above 1.1, exposure +0.15,
+  contrast +8, saturation +6, vignette 0.15); the player camera renders post-processing with SMAA.
+- **Build**: the editor assembly now references URP's runtime assemblies (to build the volume profile);
+  `tools/static-build.sh` adds them until Unity regenerates its project file.
+- The sea is a glossy dark teal surface (smoothness 0.92), no waves yet.

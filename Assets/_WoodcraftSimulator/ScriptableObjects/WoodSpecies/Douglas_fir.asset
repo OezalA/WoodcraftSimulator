@@ -23,3 +23,5 @@ MonoBehaviour:
     Natural variation is roughly \xB110 % or more. Placeholder reference value: verify
     against published wood property tables before relying on it for gameplay that
     claims real-world accuracy."
+  boardMaterial: {fileID: 2100000, guid: 28c9b27cac7427846803f13a6fb7e0df, type: 2}
+  grainAlongTextureV: 1

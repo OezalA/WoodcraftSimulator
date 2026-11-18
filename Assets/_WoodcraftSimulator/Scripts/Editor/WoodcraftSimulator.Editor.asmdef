@@ -3,7 +3,9 @@
     "rootNamespace": "WoodcraftSimulator.Editor",
     "references": [
         "WoodcraftSimulator",
-        "WoodcraftSimulator.Domain"
+        "WoodcraftSimulator.Domain",
+        "Unity.RenderPipelines.Core.Runtime",
+        "Unity.RenderPipelines.Universal.Runtime"
     ],
     "includePlatforms": [
         "Editor"

@@ -21,3 +21,6 @@ We list the source anyway, so every file can be traced. Bought assets never go h
 | Textures/Rock058 (mountain rock; Color, NormalGL, AmbientOcclusion, 1K) | https://ambientcg.com/view?id=Rock058 | Lennart Demes (ambientCG) | CC0 1.0 | 2026-11-18 |
 | Textures/Snow010A (mountain snow; Color, NormalGL, AmbientOcclusion, 1K) | https://ambientcg.com/view?id=Snow010A | Lennart Demes (ambientCG) | CC0 1.0 | 2026-11-18 |
 | Textures/Ground080 (island beach sand; Color, NormalGL, AmbientOcclusion, 1K) | https://ambientcg.com/view?id=Ground080 | Lennart Demes (ambientCG) | CC0 1.0 | 2026-11-18 |
+| Hdri/kloofendal_48d_partly_cloudy_puresky_2k.hdr (workshop sky, 2K) | https://polyhaven.com/a/kloofendal_48d_partly_cloudy_puresky | Greg Zaal (Poly Haven) | CC0 1.0 | 2026-11-18 |
+| Hdri/kloofendal_43d_clear_puresky_2k.hdr (mountain house sky, 2K) | https://polyhaven.com/a/kloofendal_43d_clear_puresky | Greg Zaal (Poly Haven) | CC0 1.0 | 2026-11-18 |
+| Hdri/rustig_koppie_puresky_2k.hdr (island house sky, 2K) | https://polyhaven.com/a/rustig_koppie_puresky | Greg Zaal (Poly Haven) | CC0 1.0 | 2026-11-18 |

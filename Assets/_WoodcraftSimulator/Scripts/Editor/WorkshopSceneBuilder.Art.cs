@@ -161,6 +161,102 @@ namespace WoodcraftSimulator.Editor
             }
         }
 
+        /// <summary>
+        /// The active scene's sky (Phase 13c, D-060): a CC0 panorama on Unity's panoramic skybox, at the given exposure;
+        /// without the panorama the default procedural sky stays.
+        /// </summary>
+        private static void ApplySky(string panorama, float exposure, float rotation)
+        {
+            Texture2D sky = ArtLibrary.Sky(panorama);
+            Shader shader = Shader.Find("Skybox/Panoramic");
+            if (sky == null || shader == null)
+            {
+                return;
+            }
+
+            EnsureFolder(TexturedFolder);
+            string path = $"{TexturedFolder}/Sky_{panorama}.mat";
+            var material = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (material == null)
+            {
+                material = new Material(shader) { name = $"Sky_{panorama}" };
+                AssetDatabase.CreateAsset(material, path);
+            }
+
+            material.SetTexture("_MainTex", sky);
+            material.SetFloat("_Exposure", exposure);
+            material.SetFloat("_Rotation", rotation);
+            material.SetFloat("_Mapping", 1f); // latitude-longitude layout
+            material.SetFloat("_ImageType", 0f); // 360°
+            EditorUtility.SetDirty(material);
+            RenderSettings.skybox = material;
+        }
+
+        /// <summary>
+        /// A reflection probe over a place (D-060): rendered once when the place loads (realtime, on awake), so glossy
+        /// things (the sea, glass, steel, oiled wood) reflect its sky without a lighting bake.
+        /// </summary>
+        private static void AddReflectionProbe(Transform parent, Vector3 center, Vector3 size)
+        {
+            var probeObject = new GameObject("ReflectionProbe");
+            probeObject.transform.SetParent(parent, false);
+            probeObject.transform.localPosition = center;
+            var probe = probeObject.AddComponent<ReflectionProbe>();
+            probe.mode = ReflectionProbeMode.Realtime;
+            probe.refreshMode = ReflectionProbeRefreshMode.OnAwake;
+            probe.timeSlicingMode = ReflectionProbeTimeSlicingMode.NoTimeSlicing;
+            probe.size = size;
+            probe.resolution = 128;
+            probe.clearFlags = ReflectionProbeClearFlags.Skybox;
+            probe.boxProjection = false;
+        }
+
+        /// <summary>
+        /// Post-processing for every place (D-060): a global volume in the core scene (ACES tonemapping, a little bloom,
+        /// slight contrast and saturation, a faint vignette) and post-processing plus SMAA on the player's camera.
+        /// </summary>
+        private static void AddPostProcessing(Scene core, Camera camera)
+        {
+            string path = "Assets/_WoodcraftSimulator/Art/Rendering/PostProcessing.asset";
+            EnsureFolder("Assets/_WoodcraftSimulator/Art/Rendering");
+            AssetDatabase.DeleteAsset(path); // rebuilt from here every time
+            var profile = ScriptableObject.CreateInstance<UnityEngine.Rendering.VolumeProfile>();
+            AssetDatabase.CreateAsset(profile, path);
+
+            var tonemapping = profile.Add<UnityEngine.Rendering.Universal.Tonemapping>(true);
+            tonemapping.mode.value = UnityEngine.Rendering.Universal.TonemappingMode.ACES;
+            var bloom = profile.Add<UnityEngine.Rendering.Universal.Bloom>(true);
+            bloom.intensity.value = 0.25f;
+            bloom.threshold.value = 1.1f;
+            var color = profile.Add<UnityEngine.Rendering.Universal.ColorAdjustments>(true);
+            color.postExposure.value = 0.15f;
+            color.contrast.value = 8f;
+            color.saturation.value = 6f;
+            var vignette = profile.Add<UnityEngine.Rendering.Universal.Vignette>(true);
+            vignette.intensity.value = 0.15f;
+            foreach (UnityEngine.Rendering.VolumeComponent component in profile.components)
+            {
+                component.hideFlags = HideFlags.HideInInspector | HideFlags.HideInHierarchy;
+                AssetDatabase.AddObjectToAsset(component, profile);
+            }
+
+            AssetDatabase.SaveAssets();
+
+            var volumeObject = new GameObject("PostProcessing");
+            SceneManager.MoveGameObjectToScene(volumeObject, core);
+            var volume = volumeObject.AddComponent<UnityEngine.Rendering.Volume>();
+            volume.isGlobal = true;
+            volume.sharedProfile = profile;
+
+            if (!camera.TryGetComponent(out UnityEngine.Rendering.Universal.UniversalAdditionalCameraData cameraData))
+            {
+                cameraData = camera.gameObject.AddComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>();
+            }
+
+            cameraData.renderPostProcessing = true;
+            cameraData.antialiasing = UnityEngine.Rendering.Universal.AntialiasingMode.SubpixelMorphologicalAntiAliasing;
+        }
+
         /// <summary>A CC0 terrain layer when the set is there (normal map too), else the generated plain one.</summary>
         private static TerrainLayer TerrainLayerFor(string name, string set, Color fallback, float tileMetres)
         {

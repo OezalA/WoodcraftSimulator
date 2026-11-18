@@ -14,6 +14,11 @@ namespace WoodcraftSimulator.Editor
     {
         public const string Root = "Assets/_WoodcraftSimulator/Art/ThirdParty/CC0";
         public const string TextureFolder = Root + "/Textures";
+        public const string HdriFolder = Root + "/Hdri";
+
+        /// <summary>A sky panorama (Poly Haven "name_2k.hdr"), or null when it isn't in the project.</summary>
+        public static Texture2D Sky(string name) =>
+            AssetDatabase.LoadAssetAtPath<Texture2D>($"{HdriFolder}/{name}_2k.hdr");
 
         // File name parts that identify a map (ambientCG, Poly Haven).
         private static readonly string[] ColorKeys = { "_Color", "_diff", "_albedo", "_basecolor" };
@@ -98,6 +103,17 @@ namespace WoodcraftSimulator.Editor
     {
         private void OnPreprocessTexture()
         {
+            // Sky panoramas (Phase 13c): 2K (owner), no mipmaps (no seams at the horizon), wrap around, not up and down.
+            if (assetPath.StartsWith(ArtLibrary.HdriFolder))
+            {
+                var sky = (TextureImporter)assetImporter;
+                sky.maxTextureSize = 2048;
+                sky.mipmapEnabled = false;
+                sky.wrapModeU = TextureWrapMode.Repeat;
+                sky.wrapModeV = TextureWrapMode.Clamp;
+                return;
+            }
+
             if (!assetPath.StartsWith(ArtLibrary.TextureFolder))
             {
                 return;

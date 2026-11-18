@@ -22,5 +22,11 @@ awk -v items="$EDITOR" '/<Compile Include=/{ if(!done){print items; done=1}; nex
 sed -i "s#<HintPath>Library.#<HintPath>$ROOT/Library/#" "$OUT"/*.csproj
 # Domain sources are compiled into the runtime project here; a separate Domain csproj is not needed.
 sed -i '/<ProjectReference Include="WoodcraftSimulator.Domain.csproj"/d' "$OUT"/*.csproj
+# The editor asmdef references URP (Phase 13c); until Unity regenerates its csproj, reference the DLLs directly.
+for dll in Unity.RenderPipelines.Core.Runtime Unity.RenderPipelines.Universal.Runtime; do
+    if ! grep -q "$dll.dll" "$OUT/WoodcraftSimulator.Editor.csproj"; then
+        sed -i "s|</Project>|  <ItemGroup><Reference Include=\"$dll\"><HintPath>$ROOT/Library/ScriptAssemblies/$dll.dll</HintPath></Reference></ItemGroup>\n</Project>|" "$OUT/WoodcraftSimulator.Editor.csproj"
+    fi
+done
 
 cd "$OUT" && dotnet build WoodcraftSimulator.Editor.csproj -nologo -v q

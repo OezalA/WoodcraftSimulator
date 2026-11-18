@@ -112,6 +112,12 @@ namespace WoodcraftSimulator.Editor
 
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
             ConfigureDefaultObjects(scene);
+            ApplySky("kloofendal_48d_partly_cloudy_puresky", 1f, 0f); // CC0 sky (Phase 13c, D-060)
+            // Ambient light from three colours, as at the locations: needs no lighting bake (D-060).
+            RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
+            RenderSettings.ambientSkyColor = new Color(0.72f, 0.80f, 0.92f);
+            RenderSettings.ambientEquatorColor = new Color(0.62f, 0.64f, 0.62f);
+            RenderSettings.ambientGroundColor = new Color(0.36f, 0.34f, 0.30f);
 
             var materials = new GreyboxMaterials();
             ApplyArt(materials); // CC0 textures where they are in the project (Phase 13b, D-059)
@@ -161,6 +167,7 @@ namespace WoodcraftSimulator.Editor
         private static Scene SplitIntoCoreScene(GameObject player, SaveGameService saveService)
         {
             Scene core = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Additive);
+            AddPostProcessing(core, player.GetComponentInChildren<Camera>()); // every place (Phase 13c, D-060)
 
             LocationDefinition workshop = LocationAssets.Workshop(ScenePath);
             var info = new GameObject("PlaceInfo").AddComponent<PlaceInfo>();
@@ -267,6 +274,7 @@ namespace WoodcraftSimulator.Editor
 
             // The apprentice's walkable area, built when the scene starts (D-052).
             environment.gameObject.AddComponent<RuntimeNavMesh>();
+            AddReflectionProbe(environment, new Vector3(0f, 2f, -4f), new Vector3(60f, 20f, 60f));
         }
 
         /// <summary>
