@@ -182,8 +182,8 @@ namespace WoodcraftSimulator.Jobs
             text.Append(Loc.T($", {Percent(material.Utilization)} in the {result.Job.Blueprint.DisplayName}\n",
                 $", {Percent(material.Utilization)} yapıda kullanıldı\n"));
             text.Append(Loc.T(
-                $"  in the structure {Cm3(material.InstalledCubicMeters)} cm³, sawdust {Cm3(material.SawdustCubicMeters)} cm³, offcuts {Cm3(material.OffcutCubicMeters)} cm³\n",
-                $"  yapıda {Cm3(material.InstalledCubicMeters)} cm³, talaş {Cm3(material.SawdustCubicMeters)} cm³, artık {Cm3(material.OffcutCubicMeters)} cm³\n"));
+                $"  in the structure {CubicCentimetres(material.InstalledCubicMeters)} cm³, sawdust {CubicCentimetres(material.SawdustCubicMeters)} cm³, offcuts {CubicCentimetres(material.OffcutCubicMeters)} cm³\n",
+                $"  yapıda {CubicCentimetres(material.InstalledCubicMeters)} cm³, talaş {CubicCentimetres(material.SawdustCubicMeters)} cm³, artık {CubicCentimetres(material.OffcutCubicMeters)} cm³\n"));
 
             text.Append(Loc.T("Quality goals ", "Kalite hedefleri ")).Append(result.GoalsMet).Append('/')
                 .Append(result.Goals.Count).Append(":\n");
@@ -252,9 +252,11 @@ namespace WoodcraftSimulator.Jobs
             return string.Join(", ", names);
         }
 
-        private static string Cm3(double cubicMeters) => (cubicMeters * 1e6).ToString("0", CultureInfo.InvariantCulture);
+        /// <summary>A volume in whole cubic centimetres, e.g. "1250".</summary>
+        public static string CubicCentimetres(double cubicMeters) => (cubicMeters * 1e6).ToString("0", CultureInfo.InvariantCulture);
 
-        private static string Percent(double share) =>
+        /// <summary>A share as a whole percentage in the language's order ("78 %", "%78").</summary>
+        public static string Percent(double share) =>
             Loc.T((share * 100.0).ToString("0", CultureInfo.InvariantCulture) + " %",
                 "%" + (share * 100.0).ToString("0", CultureInfo.InvariantCulture));
     }

@@ -21,7 +21,11 @@ namespace WoodcraftSimulator.Player
         [Tooltip("Optional: recorded CC0 sounds (Phase 13d, D-061); without them the generated placeholders play.")]
         [SerializeField] private Audio.SoundLibrary library;
 
+        [Tooltip("Optional: a confirmation or error sound when the job board answers (Phase 13e, D-062).")]
+        [SerializeField] private Jobs.JobBoard jobBoard;
+
         [SerializeField, Range(0f, 1f)] private float effectsVolume = 0.6f;
+        [SerializeField, Range(0f, 1f)] private float interfaceVolume = 0.45f;
         [SerializeField, Range(0f, 1f)] private float ambienceVolume = 0.12f;
 
         private AudioSource effects;
@@ -58,6 +62,11 @@ namespace WoodcraftSimulator.Player
                 lastBalance = economy.Ledger.Balance;
                 economy.Ledger.Changed += OnLedgerChanged;
             }
+
+            if (jobBoard != null)
+            {
+                jobBoard.Answered += OnJobBoardAnswered;
+            }
         }
 
         private void OnDisable()
@@ -75,6 +84,24 @@ namespace WoodcraftSimulator.Player
             if (economy != null)
             {
                 economy.Ledger.Changed -= OnLedgerChanged;
+            }
+
+            if (jobBoard != null)
+            {
+                jobBoard.Answered -= OnJobBoardAnswered;
+            }
+        }
+
+        // Accepted, delivered, bought: a confirmation; refused: an error tone (recorded sounds only).
+        private void OnJobBoardAnswered(bool accepted)
+        {
+            if (library != null && effects != null)
+            {
+                AudioClip clip = Audio.SoundLibrary.Any(accepted ? library.uiConfirm : library.uiError);
+                if (clip != null)
+                {
+                    effects.PlayOneShot(clip, interfaceVolume);
+                }
             }
         }
 

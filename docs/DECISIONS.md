@@ -866,3 +866,23 @@ log in). Sonniss GDC bundles were ruled out: their licence forbids redistributin
 - `SoundLibrary` asset (filled by the builder from the file names), `PlayerFootsteps` (a step per 0.65 m, shorter and
   quieter crouched; surface from what is under the feet: boards wood, terrain snow/grass by its splat map, material
   names otherwise). Every recorded sound is optional: without it the generated placeholder plays (D-044).
+
+## D-062: Phase 13e: settings, travel screen, offer and result cards, interface sounds (Accepted, 2026-11-18, approved plan)
+Part of the approved Phase 13 plan (D-058: "UI and accessibility"); no new assets.
+- **Settings page** in the pause menu (Settings / Back), so the main page stays short at a large interface size:
+  mouse sensitivity, invert mouse Y, field of view (55-95°, default 70; the precision zoom narrows from it), interface
+  size (80-150 %), language. Stored in PlayerPrefs like the existing settings (`UserPreferences`).
+- **Interface size**: all UI documents share one PanelSettings asset (1920×1080 design, scaled with the window); a
+  larger interface lays the same design out for a smaller reference resolution. Not written into the asset (in the
+  Editor a runtime change would be saved back into the project): the documents get a runtime copy, only when the size
+  isn't 100 %. Applied when the slider is let go (resizing under a dragging mouse moves the slider away from it).
+- **Travel screen**: covers everything while the van drives and the place loads (and when the game starts):
+  destination, a progress bar (leaving, loading, setting up; `SceneFlow.Progress`), a gameplay tip; at least 1.2 s on
+  screen so a fast load doesn't flash.
+- **Offer card** (looking at a job sheet) and **result card** (structure complete) in the job card's look (D-051)
+  instead of plain text: money (pay, deposit, material to buy, your money), material with have/buy per line, cut plan
+  per board; goals with met/not, only the parts off size or missing (a terrace has dozens), fasteners in one line,
+  material use, pay with profit. The text forms (`JobText.Offer`, `JobText.Result`) stay for tests and as the cards'
+  change key.
+- **Interface sounds** (Kenney, D-061): a click on pause menu buttons; a confirmation when the job board accepts,
+  delivers or sells a board, an error tone when it refuses (`JobBoard.Answered`). Money tones (D-044) stay.

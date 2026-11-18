@@ -659,6 +659,7 @@ namespace WoodcraftSimulator.Editor
             SetReference(sounds, "carrier", player.GetComponent<PlayerCarrier>());
             SetReference(sounds, "toolBelt", player.GetComponent<PlayerToolBelt>());
             SetReference(sounds, "economy", Object.FindFirstObjectByType<WorkshopEconomy>());
+            SetReference(sounds, "jobBoard", Object.FindFirstObjectByType<JobBoard>()); // confirm / error tones (D-062)
 
             // Recorded CC0 sounds and footsteps (Phase 13d, D-061).
             Audio.SoundLibrary library = AudioAssets.Library();
@@ -1695,6 +1696,7 @@ namespace WoodcraftSimulator.Editor
             document.visualTreeAsset = layout;
 
             var hud = hudObject.AddComponent<GameplayHud>();
+            hudObject.AddComponent<TravelScreen>(); // covers the screen while travelling (D-062)
             var careerPanel = hudObject.AddComponent<CareerPanel>();
             SetReference(careerPanel, "career", Object.FindFirstObjectByType<WorkshopCareer>());
             SetReference(hud, "interactor", interactor);
@@ -1798,6 +1800,7 @@ namespace WoodcraftSimulator.Editor
             SetReference(pauseMenu, "pauseController", pauseController);
             SetReference(pauseMenu, "playerController", playerController);
             SetReference(pauseMenu, "saveService", saveService);
+            SetReference(pauseMenu, "sounds", AudioAssets.Library()); // button clicks (D-062)
         }
 
         private static PanelSettings GetOrCreatePanelSettings(ThemeStyleSheet theme)

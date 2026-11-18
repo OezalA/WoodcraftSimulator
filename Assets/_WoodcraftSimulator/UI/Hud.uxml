@@ -14,8 +14,8 @@
         <!-- Quality report of a completed assembly, shown for a while on the right. -->
         <ui:VisualElement name="report-anchor" class="report-anchor" picking-mode="Ignore">
             <ui:Label name="assembly-report" class="assembly-report hidden" picking-mode="Ignore" text="" />
-            <!-- Result of the active job once its structure is complete (stays until delivered). -->
-            <ui:Label name="job-result" class="assembly-report hidden" picking-mode="Ignore" text="" />
+            <!-- Result card of the active job once its structure is complete (stays until delivered; JobPanel, D-062). -->
+            <ui:VisualElement name="result-card" class="job-card job-card--result result-card hidden" picking-mode="Ignore" />
         </ui:VisualElement>
         <!-- Money (top right) and the workshop inventory (Tab), D-040. -->
         <ui:VisualElement name="money-anchor" class="money-anchor" picking-mode="Ignore">
@@ -30,10 +30,19 @@
         <ui:VisualElement name="bin-anchor" class="bin-anchor" picking-mode="Ignore">
             <ui:VisualElement name="bin-card" class="job-card bin-card hidden" picking-mode="Ignore" />
         </ui:VisualElement>
-        <!-- Job card of the active job (built from code by JobPanel, D-051), or the offer of the sheet being looked at. -->
+        <!-- Job card of the active job (built from code by JobPanel, D-051), or the offer card of the sheet being looked at (D-062). -->
         <ui:VisualElement name="job-anchor" class="job-anchor" picking-mode="Ignore">
             <ui:VisualElement name="job-card" class="job-card hidden" picking-mode="Ignore" />
-            <ui:Label name="job-sheet" class="job-sheet hidden" picking-mode="Ignore" text="" />
+            <ui:VisualElement name="offer-card" class="job-card offer-card hidden" picking-mode="Ignore" />
+        </ui:VisualElement>
+        <!-- Shown while the van drives to a place and the place loads (TravelScreen, D-062); above everything else. -->
+        <ui:VisualElement name="travel-screen" class="travel-screen hidden" picking-mode="Ignore">
+            <ui:Label name="travel-eyebrow" class="travel-screen__eyebrow" picking-mode="Ignore" text="" />
+            <ui:Label name="travel-title" class="travel-screen__title" picking-mode="Ignore" text="" />
+            <ui:VisualElement class="travel-screen__bar" picking-mode="Ignore">
+                <ui:VisualElement name="travel-fill" class="travel-screen__fill" picking-mode="Ignore" />
+            </ui:VisualElement>
+            <ui:Label name="travel-note" class="travel-screen__note" picking-mode="Ignore" text="" />
         </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

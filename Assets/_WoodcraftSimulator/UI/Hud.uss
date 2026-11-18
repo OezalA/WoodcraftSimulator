@@ -485,6 +485,150 @@
     white-space: normal;
 }
 
+/* Offer and result cards (Phase 13e, D-062): the job card's look. Value rows: a name left, an amount right. */
+.job-card--result {
+    border-left-color: rgb(120, 200, 120);
+}
+
+.job-card--result .job-card__eyebrow {
+    color: rgb(120, 200, 120);
+}
+
+.job-card.result-card {
+    width: 100%;
+}
+
+.job-card .job-card__pay {
+    font-size: 17px;
+    -unity-font-style: bold;
+    color: rgb(230, 180, 90);
+}
+
+.job-card .job-card__customer {
+    margin-top: 2px;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.job-card .job-card__warning {
+    margin-top: 8px;
+    padding: 6px 8px;
+    border-radius: 4px;
+    background-color: rgba(220, 90, 70, 0.2);
+    color: rgb(255, 170, 150);
+    white-space: normal;
+}
+
+.value-row {
+    flex-direction: row;
+    align-items: center;
+    height: 20px;
+}
+
+.job-card .value-row__name {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 0px;
+    color: rgba(255, 255, 255, 0.7);
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.job-card .value-row__value {
+    margin-left: 8px;
+    -unity-text-align: middle-right;
+    color: rgb(255, 255, 255);
+    flex-shrink: 0;
+}
+
+.job-card .value-row__value--minus {
+    color: rgb(255, 170, 150);
+}
+
+.job-card .value-row__value--plus {
+    color: rgb(140, 215, 140);
+}
+
+.value-row--total {
+    height: 24px;
+    margin-top: 3px;
+    padding-top: 3px;
+    border-top-width: 1px;
+    border-top-color: rgba(255, 255, 255, 0.12);
+}
+
+.job-card .value-row--total .value-row__name,
+.job-card .value-row--total .value-row__value {
+    font-size: 15px;
+    -unity-font-style: bold;
+    color: rgb(255, 255, 255);
+}
+
+.cut-row__dot--problem {
+    background-color: rgb(220, 90, 70);
+    border-color: rgb(220, 90, 70);
+}
+
+.job-card .cut-row__status--problem {
+    color: rgb(255, 170, 150);
+}
+
+.job-card .job-card__small {
+    margin-top: 8px;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.45);
+    white-space: normal;
+}
+
+/* Travel screen (Phase 13e, D-062): the whole screen while the van drives and the place loads. */
+.travel-screen {
+    position: absolute;
+    left: 0px;
+    top: 0px;
+    right: 0px;
+    bottom: 0px;
+    align-items: center;
+    justify-content: center;
+    background-color: rgb(16, 14, 12);
+}
+
+.travel-screen__eyebrow {
+    font-size: 14px;
+    -unity-font-style: bold;
+    letter-spacing: 2px;
+    color: rgb(230, 180, 90);
+}
+
+.travel-screen__title {
+    margin-top: 6px;
+    font-size: 44px;
+    -unity-font-style: bold;
+    color: rgb(255, 255, 255);
+}
+
+.travel-screen__bar {
+    width: 420px;
+    height: 6px;
+    margin-top: 22px;
+    border-radius: 3px;
+    background-color: rgba(255, 255, 255, 0.12);
+    overflow: hidden;
+}
+
+.travel-screen__fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 3px;
+    background-color: rgb(230, 180, 90);
+}
+
+.travel-screen__note {
+    margin-top: 14px;
+    font-size: 15px;
+    color: rgba(255, 255, 255, 0.55);
+}
+
 .hidden {
     display: none;
 }

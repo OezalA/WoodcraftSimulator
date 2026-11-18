@@ -2,14 +2,26 @@
     <Style src="PauseMenu.uss" />
     <ui:VisualElement name="pause-root" class="pause-root hidden">
         <ui:VisualElement name="pause-panel" class="pause-panel">
-            <ui:Label name="pause-title" text="Paused" class="pause-title" />
-            <ui:Button name="resume-button" text="Resume" class="pause-button" />
-            <ui:Button name="save-button" text="Save" class="pause-button" />
-            <ui:Label name="save-status" text="" class="pause-status" />
-            <ui:Slider name="sensitivity-slider" label="Mouse sensitivity" class="pause-slider" />
-            <ui:Button name="language-button" text="Language: English" class="pause-button" />
-            <ui:Button name="new-button" text="New workshop" class="pause-button" />
-            <ui:Button name="quit-button" text="Quit" class="pause-button" />
+            <!-- Main page. -->
+            <ui:VisualElement name="main-page" class="pause-page">
+                <ui:Label name="pause-title" text="Paused" class="pause-title" />
+                <ui:Button name="resume-button" text="Resume" class="pause-button" />
+                <ui:Button name="save-button" text="Save" class="pause-button" />
+                <ui:Label name="save-status" text="" class="pause-status" />
+                <ui:Button name="settings-button" text="Settings" class="pause-button" />
+                <ui:Button name="new-button" text="New workshop" class="pause-button" />
+                <ui:Button name="quit-button" text="Quit" class="pause-button" />
+            </ui:VisualElement>
+            <!-- Settings page (Phase 13e, D-062): controls, view, interface, language. -->
+            <ui:VisualElement name="settings-page" class="pause-page hidden">
+                <ui:Label name="settings-title" text="Settings" class="pause-title" />
+                <ui:Slider name="sensitivity-slider" label="Mouse sensitivity" class="pause-slider" />
+                <ui:Toggle name="invert-toggle" label="Invert mouse Y" class="pause-slider pause-toggle" />
+                <ui:SliderInt name="fov-slider" label="Field of view" class="pause-slider" />
+                <ui:SliderInt name="scale-slider" label="Interface size %" class="pause-slider" />
+                <ui:Button name="language-button" text="Language: English" class="pause-button" />
+                <ui:Button name="back-button" text="Back" class="pause-button" />
+            </ui:VisualElement>
         </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

@@ -63,3 +63,14 @@
 .hidden {
     display: none;
 }
+
+/* Settings page (Phase 13e, D-062): a toggle row as tall as a slider row; the checkbox larger. */
+.pause-panel .pause-toggle {
+    height: 32px;
+    align-items: center;
+}
+
+.pause-panel .unity-toggle__checkmark {
+    width: 22px;
+    height: 22px;
+}

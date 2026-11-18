@@ -1,6 +1,6 @@
 # Current State
 
-_Last updated: 2026-11-16_
+_Last updated: 2026-11-18_
 
 ## Current milestone
 **Phase 5 (Basic Assembly) done**: accepted by the owner on 2026-11-15 ("hepsi süper") after MT-013 and MT-015;
@@ -28,6 +28,11 @@ reputation, skills; rent and apprentice wage per delivered job (= one week), deb
 **Phase 12.5 (customer locations) code done (D-055..D-057)**: Core scene + content scenes (workshop, mountain
 house, island house), van with cargo, place-aware save, location jobs (mountain terrace, island deck with ready-made
 glass panels), handover at the house door. **MT-032 accepted (2026-11-17)** after three builder fixes (save the workshop before opening Core; pause menu into Core; HUD ignores destroyed targets).
+**Phase 13 (presentation and polish) in progress** (plan 13a-13f approved 2026-11-18, D-058; one owner test at the
+end): 13a-13b CC0 textures and species board materials (D-059), 13c skies, ambient, reflection probes, post-processing
+(D-060), 13d recorded CC0 sounds (D-061), 13e settings page, travel screen, offer/result cards, interface sounds
+(D-062) **code done; static compile and domain tests only, not yet compiled or played in Unity.** Needs a scene rebuild
+(*WoodcraftSimulator > Build Test Workshop Scene*). 13f (performance pass) next, then MT-033.
 Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 
 ## Completed
@@ -137,8 +142,9 @@ Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 6. Done: MT-027..MT-029 accepted, `main` fast-forwarded (2026-11-17).
 7. Done: MT-030 and MT-031 accepted (2026-11-17); Phases 11 and 12 complete, `main` fast-forwarded (c0d45a9).
 8. Done: Phase 12.5 accepted (MT-032, 2026-11-17), `main` fast-forwarded.
-9. Next: Phase 13 (presentation and polish): plan for the owner's approval; first decide the art sources (own-made or kept outside the public repo, D-037).
-   Owner request (D-055): Phase 12.5 customer locations (mountain terrace, island balcony with ready-made glass
-   panels) comes before Phase 13; detailed plan after MT-030 / MT-031.
+9. Done (code): Phase 13a-13e (D-058..D-062).
+10. Next: 13f performance pass (profile CPU/GPU/memory, save and place load times), then MT-033 (one Phase 13 test,
+   in Turkish for the owner); commit the Unity-generated `.meta`/assets after the owner's rebuild. Purchases only if
+   CC0 falls short, proposed by Claude, decided and bought by the owner (D-058).
    Open small idea: in the red slot preview, point out a wrong thickness explicitly (owner
    used 28 mm larch for an 18 mm spruce part).

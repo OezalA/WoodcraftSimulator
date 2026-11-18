@@ -75,6 +75,30 @@ namespace WoodcraftSimulator.Jobs
         /// <summary>The offer on a sheet, or null.</summary>
         public JobOffer OfferAt(int slot) => offers != null && slot >= 0 && slot < offers.Length ? offers[slot] : null;
 
+        /// <summary>The job on a sheet, or null for an empty sheet (offer card, D-062).</summary>
+        public Job JobAt(int slot) => TemplateAt(slot) != null && domainJobs != null ? domainJobs[slot] : null;
+
+        /// <summary>The material plan of the job on a sheet, or null (offer card, D-062).</summary>
+        public MaterialPlan PlanAt(int slot) => TemplateAt(slot) != null && plans != null ? plans[slot] : null;
+
+        /// <summary>The customer's place of the job on a sheet; null for the workshop and its yard (D-056).</summary>
+        public World.LocationDefinition PlaceAt(int slot) => TemplateAt(slot) is JobDefinition template ? template.Location : null;
+
+        /// <summary>Why the job on a sheet can't be taken yet (career, D-054), or null when it can.</summary>
+        public string LockReasonAt(int slot) => OfferAt(slot) is JobOffer offer && offer.IsLocked
+            ? TemplateInfoAt(slot)?.LockReason(CareerState) ?? offer.LockReason
+            : null;
+
+        /// <summary>What accepting the job on a sheet costs now: the material to buy plus the place's extra (D-056).</summary>
+        public Money MaterialCostAt(int slot)
+        {
+            Money material = Shopping(slot).TotalCost;
+            return material + PlaceExtra(PlaceAt(slot), material);
+        }
+
+        /// <summary>The workshop's money.</summary>
+        public Money Balance => economy.Ledger.Balance;
+
         /// <summary>What a sheet shows from afar: the job's name, or "empty".</summary>
         public string SheetTitle(int slot) =>
             TemplateAt(slot) is JobDefinition template ? template.DisplayName : Loc.T("Empty sheet", "Boş kağıt");
@@ -103,6 +127,12 @@ namespace WoodcraftSimulator.Jobs
 
         /// <summary>Raised after a job was accepted, completed, delivered or more stock was bought.</summary>
         public event Action Changed;
+
+        /// <summary>
+        /// The board's answer to the player (Phase 13e, D-062), for a sound: true when a job was accepted or delivered
+        /// or a board bought, false when it was refused (locked, the place busy, not sold, not enough money).
+        /// </summary>
+        public event Action<bool> Answered;
 
         private void Awake()
         {
@@ -447,7 +477,7 @@ namespace WoodcraftSimulator.Jobs
             string who = string.IsNullOrEmpty(offer.Customer) ? jobName + at : $"{jobName}{at}, {offer.Customer}";
             if (offer.IsLocked)
             {
-                string reason = TemplateInfoAt(index).LockReason(CareerState) ?? offer.LockReason;
+                string reason = LockReasonAt(index);
                 return Loc.T($"Not yet: {jobName} ({offer.Customer}, pay {offer.Pay}): {reason}",
                     $"Henüz değil: {jobName} ({offer.Customer}, ücret {offer.Pay}): {reason}");
             }
@@ -527,6 +557,7 @@ namespace WoodcraftSimulator.Jobs
         {
             if (offers[index].IsLocked || !plans[index].IsFeasible || (StationFor(index) is AssemblyStation busy && !busy.IsEmpty))
             {
+                Answered?.Invoke(false);
                 return;
             }
 
@@ -537,6 +568,7 @@ namespace WoodcraftSimulator.Jobs
                 if (!line.IsSold && line.Available < line.Needed)
                 {
                     ShowMessage(Loc.T($"Not sold by the merchant: {line.Description}", $"Satıcıda yok: {line.Description}"));
+                    Answered?.Invoke(false);
                     return;
                 }
             }
@@ -551,12 +583,14 @@ namespace WoodcraftSimulator.Jobs
             {
                 ShowMessage(Loc.T($"Not enough money for the material ({shopping.TotalCost + extra})",
                     $"Malzeme için para yetmiyor ({shopping.TotalCost + extra})"));
+                Answered?.Invoke(false);
                 return;
             }
 
             // A place that isn't loaded takes the blueprint when it loads (OnStationsLoaded, D-056).
             if (StationFor(index) is AssemblyStation target && !target.TrySetBlueprint(TemplateAt(index).Blueprint))
             {
+                Answered?.Invoke(false);
                 return;
             }
 
@@ -600,6 +634,7 @@ namespace WoodcraftSimulator.Jobs
                     ? Loc.T($"Material bought ({shopping.TotalCost}): see the delivery area", $"Malzeme alındı ({shopping.TotalCost}): teslim alanına bak")
                     : Loc.T($"Material bought ({shopping.TotalCost}): delivered to the site outside", $"Malzeme alındı ({shopping.TotalCost}): dışarıdaki şantiyeye bırakıldı"))
                 : Loc.T("The workshop has all the material", "Atölyede tüm malzeme var"));
+            Answered?.Invoke(true);
             Changed?.Invoke();
         }
 
@@ -619,6 +654,7 @@ namespace WoodcraftSimulator.Jobs
             if (result != PurchaseResult.Bought)
             {
                 ShowMessage(WorkshopEconomy.PurchaseText(result));
+                Answered?.Invoke(false);
                 return;
             }
 
@@ -626,6 +662,7 @@ namespace WoodcraftSimulator.Jobs
             boardsOrderedExtra++;
             OnStationChanged();
             ShowMessage(Loc.T("Bought: see the delivery area", "Satın alındı: teslim alanına bak"));
+            Answered?.Invoke(true);
             Changed?.Invoke();
         }
 
@@ -717,6 +754,7 @@ namespace WoodcraftSimulator.Jobs
             DrawOffers();
             ShowMessage(Loc.T($"Delivered: +{settlement.Earned} (profit {settlement.Profit}){careerText}",
                 $"Teslim edildi: +{settlement.Earned} (kâr {settlement.Profit}){careerText}"), 8f);
+            Answered?.Invoke(true);
             Changed?.Invoke();
         }
 

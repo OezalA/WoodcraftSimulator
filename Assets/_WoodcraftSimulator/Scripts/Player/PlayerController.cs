@@ -97,6 +97,26 @@ namespace WoodcraftSimulator.Player
             set => lookSensitivity = Mathf.Clamp(value, UserPreferences.MinMouseSensitivity, UserPreferences.MaxMouseSensitivity);
         }
 
+        /// <summary>Mouse up looks down (D-062). Initialized from <see cref="UserPreferences"/>.</summary>
+        public bool InvertLookY { get; set; }
+
+        /// <summary>
+        /// The eyes' field of view in degrees without the precision zoom (D-062). Initialized from
+        /// <see cref="UserPreferences"/>; set from the pause menu it shows at once (behind the menu).
+        /// </summary>
+        public float FieldOfView
+        {
+            get => normalFieldOfView;
+            set
+            {
+                normalFieldOfView = Mathf.Clamp(value, UserPreferences.MinFieldOfView, UserPreferences.MaxFieldOfView);
+                if (viewCamera != null)
+                {
+                    viewCamera.fieldOfView = normalFieldOfView;
+                }
+            }
+        }
+
         private void Awake()
         {
             characterController = GetComponent<CharacterController>();
@@ -122,7 +142,8 @@ namespace WoodcraftSimulator.Player
             standEyeHeight = cameraTransform.localPosition.y;
 
             viewCamera = cameraTransform.GetComponent<Camera>();
-            normalFieldOfView = viewCamera != null ? viewCamera.fieldOfView : 70f;
+            FieldOfView = UserPreferences.FieldOfView;
+            InvertLookY = UserPreferences.InvertLookY;
         }
 
         /// <summary>Camera pitch in degrees (positive = looking down).</summary>
@@ -268,7 +289,7 @@ namespace WoodcraftSimulator.Player
 
             transform.Rotate(0f, delta.x, 0f, Space.Self);
 
-            pitch = Mathf.Clamp(pitch - delta.y, -maxPitch, maxPitch);
+            pitch = Mathf.Clamp(pitch + (InvertLookY ? delta.y : -delta.y), -maxPitch, maxPitch);
             cameraTransform.localRotation = Quaternion.Euler(pitch, 0f, 0f);
         }
 
