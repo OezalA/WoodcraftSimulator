@@ -37,7 +37,10 @@ island grass, poor mountain view): generated island and mountain landscapes, cam
 seen by the owner 2026-11-18); workshop birdsong ambience done. Owner: sounds OK, grass OK for now (nicer later), but
 island and mountain "not as I dreamed"; he is willing to **buy Asset Store packs** (nature, water) for them (D-058:
 Claude proposes a concrete list with prices, the owner decides and buys, kept out of the repo). Waiting for his
-screenshots / reference pictures. 13f (performance pass, incl. the ~25k mountain trees) next, then MT-033.
+screenshots / reference pictures. **Owner decided (D-064): close Phase 13 now, landscape beautification as its own
+step before Phase 14.** 13f measuring tools done (F3 overlay, `[Perf]` log lines). **Next: owner runs MT-033** (Turkish
+steps given in chat), reports FPS per place; Claude reads the `[Perf]` lines in Editor.log, fixes performance if
+needed, commits the rebuilt scenes, then `main` is fast-forwarded.
 Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 
 ## Completed
