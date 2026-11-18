@@ -34,8 +34,10 @@ end): 13a-13b CC0 textures and species board materials (D-059), 13c skies, ambie
 (D-062) **code done; static compile and domain tests only, not yet compiled or played in Unity.** Needs a scene rebuild
 (*WoodcraftSimulator > Build Test Workshop Scene*). After the owner's first look (fly in the workshop ambience, poor
 island grass, poor mountain view): generated island and mountain landscapes, camera far plane 4 km (D-063, code done,
-not yet seen in Unity); the birdsong recording for the workshop is waiting for the owner's download. 13f (performance
-pass, incl. the ~25k mountain trees) next, then MT-033.
+seen by the owner 2026-11-18); workshop birdsong ambience done. Owner: sounds OK, grass OK for now (nicer later), but
+island and mountain "not as I dreamed"; he is willing to **buy Asset Store packs** (nature, water) for them (D-058:
+Claude proposes a concrete list with prices, the owner decides and buys, kept out of the repo). Waiting for his
+screenshots / reference pictures. 13f (performance pass, incl. the ~25k mountain trees) next, then MT-033.
 Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 
 ## Completed
