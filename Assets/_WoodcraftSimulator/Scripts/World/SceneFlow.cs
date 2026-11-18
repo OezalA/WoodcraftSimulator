@@ -1,7 +1,9 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using UnityEngine;
+using Debug = UnityEngine.Debug;
 using UnityEngine.SceneManagement;
 using WoodcraftSimulator.Localization;
 using WoodcraftSimulator.Persistence;
@@ -65,14 +67,17 @@ namespace WoodcraftSimulator.World
                 yield break;
             }
 
+            var timer = Stopwatch.StartNew();
             SaveGameData save = saveService.ReadSave();
             LocationDefinition start = Find(save != null ? SaveLocations.Of(save.location) : null);
+            long read = timer.ElapsedMilliseconds;
 
             Destination = start;
             Progress = 0f;
             IsTravelling = true;
             player.enabled = false;
             yield return LoadContent(start, 0f, 0.9f);
+            long loaded = timer.ElapsedMilliseconds;
             saveService.ApplyAll(save, content, start.Id);
             Progress = 1f;
             Core.Services.Get<Economy.WorkshopEconomy>()?.DeliverAllPending(); // bought while away (D-056)
@@ -81,6 +86,8 @@ namespace WoodcraftSimulator.World
             IsTravelling = false;
             IsReady = true;
             LocationChanged?.Invoke();
+            Debug.Log($"[Perf] Start at '{start.Id}': read save {read} ms, load scene {loaded - read} ms, " +
+                      $"apply save {timer.ElapsedMilliseconds - loaded} ms, total {timer.ElapsedMilliseconds} ms.");
         }
 
         /// <summary>Leaves the current place for another (its state is kept in the save data).</summary>
@@ -100,11 +107,14 @@ namespace WoodcraftSimulator.World
             Progress = 0f;
             IsTravelling = true;
             player.enabled = false;
+            var timer = Stopwatch.StartNew();
+            string from = CurrentLocationId;
 
             Scene leaving = content;
             // First what leaves with the van (it must not stay in this place's state), then the place is captured.
             beforeUnload?.Invoke(leaving);
             saveService.CaptureLocation(CurrentLocationId, leaving);
+            long captured = timer.ElapsedMilliseconds;
             Progress = 0.1f;
             if (leaving.IsValid() && leaving.isLoaded)
             {
@@ -116,7 +126,9 @@ namespace WoodcraftSimulator.World
                 }
             }
 
+            long unloaded = timer.ElapsedMilliseconds;
             yield return LoadContent(target, 0.3f, 0.9f);
+            long loaded = timer.ElapsedMilliseconds;
             saveService.ApplyLocation(target.Id, content);
             Progress = 1f;
             Core.Services.Get<Economy.WorkshopEconomy>()?.DeliverAllPending(); // material waiting for this place
@@ -133,6 +145,9 @@ namespace WoodcraftSimulator.World
             player.enabled = true;
             IsTravelling = false;
             LocationChanged?.Invoke();
+            Debug.Log($"[Perf] Travel '{from}' → '{target.Id}': capture {captured} ms, unload {unloaded - captured} ms, " +
+                      $"load scene {loaded - unloaded} ms, set up {timer.ElapsedMilliseconds - loaded} ms, " +
+                      $"total {timer.ElapsedMilliseconds} ms.");
         }
 
         /// <summary>Reloads everything from the core scene (start over, or apply a changed language).</summary>

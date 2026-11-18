@@ -161,3 +161,27 @@ landscapes' beauty in Phase 13.
 - [x] 12.5c: Location rules (trip cost, material factor, delivery fee), material delivered to the place, handover there
 - [x] 12.5d: Mountain house: terrace with a view of snowy peaks (generated terrain, haze)
 - [x] 12.5e: Island house: deck with ready-made glass panels and clamps (sea, horizon, islets)
+
+## Phase 13: Presentation and Polish (plan approved 2026-11-18, D-058) - code done, waiting for MT-033
+Sources: CC0 first (ambientCG, Poly Haven, Kenney, Freesound); purchases only where CC0 falls short, decided and bought
+by the owner, kept out of the public repository.
+- [x] 13a: Art sources and import rules (1K textures, 2K skies), CREDITS
+- [x] 13b: Textured greybox, species board materials, grain along the board (D-059)
+- [x] 13c: Skies, ambient light, reflection probes, post-processing (D-060); generated island and mountain landscapes (D-063)
+- [x] 13d: Recorded sounds: footsteps, put-down, tools, place ambience (D-061, D-063)
+- [x] 13e: Settings page (invert Y, field of view, interface size), travel screen, offer/result cards, interface sounds (D-062)
+- [x] 13f: Measuring tools: F3 performance overlay, `[Perf]` timings of start, travel and save (D-064)
+- [ ] MT-033 (owner); performance fixes from its measurements
+
+## Landscape beautification (added 2026-11-18, D-064) - after Phase 13, before Phase 14
+The owner: the island and the mountain are not yet as he imagines them. Its own step so Phase 13 can be closed and
+tested first, and Phase 14's measurements see the final landscapes.
+- [ ] Water shader (waves, shallow turquoise / deep colour, shore foam, sky reflection)
+- [ ] Light and sky per place (time of day, clouds)
+- [ ] Rocks (Poly Haven CC0 scans reduced in Blender; Blender to be installed with the owner's approval)
+- [ ] Better trees (palms, spruces with leaf cards) and denser grass, flowers
+- [ ] Decide on purchases (e.g. a nature pack, a water pack) with the owner, perhaps in an Asset Store sale
+
+## Phase 14: Testing and Release Preparation
+Regression and automated tests, save/load verification, Windows build (scenes into Build Settings, D-056), performance
+profiling, input devices, UI resolutions, error reporting, release configuration, packaging, documentation.

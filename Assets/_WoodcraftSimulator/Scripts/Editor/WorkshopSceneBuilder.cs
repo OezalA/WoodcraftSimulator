@@ -1697,6 +1697,7 @@ namespace WoodcraftSimulator.Editor
 
             var hud = hudObject.AddComponent<GameplayHud>();
             hudObject.AddComponent<TravelScreen>(); // covers the screen while travelling (D-062)
+            hudObject.AddComponent<PerformanceOverlay>(); // F3: FPS, frame times, draw calls, memory (D-064)
             var careerPanel = hudObject.AddComponent<CareerPanel>();
             SetReference(careerPanel, "career", Object.FindFirstObjectByType<WorkshopCareer>());
             SetReference(hud, "interactor", interactor);

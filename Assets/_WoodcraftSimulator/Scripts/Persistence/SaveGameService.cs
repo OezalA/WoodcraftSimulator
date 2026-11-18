@@ -81,9 +81,14 @@ namespace WoodcraftSimulator.Persistence
 
             try
             {
+                var timer = System.Diagnostics.Stopwatch.StartNew();
                 SaveGameData data = Capture();
+                long captured = timer.ElapsedMilliseconds;
                 string json = JsonUtility.ToJson(data, prettyPrint: true);
+                long serialized = timer.ElapsedMilliseconds;
                 WriteAtomically(SavePath, json);
+                Debug.Log($"[Perf] Save: capture {captured} ms, JSON {serialized - captured} ms, " +
+                          $"write {timer.ElapsedMilliseconds - serialized} ms, {json.Length / 1024} KB.");
                 SetStatus(Loc.T($"Saved {DateTime.Now:HH:mm}", $"Kaydedildi {DateTime.Now:HH:mm}"));
                 return true;
             }

@@ -587,6 +587,32 @@ Rebuild with *WoodcraftSimulator > Build Test Workshop Scene*: it now writes Cor
 | Island deck job | Material ×1.3 + €40 fee; ferry €25; the sea with islets; three glass panels delivered; each set on the front deck edge and fixed with two clamps; fifth stage `cam korkuluk` |
 | Pause > New workshop | A fresh game in the workshop; no errors |
 
+### MT-033: Presentation and polish (Phase 13, D-058..D-064)
+Rebuild with *WoodcraftSimulator > Build Test Workshop Scene* first (textures, skies, sounds, landscapes come from it).
+| Step | Expected |
+|---|---|
+| Play (your save) | Loading screen `YÜKLENİYOR · Atölye` with a bar and a tip, then the workshop; no errors in the Console |
+| Look around the workshop | Concrete floor, plastered walls, wooden bench, steel parts textured (not flat colours); a partly cloudy sky through the door; soft colours (tone mapping), light bloom on bright spots |
+| Boards of different species (rack, bins) | Each species its own wood texture, the grain running along the board; sanded lighter, oiled darker and glossier |
+| Walk on concrete, on boards, in the yard on grass and gravel; crouch | Footsteps by surface; quieter and shorter steps crouched |
+| Put down a board, a glass panel, the stepladder | Wood knock, glass clink, metal clank |
+| Saw, drill, nail, sand | Recorded sounds (loops) while working; they stop when you stop |
+| Yard | Birds and distant sheep (no fly) |
+| Esc > Ayarlar | Settings page: sensitivity, `Fare Y ekseni ters`, `Görüş açısı °`, `Arayüz boyutu %`, language, `Geri`; buttons click |
+| Invert Y on, look around; off again | Mouse up looks down while on |
+| Field of view 90, then back to 70 | The view widens behind the menu at once; precision zoom still works |
+| Interface size 130 %, let go of the slider; Geri, Devam et | All texts, cards, menus larger; still fit on screen; back to 100 % works |
+| Quit, Play | The settings are kept |
+| Look at a job sheet (no active job) | An offer card: `İŞ TEKLİFİ`, pay, customer, money rows, material with var / al / satıcıda yok, cut plan per board |
+| Accept a job; with too little money, a locked job | Accepted: confirmation sound; refused: error sound and the message |
+| Finish a job's structure | A green result card on the right: goals met / not, parts off size or missing, fasteners, material, pay and profit |
+| Drive to the mountain house | Loading screen `YOLDA · Dağ evi`, a bar, a tip, at least ~1 s |
+| Mountain house: look from the terrace | A valley with conifer forests below, across it a snowy range in light haze; grass tufts near the chalet; wind |
+| Walk on grass and on snow or rock (if you reach it) | Grass footsteps; snow crunch on snow |
+| Island house | A grassy island with grass tufts, a sandy beach all round into the sea, islets in the distance, waves sound; footsteps grass / sand |
+| F3 at the workshop, the mountain, the island (about 20 s each) | Lower left: FPS, ms, draw calls, triangles, memory; F3 again hides it. Tell Claude the FPS per place (the log keeps `[Perf]` lines) |
+| Save in the pause menu; drive somewhere and back | The log gets `[Perf] Save ...` and `[Perf] Travel ...` lines with times (Claude reads them) |
+
 ## Game view setup (corrects the earlier tip)
 A fixed resolution such as *Full HD (1920x1080)* at `Scale 1x` **crops** the image when the Game view window is
 smaller than 1920×1080: the bottom (tool belt bar) and the lower right (tool in hand) are cut off.

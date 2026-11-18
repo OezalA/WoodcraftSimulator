@@ -908,3 +908,16 @@ view is not nice at all.
   changes writes the same bytes.
 - **Workshop ambience**: replaced by a CC0 birdsong recording without insects (the owner listened and chose
   Freesound 641561, Psykophobia: early-morning countryside, birds, distant sheep; the whole 3:13 loop kept).
+
+## D-064: Phase 13 closes with measuring tools; landscape beautification as its own step before Phase 14 (Accepted, 2026-11-18, owner)
+Owner asked whether to beautify the landscapes now or at the very end; Claude recommended neither: close Phase 13
+first (tested, accepted state on `main`), then a separate beautification step, then Phase 14 (whose performance and
+resolution tests must see the final landscapes). Owner: "tamam dediğin gibi yap".
+- **13f measuring tools** (Claude can't run Unity, the owner plays and the log carries the numbers): F3 overlay in the
+  HUD (FPS, average and worst frame time, draw calls, set-pass calls, triangles, memory; render counters only in the
+  Editor and development builds), a `[Perf]` summary in the log every 10 s while it is shown; `[Perf]` timings of the
+  start (read save, load scene, apply save), each trip (capture, unload, load, set up) and each save (capture, JSON,
+  write, size). Performance fixes follow the numbers of MT-033 (likely candidates: the ~25k mountain trees, grass
+  distance, shadow distance).
+- **Beautification step**: water shader, light and sky per place, CC0 rocks reduced in Blender, better generated trees,
+  denser grass; purchases decided with the owner then (prices seemed high; perhaps in a sale).
