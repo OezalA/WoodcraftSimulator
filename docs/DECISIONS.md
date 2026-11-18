@@ -906,5 +906,5 @@ view is not nice at all.
   later, are a purchase candidate (D-058: proposed by Claude, decided and bought by the owner, kept out of the repo).
 - Terrain data assets go to Git LFS (`.gitattributes`): several MB of text each; deterministic, so a rebuild without
   changes writes the same bytes.
-- **Workshop ambience**: to be replaced by a CC0 birdsong recording without insects; candidates given to the owner
-  (Freesound 614924 Rimmer, 641561 Psykophobia), downloaded by the owner.
+- **Workshop ambience**: replaced by a CC0 birdsong recording without insects (the owner listened and chose
+  Freesound 641561, Psykophobia: early-morning countryside, birds, distant sheep; the whole 3:13 loop kept).
