@@ -821,3 +821,20 @@ Owner agreed to the recommended mixed approach:
   (licences are bound to the buyer; Claude can't and must not pay). Bought assets stay out of the public repository
   (`.gitignore`, D-037) and the game keeps working without them (greybox fallback).
 - Claude may download CC0 files only after the owner's approval (per batch).
+
+## D-059: Phase 13a-13b: CC0 textures on wood and the greybox (Accepted, 2026-11-18)
+- **13a**: CC0 files under `Art/ThirdParty/CC0` (one folder per set, `CREDITS.md` with source, author, licence, date);
+  `ArtLibrary` finds a set's maps by file name (ambientCG / Poly Haven naming) and applies them to URP Lit (colour,
+  normal, occlusion, tiling in metres, smoothness); `ArtTextureImport` sets normal maps / linear data maps, max 1024 px.
+  Everything falls back to the greybox colour when a set is missing.
+- **Downloaded** (owner-approved list, ambientCG, CC0, 1K, only Color + NormalGL (+ AO where present) kept, 41 MB in
+  LFS): spruce Wood022, pine Wood050, larch Wood052, Douglas fir Wood081, oak Wood049, beech Wood034, walnut Wood067,
+  bench/shelves Wood048, Concrete034, PaintedPlaster017, Metal049A, Grass004, Gravel043, Rock058, Snow010A, Ground080.
+- **Boards**: each species has its board material (`WoodSpeciesDefinition.boardMaterial`); the board mesh maps its
+  length along the texture's grain on all four long faces (`BoxMeshBuilder` `lengthOnU`; Douglas fir's texture is
+  upright). Surfaces: raw matte; sanded a little lighter and smoother; oiled warmer, darker, with a sheen. Concrete
+  pier blocks use the concrete texture; glass panels a see-through light blue glossy material.
+- **Greybox**: floor, walls, bench wood, steel, gravel, ground, island grass and sand textured; builder boxes (Unity
+  cubes scaled to size) get cube meshes with metre-based UVs for their size (`UseMetreUVs`, shared per size), so a
+  texture has the same physical scale everywhere. Mountain terrain layers use Grass004 / Rock058 / Snow010A.
+- End grain (rings on the board ends) is not separate yet: the ends show the side texture.

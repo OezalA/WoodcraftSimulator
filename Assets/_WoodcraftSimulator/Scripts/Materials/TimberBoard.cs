@@ -18,6 +18,7 @@ namespace WoodcraftSimulator.Materials
     public sealed class TimberBoard : MonoBehaviour, IDescribable
     {
         private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
+        private static readonly int SmoothnessId = Shader.PropertyToID("_Smoothness");
 
         // Pencil line visual: drawn wider than a real 0.5 mm line so it stays visible from a normal working
         // distance. Only the visual; the authoritative position is the domain PencilMark (0.1 mm).
@@ -126,14 +127,21 @@ namespace WoodcraftSimulator.Materials
                 return;
             }
 
-            Color color = species.GreyboxColor;
+            // Greybox: the species colour; textured (D-059): the texture carries the colour, the surface tints it. Sanded is
+            // a little lighter and smoother, oiled warmer, darker and with a sheen.
+            bool textured = species.BoardMaterial != null;
+            // A textured material keeps its own tint (white for wood, the see-through blue of glass panels).
+            Color color = textured ? species.BoardMaterial.GetColor(BaseColorId) : species.GreyboxColor;
+            float smoothness = textured ? species.BoardMaterial.GetFloat(SmoothnessId) : 0.12f;
             if (surface == BoardSurface.Sanded)
             {
-                color = Color.Lerp(color, Color.white, 0.15f);
+                color = textured ? color * new Color(1.06f, 1.05f, 1.03f, 1f) : Color.Lerp(color, Color.white, 0.15f);
+                smoothness = 0.25f;
             }
             else if (surface == BoardSurface.Oiled)
             {
-                color = new Color(color.r * 0.8f, color.g * 0.66f, color.b * 0.5f, color.a);
+                color = textured ? color * new Color(0.86f, 0.74f, 0.6f, 1f) : new Color(color.r * 0.8f, color.g * 0.66f, color.b * 0.5f, color.a);
+                smoothness = 0.55f;
             }
 
             // Per-object color without creating a material instance per board.
@@ -141,6 +149,10 @@ namespace WoodcraftSimulator.Materials
             var meshRenderer = GetComponent<MeshRenderer>();
             meshRenderer.GetPropertyBlock(propertyBlock);
             propertyBlock.SetColor(BaseColorId, color);
+            if (textured)
+            {
+                propertyBlock.SetFloat(SmoothnessId, smoothness);
+            }
             meshRenderer.SetPropertyBlock(propertyBlock);
         }
 
@@ -163,7 +175,14 @@ namespace WoodcraftSimulator.Materials
                 (float)dimensions.Length.Meters);
 
             Mesh previousMesh = generatedMesh;
-            generatedMesh = BoxMeshBuilder.Create(size, $"Timber {dimensions}");
+            // With a wood texture the grain runs along the board on every long face (Phase 13b, D-059).
+            bool textured = species != null && species.BoardMaterial != null;
+            generatedMesh = BoxMeshBuilder.Create(size, $"Timber {dimensions}", textured ? !species.GrainAlongTextureV : (bool?)null);
+            if (textured)
+            {
+                GetComponent<MeshRenderer>().sharedMaterial = species.BoardMaterial;
+            }
+
             GetComponent<MeshFilter>().sharedMesh = generatedMesh;
             DestroyMesh(previousMesh);
 

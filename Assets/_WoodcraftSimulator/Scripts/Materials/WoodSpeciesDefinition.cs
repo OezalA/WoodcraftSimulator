@@ -32,6 +32,13 @@ namespace WoodcraftSimulator.Materials
         [Tooltip("Where the values come from and how reliable they are.")]
         [SerializeField, TextArea] private string dataNotes = "";
 
+        [Header("Look (Phase 13b, D-059)")]
+        [Tooltip("Textured material for boards of this species (CC0 art); empty = the board material in its greybox colour.")]
+        [SerializeField] private Material boardMaterial;
+
+        [Tooltip("The texture's grain runs upright (along V); the board's length is then mapped along V.")]
+        [SerializeField] private bool grainAlongTextureV;
+
         public string Id => id;
 
         public string DisplayName => Localization.Loc.Pick(displayName, displayNameTurkish);
@@ -39,6 +46,10 @@ namespace WoodcraftSimulator.Materials
         public string ScientificName => scientificName;
 
         public Color GreyboxColor => greyboxColor;
+
+        public Material BoardMaterial => boardMaterial;
+
+        public bool GrainAlongTextureV => grainAlongTextureV;
 
         public string DataNotes => dataNotes;
 

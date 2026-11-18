@@ -114,6 +114,8 @@ namespace WoodcraftSimulator.Editor
             ConfigureDefaultObjects(scene);
 
             var materials = new GreyboxMaterials();
+            ApplyArt(materials); // CC0 textures where they are in the project (Phase 13b, D-059)
+            ApplySpeciesArt(WoodSpeciesAssets.EnsureDefaults());
             BuildEnvironment(materials, WoodSpeciesAssets.EnsureDefaults());
             GameObject player = BuildPlayer(materials.PlacementPreview);
             PanelSettings panelSettings = GetOrCreatePanelSettings(theme);
@@ -131,6 +133,7 @@ namespace WoodcraftSimulator.Editor
 
             // Intentionally does not touch Build Settings (ProjectSettings): add the scenes there manually when needed.
             EnsureFolder(Path.GetDirectoryName(CoreScenePath).Replace('\\', '/'));
+            UseMetreUVs(scene); // textured boxes get metre-based UVs (Phase 13b)
             EditorSceneManager.SaveScene(scene, ScenePath);
             EditorSceneManager.SaveScene(core, CoreScenePath);
 
@@ -701,7 +704,7 @@ namespace WoodcraftSimulator.Editor
                     materials.PencilRed);
                 Object.DestroyImmediate(stake.GetComponent<BoxCollider>());
                 GameObject gravel = CreateBox("Gravel", spot.transform, new Vector3(0f, 0.5f, 0f), new Vector3(1.1f, 1f, 1.1f),
-                    materials.Steel);
+                    materials.Colored("Gravel", new Color(0.5f, 0.5f, 0.5f)));
                 Object.DestroyImmediate(gravel.GetComponent<BoxCollider>());
                 gravel.SetActive(false);
                 bracketVisuals.Add(BuildBeamBracket(site, new Vector3(p.x, TerraceAssets.PierTop, p.z), materials.Steel));
@@ -838,7 +841,7 @@ namespace WoodcraftSimulator.Editor
                     materials.PencilRed);
                 Object.DestroyImmediate(stake.GetComponent<BoxCollider>());
                 GameObject gravel = CreateBox("Gravel", spot.transform, new Vector3(0f, 0.5f, 0f), new Vector3(1.1f, 1f, 1.1f),
-                    materials.Steel);
+                    materials.Colored("Gravel", new Color(0.5f, 0.5f, 0.5f)));
                 Object.DestroyImmediate(gravel.GetComponent<BoxCollider>());
                 gravel.SetActive(false);
 
@@ -1922,8 +1925,13 @@ namespace WoodcraftSimulator.Editor
                     AssetDatabase.CreateAsset(material, path);
                 }
 
-                material.SetColor("_BaseColor", color);
-                material.SetFloat("_Smoothness", 0.15f);
+                // A material with a CC0 texture keeps a white tint and its own smoothness (Phase 13b).
+                bool textured = material.GetTexture("_BaseMap") != null;
+                material.SetColor("_BaseColor", textured ? Color.white : color);
+                if (!textured)
+                {
+                    material.SetFloat("_Smoothness", 0.15f);
+                }
                 EditorUtility.SetDirty(material);
                 return material;
             }

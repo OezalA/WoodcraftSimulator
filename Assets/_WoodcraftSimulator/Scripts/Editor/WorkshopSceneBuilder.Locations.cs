@@ -104,6 +104,7 @@ namespace WoodcraftSimulator.Editor
             ConfigureDefaultObjects(scene);
             Transform arrival = build(scene);
             AddPlaceInfo(scene, location, arrival);
+            UseMetreUVs(scene);
             EditorSceneManager.SaveScene(scene, path);
             EditorSceneManager.CloseScene(scene, true);
         }
@@ -172,9 +173,9 @@ namespace WoodcraftSimulator.Editor
 
             data.SetHeights(0, 0, heights);
 
-            TerrainLayer grass = TerrainLayerAsset("MountainGrass", new Color(0.34f, 0.44f, 0.24f));
-            TerrainLayer rock = TerrainLayerAsset("MountainRock", new Color(0.45f, 0.44f, 0.42f));
-            TerrainLayer snow = TerrainLayerAsset("MountainSnow", new Color(0.95f, 0.96f, 0.98f));
+            TerrainLayer grass = TerrainLayerFor("MountainGrass", "Grass004", new Color(0.34f, 0.44f, 0.24f), 3f);
+            TerrainLayer rock = TerrainLayerFor("MountainRock", "Rock058", new Color(0.45f, 0.44f, 0.42f), 6f);
+            TerrainLayer snow = TerrainLayerFor("MountainSnow", "Snow010A", new Color(0.95f, 0.96f, 0.98f), 4f);
             data.terrainLayers = new[] { grass, rock, snow };
             data.alphamapResolution = 128;
             var alphas = new float[128, 128, 3];
