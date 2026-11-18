@@ -116,15 +116,16 @@ namespace WoodcraftSimulator.Editor
         private static Transform BuildMountain(Scene scene, GreyboxMaterials materials)
         {
             var environment = new GameObject("Environment").transform;
-            BuildMountainTerrain(environment);
+            BuildMountainLandscape(environment, materials); // valley, forests, snowy range (D-063)
             ApplySky("kloofendal_43d_clear_puresky", 1f, 0f); // clear, crisp mountain sky (D-060)
             AddReflectionProbe(environment, new Vector3(0f, 2f, 0f), new Vector3(80f, 30f, 80f));
             AddAmbience(environment, "Wind", 0.35f);
 
+            // Thin haze: the range 1.2–2.3 km away shows about half through it, bluish (aerial perspective, D-063).
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.ExponentialSquared;
-            RenderSettings.fogColor = new Color(0.80f, 0.86f, 0.92f);
-            RenderSettings.fogDensity = 0.0028f;
+            RenderSettings.fogColor = new Color(0.72f, 0.80f, 0.90f);
+            RenderSettings.fogDensity = 0.0004f;
             RenderSettings.ambientMode = AmbientMode.Trilight;
             RenderSettings.ambientSkyColor = new Color(0.75f, 0.82f, 0.92f);
             RenderSettings.ambientEquatorColor = new Color(0.62f, 0.66f, 0.70f);
@@ -142,87 +143,6 @@ namespace WoodcraftSimulator.Editor
             });
 
             return BuildVan(environment, materials, new Vector3(-7f, 0f, -1f), 0f);
-        }
-
-        /// <summary>
-        /// A generated terrain (no bought art, D-037): a flat yard in the middle (at y 0), rolling meadows around it,
-        /// then a ring of high peaks, highest in front of the terrace (towards −Z); grass, rock and snow by height and
-        /// slope. 400 × 400 m, peaks up to ~160 m. Its data and layers are saved as assets.
-        /// </summary>
-        private static void BuildMountainTerrain(Transform parent)
-        {
-            const int resolution = 129;
-            const float size = 400f;
-            const float height = 160f;
-            const float yard = 0.05f; // the yard's height (normalised): 8 m above the terrain's base
-
-            var data = new TerrainData { heightmapResolution = resolution, size = new Vector3(size, height, size) };
-            var heights = new float[resolution, resolution];
-            for (int z = 0; z < resolution; z++)
-            {
-                for (int x = 0; x < resolution; x++)
-                {
-                    float u = x / (resolution - 1f) - 0.5f;
-                    float v = z / (resolution - 1f) - 0.5f;
-                    float r = Mathf.Sqrt(u * u + v * v) * 2f;
-                    float meadow = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.12f, 0.35f, r)) * 0.06f *
-                                   (0.6f + Mathf.PerlinNoise(x * 0.11f, z * 0.11f));
-                    float front = 1f + 0.7f * Mathf.Max(0f, -v * 2f); // higher peaks in the terrace's view
-                    float ridge = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.35f, 0.95f, r)) * front *
-                                  (0.45f + 0.45f * Mathf.PerlinNoise(x * 0.07f + 13f, z * 0.07f + 7f));
-                    heights[z, x] = Mathf.Clamp01(yard + meadow + ridge);
-                }
-            }
-
-            data.SetHeights(0, 0, heights);
-
-            TerrainLayer grass = TerrainLayerFor("MountainGrass", "Grass004", new Color(0.34f, 0.44f, 0.24f), 3f);
-            TerrainLayer rock = TerrainLayerFor("MountainRock", "Rock058", new Color(0.45f, 0.44f, 0.42f), 6f);
-            TerrainLayer snow = TerrainLayerFor("MountainSnow", "Snow010A", new Color(0.95f, 0.96f, 0.98f), 4f);
-            data.terrainLayers = new[] { grass, rock, snow };
-            data.alphamapResolution = 128;
-            var alphas = new float[128, 128, 3];
-            for (int z = 0; z < 128; z++)
-            {
-                for (int x = 0; x < 128; x++)
-                {
-                    float nx = x / 127f;
-                    float nz = z / 127f;
-                    float h = data.GetInterpolatedHeight(nx, nz) / height;
-                    float steep = data.GetSteepness(nx, nz) / 90f;
-                    float snowWeight = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.30f, 0.42f, h));
-                    float rockWeight = (1f - snowWeight) * Mathf.Clamp01(Mathf.InverseLerp(0.10f, 0.22f, h) + steep * 1.5f);
-                    float grassWeight = Mathf.Max(0f, 1f - snowWeight - rockWeight);
-                    alphas[z, x, 0] = grassWeight;
-                    alphas[z, x, 1] = rockWeight;
-                    alphas[z, x, 2] = snowWeight;
-                }
-            }
-
-            data.SetAlphamaps(0, 0, alphas);
-            string dataPath = $"{TerrainFolder}/MountainTerrain.asset";
-            AssetDatabase.DeleteAsset(dataPath);
-            AssetDatabase.CreateAsset(data, dataPath);
-
-            GameObject terrain = Terrain.CreateTerrainGameObject(data);
-            terrain.name = "Terrain";
-
-            // URP's terrain shader (without a material the terrain may render pink in URP).
-            Shader terrainShader = Shader.Find("Universal Render Pipeline/Terrain/Lit");
-            if (terrainShader != null)
-            {
-                string materialPath = $"{TerrainFolder}/MountainTerrain.mat";
-                var terrainMaterial = AssetDatabase.LoadAssetAtPath<Material>(materialPath);
-                if (terrainMaterial == null)
-                {
-                    terrainMaterial = new Material(terrainShader) { name = "MountainTerrain" };
-                    AssetDatabase.CreateAsset(terrainMaterial, materialPath);
-                }
-
-                terrain.GetComponent<Terrain>().materialTemplate = terrainMaterial;
-            }
-            terrain.transform.SetParent(parent, false);
-            terrain.transform.localPosition = new Vector3(-size / 2f, -yard * height, -size / 2f);
         }
 
         /// <summary>A terrain layer with a small generated one-colour texture (a little noise so it isn't flat).</summary>
@@ -258,7 +178,7 @@ namespace WoodcraftSimulator.Editor
         }
 
         /// <summary>
-        /// The island house (D-055): a small island in a calm sea (a sand disc with a grass top, a water plane to the
+        /// The island house (D-055): a small island in a calm sea (a generated terrain: grass, beach, islets; a water plane to the
         /// horizon, a few islets in the distance), a white house, the deck site in front of it facing the open sea.
         /// </summary>
         private static Transform BuildIsland(Scene scene, GreyboxMaterials materials)
@@ -269,7 +189,7 @@ namespace WoodcraftSimulator.Editor
             sea.name = "Sea";
             sea.transform.SetParent(environment, false);
             sea.transform.localPosition = new Vector3(0f, -0.45f, 0f);
-            sea.transform.localScale = new Vector3(80f, 1f, 80f); // 800 m: to the haze
+            sea.transform.localScale = new Vector3(300f, 1f, 300f); // 3 km: its edge stays in the haze (far view 4 km)
             Material water = materials.Colored("Sea", new Color(0.06f, 0.30f, 0.42f));
             water.SetFloat("_Smoothness", 0.92f); // reflects the sky (the probe below, D-060)
             sea.GetComponent<Renderer>().sharedMaterial = water;
@@ -277,23 +197,9 @@ namespace WoodcraftSimulator.Editor
             AddReflectionProbe(environment, new Vector3(0f, 2f, 0f), new Vector3(80f, 30f, 80f));
             AddAmbience(environment, "Waves", 0.4f);
 
-            Material sand = materials.Colored("Sand", new Color(0.86f, 0.80f, 0.62f));
-            Material grass = materials.Colored("IslandGrass", new Color(0.40f, 0.55f, 0.28f));
-            Disc("Beach", environment, 60f, -0.6f, 1.2f, sand);
-            Disc("Meadow", environment, 44f, -0.59f, 1.2f, grass);
-            foreach ((Vector3 position, float size) in new[]
-                     {
-                         (new Vector3(-140f, -6f, -170f), 60f), (new Vector3(90f, -8f, -210f), 80f), (new Vector3(210f, -5f, -60f), 50f)
-                     })
-            {
-                GameObject islet = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                islet.name = "Islet";
-                islet.transform.SetParent(environment, false);
-                islet.transform.localPosition = position;
-                islet.transform.localScale = new Vector3(size, size * 0.25f, size);
-                islet.GetComponent<Renderer>().sharedMaterial = grass;
-                Object.DestroyImmediate(islet.GetComponent<SphereCollider>());
-            }
+            // The island, its beach and the islets as one terrain with grass tufts (D-063; the earlier discs stretched
+            // the grass texture over the whole disc).
+            BuildIslandLandscape(environment, materials);
 
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.ExponentialSquared;
@@ -317,19 +223,6 @@ namespace WoodcraftSimulator.Editor
             });
 
             return BuildVan(environment, materials, new Vector3(-7f, 0f, -1f), 0f);
-        }
-
-        /// <summary>A flat disc to walk on (a cylinder with a mesh collider: the primitive's capsule would be round).</summary>
-        private static void Disc(string name, Transform parent, float diameter, float y, float thickness, Material material)
-        {
-            GameObject disc = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            disc.name = name;
-            disc.transform.SetParent(parent, false);
-            disc.transform.localPosition = new Vector3(0f, y, 0f);
-            disc.transform.localScale = new Vector3(diameter, thickness / 2f, diameter);
-            disc.GetComponent<Renderer>().sharedMaterial = material;
-            Object.DestroyImmediate(disc.GetComponent<CapsuleCollider>());
-            disc.AddComponent<MeshCollider>().sharedMesh = disc.GetComponent<MeshFilter>().sharedMesh;
         }
 
         /// <summary>

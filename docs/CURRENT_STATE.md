@@ -32,7 +32,10 @@ glass panels), handover at the house door. **MT-032 accepted (2026-11-17)** afte
 end): 13a-13b CC0 textures and species board materials (D-059), 13c skies, ambient, reflection probes, post-processing
 (D-060), 13d recorded CC0 sounds (D-061), 13e settings page, travel screen, offer/result cards, interface sounds
 (D-062) **code done; static compile and domain tests only, not yet compiled or played in Unity.** Needs a scene rebuild
-(*WoodcraftSimulator > Build Test Workshop Scene*). 13f (performance pass) next, then MT-033.
+(*WoodcraftSimulator > Build Test Workshop Scene*). After the owner's first look (fly in the workshop ambience, poor
+island grass, poor mountain view): generated island and mountain landscapes, camera far plane 4 km (D-063, code done,
+not yet seen in Unity); the birdsong recording for the workshop is waiting for the owner's download. 13f (performance
+pass, incl. the ~25k mountain trees) next, then MT-033.
 Branches: only `main` + `develop` (D-020). `main` = last owner-tested state.
 
 ## Completed

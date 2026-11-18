@@ -1662,7 +1662,7 @@ namespace WoodcraftSimulator.Editor
             camera.fieldOfView = 70f;
             // Small near plane so close-up work (measuring, marking) doesn't clip into objects.
             camera.nearClipPlane = 0.03f;
-            camera.farClipPlane = 500f;
+            camera.farClipPlane = 4000f; // the mountain range and the sea horizon (D-063)
             cameraObject.AddComponent<AudioListener>();
 
             var controller = player.AddComponent<PlayerController>();

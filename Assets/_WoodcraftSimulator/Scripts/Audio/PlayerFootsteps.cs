@@ -127,7 +127,9 @@ namespace WoodcraftSimulator.Audio
             return FootstepSurface.Concrete;
         }
 
-        /// <summary>On the mountain terrain: snow where the snow layer is strongest, else grass (rock counts as grass).</summary>
+        /// <summary>
+        /// On a terrain: by the name of the strongest layer under the feet (snow, sand, rock; grass otherwise), D-063.
+        /// </summary>
         private static FootstepSurface TerrainSurface(Terrain terrain, Vector3 point)
         {
             TerrainData data = terrain.terrainData;
@@ -135,8 +137,28 @@ namespace WoodcraftSimulator.Audio
             int x = Mathf.Clamp(Mathf.RoundToInt(local.x / data.size.x * (data.alphamapWidth - 1)), 0, data.alphamapWidth - 1);
             int z = Mathf.Clamp(Mathf.RoundToInt(local.z / data.size.z * (data.alphamapHeight - 1)), 0, data.alphamapHeight - 1);
             float[,,] alphas = data.GetAlphamaps(x, z, 1, 1);
-            int layers = alphas.GetLength(2);
-            return layers >= 3 && alphas[0, 0, 2] > 0.5f ? FootstepSurface.Snow : FootstepSurface.Grass;
+            TerrainLayer[] layers = data.terrainLayers;
+            int strongest = 0;
+            for (int i = 1; i < alphas.GetLength(2); i++)
+            {
+                if (alphas[0, 0, i] > alphas[0, 0, strongest])
+                {
+                    strongest = i;
+                }
+            }
+
+            string name = strongest < layers.Length && layers[strongest] != null ? layers[strongest].name : string.Empty;
+            if (Contains(name, "Snow"))
+            {
+                return FootstepSurface.Snow;
+            }
+
+            if (Contains(name, "Sand"))
+            {
+                return FootstepSurface.Sand;
+            }
+
+            return Contains(name, "Rock") ? FootstepSurface.Concrete : FootstepSurface.Grass;
         }
 
         private static bool Contains(string text, string part) =>

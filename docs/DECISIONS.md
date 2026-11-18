@@ -886,3 +886,25 @@ Part of the approved Phase 13 plan (D-058: "UI and accessibility"); no new asset
   change key.
 - **Interface sounds** (Kenney, D-061): a click on pause menu buttons; a confirmation when the job board accepts,
   delivers or sells a board, an error tone when it refuses (`JobBoard.Answered`). Money tones (D-044) stay.
+
+## D-063: Phase 13c revision after the owner's look: generated landscapes, birdsong ambience (2026-11-18, owner feedback)
+Owner (after the rebuild): the workshop ambience has a buzzing fly; the island's grass doesn't look good; the mountain
+view is not nice at all.
+- **Causes**: the island's grass lay on a cylinder disc whose top UVs span the whole disc (the texture stretched over
+  ~90 m), with a hard circular edge to the sand; the mountain was a 400 m Perlin terrain (round hills, not peaks) under a
+  pure sky, the player camera's far plane was 500 m and the haze hid everything beyond ~600 m.
+- **Island**: one terrain (600 m): flat yard, low dunes, a ~12 m beach with a ragged edge running gently into the sea,
+  three islets; CC0 layers grass / sand / rock blended by distance to the shore and slope; grass tufts (a generated
+  texture, waving) except under the site, the house and the van. Sea plane 3 km.
+- **Mountain**: one terrain (5 km): the yard on a shoulder, the ground falling ~400 m into a valley, across it a ridged
+  (multifractal, warped) snow-capped range 1.2–2.3 km away, ~15° above the horizon; snow above a wavy snow line, rock on
+  steep slopes, grass below; ~25k generated conifers (three shapes, ~30 triangles each, instanced terrain trees) below a
+  tree line, in patches, none blocking the terrace's view; grass tufts near the house. Lighter haze (0.0004).
+  The shape was checked beforehand with a rough off-line render of the formula (not Unity's noise).
+- **Camera** far plane 4 km. Footsteps on terrain follow the strongest layer's name (snow, sand, rock, grass).
+- Poly Haven's CC0 tree and grass models were ruled out: 1.6–7.8 million polygons each. Better trees, if wanted
+  later, are a purchase candidate (D-058: proposed by Claude, decided and bought by the owner, kept out of the repo).
+- Terrain data assets go to Git LFS (`.gitattributes`): several MB of text each; deterministic, so a rebuild without
+  changes writes the same bytes.
+- **Workshop ambience**: to be replaced by a CC0 birdsong recording without insects; candidates given to the owner
+  (Freesound 614924 Rimmer, 641561 Psykophobia), downloaded by the owner.

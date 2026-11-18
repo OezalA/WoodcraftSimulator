@@ -32,3 +32,6 @@
 *.ogg  filter=lfs diff=lfs merge=lfs -text
 *.ttf  filter=lfs diff=lfs merge=lfs -text
 *.otf  filter=lfs diff=lfs merge=lfs -text
+
+# Generated terrain data (heights, splat maps, grass, trees: several MB each, D-063)
+Assets/_WoodcraftSimulator/Art/Terrain/*Terrain.asset filter=lfs diff=lfs merge=lfs -text
