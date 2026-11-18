@@ -45,6 +45,19 @@ namespace WoodcraftSimulator.Editor
             return library;
         }
 
+        /// <summary>The recorded Freesound clip of a use folder (Saw, Drill, Hammer, Sanding, Wind, Waves, Yard), or null.</summary>
+        public static AudioClip Recorded(string use)
+        {
+            string folder = $"{AudioFolder}/Freesound/{use}";
+            if (!AssetDatabase.IsValidFolder(folder))
+            {
+                return null;
+            }
+
+            string[] guids = AssetDatabase.FindAssets("t:AudioClip", new[] { folder });
+            return guids.Length > 0 ? AssetDatabase.LoadAssetAtPath<AudioClip>(AssetDatabase.GUIDToAssetPath(guids[0])) : null;
+        }
+
         private static AudioClip[] Clips(string prefix)
         {
             var clips = new List<AudioClip>();

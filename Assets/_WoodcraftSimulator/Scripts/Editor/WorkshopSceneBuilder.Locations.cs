@@ -119,6 +119,7 @@ namespace WoodcraftSimulator.Editor
             BuildMountainTerrain(environment);
             ApplySky("kloofendal_43d_clear_puresky", 1f, 0f); // clear, crisp mountain sky (D-060)
             AddReflectionProbe(environment, new Vector3(0f, 2f, 0f), new Vector3(80f, 30f, 80f));
+            AddAmbience(environment, "Wind", 0.35f);
 
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.ExponentialSquared;
@@ -274,6 +275,7 @@ namespace WoodcraftSimulator.Editor
             sea.GetComponent<Renderer>().sharedMaterial = water;
             ApplySky("rustig_koppie_puresky", 1f, 0f); // deep blue summer sky (D-060)
             AddReflectionProbe(environment, new Vector3(0f, 2f, 0f), new Vector3(80f, 30f, 80f));
+            AddAmbience(environment, "Waves", 0.4f);
 
             Material sand = materials.Colored("Sand", new Color(0.86f, 0.80f, 0.62f));
             Material grass = materials.Colored("IslandGrass", new Color(0.40f, 0.55f, 0.28f));

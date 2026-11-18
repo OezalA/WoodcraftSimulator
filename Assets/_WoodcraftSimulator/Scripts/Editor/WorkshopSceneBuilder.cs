@@ -129,6 +129,7 @@ namespace WoodcraftSimulator.Editor
             SaveGameService saveService = BuildSaveSystem(player, materials, WoodSpeciesAssets.EnsureDefaults());
             BuildPauseSystem(player, pauseMenuLayout, panelSettings, saveService);
             AddPlayerSounds(player);
+            ApplyRecordedToolSounds(); // recorded CC0 tool sounds (Phase 13d, D-061)
             TurkishNames.Apply();
 
             // Phase 12.5 (D-056): what lasts across places goes into the core scene; the workshop stays a content scene.
@@ -275,6 +276,7 @@ namespace WoodcraftSimulator.Editor
             // The apprentice's walkable area, built when the scene starts (D-052).
             environment.gameObject.AddComponent<RuntimeNavMesh>();
             AddReflectionProbe(environment, new Vector3(0f, 2f, -4f), new Vector3(60f, 20f, 60f));
+            AddAmbience(environment, "Yard", 0.25f);
         }
 
         /// <summary>

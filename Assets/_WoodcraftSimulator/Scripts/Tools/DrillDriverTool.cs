@@ -110,7 +110,7 @@ namespace WoodcraftSimulator.Tools
                 audioSource = gameObject.AddComponent<AudioSource>();
             }
 
-            motorLoop = new LoopSound(audioSource, ProceduralSounds.Drill, 0.4f);
+            motorLoop = recordedDrill != null ? new LoopSound(audioSource, recordedDrill, 0.55f) : new LoopSound(audioSource, ProceduralSounds.Drill, 0.4f);
         }
 
         private static string KeyLabel(InputAction action) =>
@@ -139,6 +139,9 @@ namespace WoodcraftSimulator.Tools
         // Sound (D-044): the motor runs while drilling or driving; a click when the clutch slips or a screw is in.
         private AudioSource audioSource;
         private LoopSound motorLoop;
+
+        [Tooltip("Optional recorded drill-driver loop (CC0, D-061).")]
+        [SerializeField] private AudioClip recordedDrill;
         private bool motorRunning;
         private bool wasSlipping;
 

@@ -31,6 +31,9 @@ namespace WoodcraftSimulator.Tools
         private PickupItem pickup;
         private HeldToolContext context;
         private LoopSound workSound;
+
+        [Tooltip("Optional recorded sanding loop (CC0, D-061).")]
+        [SerializeField] private AudioClip recordedSanding;
         private bool workingNow;
         private int ignoreInputFrame = -1;
         private TimberBoard target;
@@ -55,7 +58,10 @@ namespace WoodcraftSimulator.Tools
             }
 
             // Sanding sounds like soft sawing; brushing is quiet.
-            workSound = new LoopSound(source, ProceduralSounds.Saw, result == BoardSurface.Sanded ? 0.25f : 0.06f);
+            // Sanding: a recorded CC0 loop if there is one (D-061); oiling stays a faint brushing.
+            workSound = result == BoardSurface.Sanded && recordedSanding != null
+                ? new LoopSound(source, recordedSanding, 0.5f)
+                : new LoopSound(source, ProceduralSounds.Saw, result == BoardSurface.Sanded ? 0.25f : 0.06f);
         }
 
         public void Equip(HeldToolContext toolContext)

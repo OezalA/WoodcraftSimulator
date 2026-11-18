@@ -36,6 +36,11 @@ namespace WoodcraftSimulator.Tools
         private PickupItem pickup;
         private HeldToolContext context;
         private AudioSource audioSource;
+
+        [Tooltip("Optional recorded nailing loop (CC0, D-061); played while a nail is driven instead of a knock per blow.")]
+        [SerializeField] private AudioClip recordedNailing;
+
+        private LoopSound nailingLoop;
         private int ignoreInputFrame = -1;
 
         private AssemblyStation targetStation;
@@ -62,6 +67,11 @@ namespace WoodcraftSimulator.Tools
             if (audioSource == null)
             {
                 audioSource = gameObject.AddComponent<AudioSource>();
+            }
+
+            if (recordedNailing != null)
+            {
+                nailingLoop = new LoopSound(gameObject.AddComponent<AudioSource>(), recordedNailing, 0.7f);
             }
         }
 
@@ -152,6 +162,7 @@ namespace WoodcraftSimulator.Tools
             {
                 progress = 0f;
                 blowsPlayed = 0;
+                nailingLoop?.Set(false);
                 pickup.HandOffset = Vector3.zero;
                 string action = kind == FastenerKind.Nail
                     ? Loc.T($"Hold {useKeyLabel} to nail ({spec.DisplayName})", $"Çivilemek için {useKeyLabel} basılı tut ({spec.DisplayName})")
@@ -173,7 +184,11 @@ namespace WoodcraftSimulator.Tools
                 float swing = Mathf.Repeat(progress * 3f, 1f);
                 pickup.HandOffset = Vector3.up * (0.06f * Mathf.Sin(swing * Mathf.PI));
                 int blows = Mathf.FloorToInt(progress * 3f);
-                if (blows > blowsPlayed)
+                if (nailingLoop != null)
+                {
+                    nailingLoop.Set(true);
+                }
+                else if (blows > blowsPlayed)
                 {
                     blowsPlayed = blows;
                     audioSource.PlayOneShot(ProceduralSounds.Thunk, 0.9f);
@@ -253,6 +268,7 @@ namespace WoodcraftSimulator.Tools
             targetPoint = -1;
             progress = 0f;
             blowsPlayed = 0;
+            nailingLoop?.Set(false);
             if (pickup != null)
             {
                 pickup.HandOffset = Vector3.zero;

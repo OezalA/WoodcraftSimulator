@@ -26,3 +26,10 @@ We list the source anyway, so every file can be traced. Bought assets never go h
 | Hdri/rustig_koppie_puresky_2k.hdr (island house sky, 2K) | https://polyhaven.com/a/rustig_koppie_puresky | Greg Zaal (Poly Haven) | CC0 1.0 | 2026-11-18 |
 | Audio/Kenney (footsteps concrete/grass/snow/wood, impacts wood/plank/metal/glass; from "Impact Sounds" 1.0) | https://kenney.nl/assets/impact-sounds | Kenney (www.kenney.nl) | CC0 1.0 | 2026-11-18 |
 | Audio/Kenney (click, confirmation, error, select, drop, open, close; from "Interface Sounds") | https://kenney.nl/assets/interface-sounds | Kenney (www.kenney.nl) | CC0 1.0 | 2026-11-18 |
+| Audio/Freesound/Saw/383725_saw_loop.ogg (hand saw, 32.5-41.5 s; trimmed, loudness-normalised, Ogg) | https://freesound.org/s/383725/ | deleted_user_7146007 (Freesound) | CC0 1.0 | 2026-11-18 (downloaded by the owner) |
+| Audio/Freesound/Drill/383447_drill_loop.ogg (drill-driver, 73-76.5 s; trimmed, loudness-normalised, Ogg) | https://freesound.org/s/383447/ | deleted_user_7146007 (Freesound) | CC0 1.0 | 2026-11-18 (downloaded by the owner) |
+| Audio/Freesound/Hammer/850175_nailing.ogg (nailing, first 8 s; trimmed, loudness-normalised, Ogg) | https://freesound.org/s/850175/ | mihacappy (Freesound) | CC0 1.0 | 2026-11-18 (downloaded by the owner) |
+| Audio/Freesound/Sanding/383444_sanding_loop.ogg (sanding, first 12 s; trimmed, loudness-normalised, Ogg) | https://freesound.org/s/383444/ | deleted_user_7146007 (Freesound) | CC0 1.0 | 2026-11-18 (downloaded by the owner) |
+| Audio/Freesound/Wind/578275_wind_loop.ogg (mountain wind, whole; trimmed, loudness-normalised, Ogg) | https://freesound.org/s/578275/ | makape (Freesound) | CC0 1.0 | 2026-11-18 (downloaded by the owner) |
+| Audio/Freesound/Waves/852826_waves_loop.ogg (island waves, whole; trimmed, loudness-normalised, Ogg) | https://freesound.org/s/852826/ | kkenny101 (Freesound) | CC0 1.0 | 2026-11-18 (downloaded by the owner) |
+| Audio/Freesound/Yard/586438_countryside_loop.ogg (workshop yard, 20-80 s; trimmed, loudness-normalised, Ogg) | https://freesound.org/s/586438/ | joenmuri (Freesound) | CC0 1.0 | 2026-11-18 (downloaded by the owner) |

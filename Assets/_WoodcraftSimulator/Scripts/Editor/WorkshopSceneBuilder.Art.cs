@@ -257,6 +257,55 @@ namespace WoodcraftSimulator.Editor
             cameraData.antialiasing = UnityEngine.Rendering.Universal.AntialiasingMode.SubpixelMorphologicalAntiAliasing;
         }
 
+        /// <summary>The recorded CC0 sounds on the tools that have them (Phase 13d, D-061); missing ones stay generated.</summary>
+        private static void ApplyRecordedToolSounds()
+        {
+            SetRecorded<Tools.HandSawTool>("recordedSaw", "Saw");
+            SetRecorded<Tools.DrillDriverTool>("recordedDrill", "Drill");
+            foreach (Tools.HandFastenTool tool in Object.FindObjectsByType<Tools.HandFastenTool>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                var serialized = new SerializedObject(tool);
+                bool nails = serialized.FindProperty("kind").enumValueIndex == (int)Construction.FastenerKind.Nail;
+                serialized.FindProperty("recordedNailing").objectReferenceValue = nails ? AudioAssets.Recorded("Hammer") : null;
+                serialized.ApplyModifiedPropertiesWithoutUndo();
+            }
+
+            SetRecorded<Tools.SurfaceTool>("recordedSanding", "Sanding");
+        }
+
+        private static void SetRecorded<T>(string property, string use) where T : Object
+        {
+            AudioClip clip = AudioAssets.Recorded(use);
+            foreach (T tool in Object.FindObjectsByType<T>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                var serialized = new SerializedObject(tool);
+                serialized.FindProperty(property).objectReferenceValue = clip;
+                serialized.ApplyModifiedPropertiesWithoutUndo();
+            }
+        }
+
+        /// <summary>
+        /// The place's background sound (D-061): a quiet looping recording heard everywhere in it (the countryside at
+        /// the workshop, wind at the mountain house, waves at the island). Nothing when the recording isn't there.
+        /// </summary>
+        private static void AddAmbience(Transform parent, string use, float volume)
+        {
+            AudioClip clip = AudioAssets.Recorded(use);
+            if (clip == null)
+            {
+                return;
+            }
+
+            var ambience = new GameObject("Ambience");
+            ambience.transform.SetParent(parent, false);
+            var source = ambience.AddComponent<AudioSource>();
+            source.clip = clip;
+            source.loop = true;
+            source.playOnAwake = true;
+            source.volume = volume;
+            source.spatialBlend = 0f;
+        }
+
         /// <summary>A CC0 terrain layer when the set is there (normal map too), else the generated plain one.</summary>
         private static TerrainLayer TerrainLayerFor(string name, string set, Color fallback, float tileMetres)
         {

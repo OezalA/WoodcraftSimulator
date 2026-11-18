@@ -104,7 +104,8 @@ namespace WoodcraftSimulator.Tools
                 source = gameObject.AddComponent<AudioSource>();
             }
 
-            sawLoop = new LoopSound(source, ProceduralSounds.Saw, 0.45f);
+            // A recorded CC0 hand saw if the builder gave one (Phase 13d, D-061), else the generated strokes.
+            sawLoop = recordedSaw != null ? new LoopSound(source, recordedSaw, 0.6f) : new LoopSound(source, ProceduralSounds.Saw, 0.45f);
             modeAction = InputSystem.actions.FindAction("Player/ToolMode", throwIfNotFound: true);
             adjustAction = InputSystem.actions.FindAction("Player/AdjustTool", throwIfNotFound: true);
             coarseAction = InputSystem.actions.FindAction("Player/CoarseAdjust", throwIfNotFound: true);
@@ -302,6 +303,9 @@ namespace WoodcraftSimulator.Tools
 
         // Sound (D-044): the saw loop plays exactly while the blade moves.
         private LoopSound sawLoop;
+
+        [Tooltip("Optional recorded sawing loop (CC0, D-061).")]
+        [SerializeField] private AudioClip recordedSaw;
         private bool sawingNow;
 
         private void LateUpdate() => sawLoop?.Set(sawingNow && context != null);

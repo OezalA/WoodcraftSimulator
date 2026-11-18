@@ -852,3 +852,17 @@ Owner agreed to the recommended mixed approach:
 - **Build**: the editor assembly now references URP's runtime assemblies (to build the volume profile);
   `tools/static-build.sh` adds them until Unity regenerates its project file.
 - The sea is a glossy dark teal surface (smoothness 0.92), no waves yet.
+
+## D-061: Phase 13d: recorded CC0 sounds (Accepted, 2026-11-18, owner choices)
+Owner chose Kenney (downloaded by Claude) plus a Freesound list (downloaded by the owner with his account; Claude can't
+log in). Sonniss GDC bundles were ruled out: their licence forbids redistributing the raw files (public repository).
+- **Kenney** (CC0, 1.1 MB): footsteps on concrete, wood, grass, snow (sand = the snow crunch played higher); put-down
+  impacts by material (timber wood/plank, glass panels glass, the stepladder metal; concrete blocks keep the
+  generated knock); interface clicks/confirm/error (kept for 13e).
+- **Freesound** (CC0, owner picked the recommended first candidates; Claude trimmed, normalised to -20 LUFS and
+  converted to Ogg: 95 MB of WAV became 1.7 MB): hand saw loop, drill-driver loop, nailing loop (while a nail is
+  driven, instead of a knock per blow), sanding loop (oiling stays a faint generated brushing); place ambience loops:
+  countryside at the workshop, wind at the mountain house, waves at the island.
+- `SoundLibrary` asset (filled by the builder from the file names), `PlayerFootsteps` (a step per 0.65 m, shorter and
+  quieter crouched; surface from what is under the feet: boards wood, terrain snow/grass by its splat map, material
+  names otherwise). Every recorded sound is optional: without it the generated placeholder plays (D-044).
